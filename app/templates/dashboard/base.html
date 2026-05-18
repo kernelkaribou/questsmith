@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Readers Quest{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --color-primary: {{ color_primary|default('#4F46E5') }};
+            --color-secondary: {{ color_secondary|default('#818CF8') }};
+        }
+        .bg-theme-primary { background-color: var(--color-primary); }
+        .bg-theme-secondary { background-color: var(--color-secondary); }
+        .text-theme-primary { color: var(--color-primary); }
+        .text-theme-secondary { color: var(--color-secondary); }
+        .border-theme-primary { border-color: var(--color-primary); }
+        .ring-theme-primary { --tw-ring-color: var(--color-primary); }
+        .progress-fill {
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            transition: width 0.5s ease;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    {% block body %}{% endblock %}
+</body>
+</html>

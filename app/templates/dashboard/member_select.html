@@ -1,0 +1,24 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ member.name }} - Pick a Quest{% endblock %}
+{% block body %}
+<div class="flex flex-col items-center justify-center min-h-screen p-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ member.name }}</h1>
+    <p class="text-gray-500 mb-8">Choose your active quest</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl w-full">
+        {% for q in quests %}
+        <a href="{{ url_for('dashboard.quest_view', quest_id=q.id) }}"
+           class="group bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-shadow"
+           style="border-color: {{ q.color_primary }}">
+            {% if q.theme_graphic_url %}
+            <img src="{{ q.theme_graphic_url }}" alt="{{ q.theme_name }}" class="w-16 h-16 mx-auto mb-3 object-contain">
+            {% endif %}
+            <h2 class="text-xl font-bold text-center" style="color: {{ q.color_primary }}">{{ q.theme_name }}</h2>
+            <p class="text-sm text-gray-500 text-center mt-1">{{ q.journey.name }}</p>
+        </a>
+        {% endfor %}
+    </div>
+
+    <a href="{{ url_for('dashboard.index') }}" class="mt-8 text-gray-400 hover:text-gray-600 text-sm">Back to adventurers</a>
+</div>
+{% endblock %}

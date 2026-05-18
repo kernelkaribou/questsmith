@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Readers Quest - Choose Adventurer{% endblock %}
+{% block body %}
+<div class="flex flex-col items-center justify-center min-h-screen p-6">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">Readers Quest</h1>
+    <p class="text-gray-500 mb-8">Choose your adventurer</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl w-full">
+        {% for m in members %}
+        <a href="{{ url_for('dashboard.member_select', member_id=m.id) }}"
+           class="group bg-white rounded-xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-shadow hover:-translate-y-1 transform transition-transform">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold mb-3 group-hover:scale-110 transition-transform">
+                {{ m.name[0] }}
+            </div>
+            <span class="text-lg font-semibold text-gray-700">{{ m.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
