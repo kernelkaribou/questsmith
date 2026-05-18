@@ -1,0 +1,40 @@
+name: Dev Tag
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+
+      - name: Create dev tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          TAG="v${{ steps.version.outputs.version }}-dev.$(date +%Y%m%d%H%M%S)"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest tests/ -v

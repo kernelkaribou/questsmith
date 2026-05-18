@@ -1,0 +1,14 @@
+tmp/
+data/
+*.db
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+node_modules/
+app/static/css/output.css
+*.egg-info/
+dist/
+build/
+.pytest_cache/

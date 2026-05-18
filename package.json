@@ -1,0 +1,11 @@
+{
+  "name": "readers-quest-frontend",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify",
+    "watch:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4"
+  }
+}
