@@ -1,16 +1,18 @@
 # Readers Quest
 
-A book reading tracker that rewards readers through themed quests. Track reading progress, earn XP and Gold, unlock achievements, and compete in Co-Op family goals.
+A quest-based reward engine that tracks individual accomplishments and party goals. Build themed quests for any activity — reading, chores, sports, or anything with trackable progress. Members earn XP and Gold, unlock achievements, redeem prizes, and work together on Co-Op goals.
 
 ## Features
 
-- Themed quests per reader (custom earning rules, labels, and visuals)
+- Activity-agnostic quest engine (reading, chores, sports, anything)
+- Admin-defined activity types per quest with flexible earning rules
+- Themed quests with configurable labels per member (Pokemon trainer, Cheer camp, etc.)
 - Individual progress tracking with level vials and milestone markers
 - Spendable currency shop for prize redemption
-- Co-Op family goals with fairness validation
+- Co-Op party goals with fairness validation
 - Side quests for bonus XP
 - Lifetime achievements spanning all quests
-- Reading log history and stats
+- Activity log history and stats
 
 ## Quick Start
 

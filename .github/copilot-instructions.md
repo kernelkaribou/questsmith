@@ -55,7 +55,10 @@
 
 ## Architecture Notes
 
-- Lifetime stats and achievements exist outside of quests (permanent reader-level data)
+- Generic quest-based reward engine; activity-agnostic by design
+- Quests define activity types, earning rules, theme, and labels
+- Lifetime stats and achievements exist outside of quests (permanent member-level data)
 - Quests are time-bound campaigns with scoped XP, Gold, prizes, and Co-Op goals
-- Reading logs feed both lifetime stats and active quest progression
-- Theme language is configurable per quest enrollment (labels, colors, earning rules)
+- Activity logs feed both lifetime stats and active quest progression
+- Theme language is configurable per quest and per member enrollment
+- "Member" is the generic data term; themed per quest (reader, trainer, player, etc.)
