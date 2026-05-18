@@ -3,9 +3,9 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from app import db
 from app.models import (
     Member, Journey, Quest, CoOpGoal, PrizeTier, PrizeItem,
-    SideQuest, AchievementUnlock, Achievement,
+    SideQuest, AchievementUnlock, Achievement, ActivityLog,
 )
-from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine
+from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
 
 bp = Blueprint("dashboard", __name__, url_prefix="/")
 
@@ -84,3 +84,42 @@ def member_select(member_id):
     if len(quests) == 1:
         return redirect(url_for("dashboard.quest_view", quest_id=quests[0].id))
     return render_template("dashboard/member_select.html", member=member, quests=quests)
+
+
+@bp.route("/member/<int:member_id>/profile")
+def member_profile(member_id):
+    """Lifetime stats and achievement showcase for a member."""
+    member = db.session.get(Member, member_id)
+    stats = lifetime.get_all_stats(member_id)
+
+    # All achievements
+    unlocks = AchievementUnlock.query.filter_by(member_id=member_id).order_by(AchievementUnlock.unlocked_at.desc()).all()
+    achievements = []
+    for u in unlocks:
+        ach = db.session.get(Achievement, u.achievement_id)
+        achievements.append({"achievement": ach, "unlocked_at": u.unlocked_at})
+
+    # Past journeys
+    all_quests = Quest.query.filter_by(member_id=member_id).join(Journey).order_by(Journey.created_at.desc()).all()
+
+    return render_template(
+        "dashboard/profile.html",
+        member=member,
+        stats=stats,
+        achievements=achievements,
+        all_quests=all_quests,
+    )
+
+
+@bp.route("/quest/<int:quest_id>/history")
+def quest_history(quest_id):
+    """Activity log timeline for a specific quest."""
+    quest = db.session.get(Quest, quest_id)
+    logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).all()
+    ctx = quest_engine.get_quest_context(quest_id)
+    return render_template(
+        "dashboard/history.html",
+        quest=quest,
+        logs=logs,
+        ctx=ctx,
+    )

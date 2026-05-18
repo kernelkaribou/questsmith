@@ -1,0 +1,101 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ member.name }} - Lifetime Profile{% endblock %}
+{% block body %}
+<div class="min-h-screen pb-8">
+    <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 py-6 text-center">
+            <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl font-bold mx-auto mb-3">
+                {{ member.name[0] }}
+            </div>
+            <h1 class="text-2xl font-bold">{{ member.name }}</h1>
+            <p class="text-sm opacity-80">Lifetime Profile</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- Lifetime Stats -->
+        <section class="bg-white rounded-xl shadow-lg p-5">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Lifetime Stats</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="text-center p-3 bg-indigo-50 rounded-lg">
+                    <div class="text-2xl font-bold text-indigo-700">{{ stats.total_currency_earned }}</div>
+                    <div class="text-xs text-gray-500">Total Earned</div>
+                </div>
+                <div class="text-center p-3 bg-purple-50 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-700">{{ stats.total_logs }}</div>
+                    <div class="text-xs text-gray-500">Activities Logged</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-700">{{ stats.journeys_completed }}</div>
+                    <div class="text-xs text-gray-500">Journeys Completed</div>
+                </div>
+                <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-700">{{ stats.side_quests_completed }}</div>
+                    <div class="text-xs text-gray-500">Side Quests Done</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activity Breakdown -->
+        {% if stats.by_activity_type %}
+        <section class="bg-white rounded-xl shadow-lg p-5">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Activity Breakdown</h2>
+            <div class="space-y-3">
+                {% for at in stats.by_activity_type %}
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <span class="font-medium text-sm">{{ at.name }}</span>
+                        <span class="text-xs text-gray-500 ml-1">({{ at.logs }} entries)</span>
+                    </div>
+                    <span class="font-bold text-indigo-700">{{ at.total }} {{ at.unit }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Achievements -->
+        {% if achievements %}
+        <section class="bg-white rounded-xl shadow-lg p-5">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Achievement Trophy Case</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for item in achievements %}
+                <div class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <span class="text-2xl">{{ item.achievement.icon or '&#127942;' }}</span>
+                    <div>
+                        <p class="font-medium text-sm">{{ item.achievement.name }}</p>
+                        <p class="text-xs text-gray-500">{{ item.unlocked_at.strftime('%b %d, %Y') if item.unlocked_at else '' }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Quest History -->
+        <section class="bg-white rounded-xl shadow-lg p-5">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Quest History</h2>
+            <div class="space-y-2">
+                {% for q in all_quests %}
+                <a href="{{ url_for('dashboard.quest_history', quest_id=q.id) }}"
+                   class="flex justify-between items-center p-3 rounded-lg border hover:bg-gray-50 transition-colors"
+                   style="border-left: 4px solid {{ q.color_primary }}">
+                    <div>
+                        <span class="font-medium text-sm">{{ q.theme_name }}</span>
+                        <span class="text-xs text-gray-500 ml-2">{{ q.journey.name }}</span>
+                    </div>
+                    <span class="text-xs px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if q.journey.status == 'active' else 'bg-gray-100 text-gray-600' }}">
+                        {{ q.journey.status }}
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <div class="text-center mt-6 mb-16">
+        <a href="{{ url_for('dashboard.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">Back to home</a>
+    </div>
+</div>
+{% endblock %}
