@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block title %}Achievements{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Achievements</h1>
+    <a href="{{ url_for('admin.achievement_create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">+ New Achievement</a>
+</div>
+
+<div class="space-y-3">
+    {% for a in achievements %}
+    <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center">
+        <div>
+            <span class="font-medium">{{ a.name }}</span>
+            <span class="text-sm text-gray-500 ml-2">{{ a.description or '' }}</span>
+            <span class="text-xs ml-2 px-2 py-0.5 rounded {{ 'bg-blue-100 text-blue-800' if a.trigger_type == 'auto' else 'bg-purple-100 text-purple-800' }}">
+                {{ a.trigger_type }}
+            </span>
+        </div>
+        <div class="flex gap-3">
+            {% if a.trigger_type == 'manual' %}
+            <a href="{{ url_for('admin.achievement_award', achievement_id=a.id) }}" class="text-xs text-green-600 hover:underline">Award</a>
+            {% endif %}
+            <a href="{{ url_for('admin.achievement_edit', achievement_id=a.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

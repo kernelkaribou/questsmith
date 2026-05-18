@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block title %}Journeys{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Journeys</h1>
+    <a href="{{ url_for('admin.journey_create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">+ New Journey</a>
+</div>
+
+<div class="space-y-4">
+    {% for j in journeys %}
+    <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center">
+        <div>
+            <a href="{{ url_for('admin.journey_detail', journey_id=j.id) }}" class="text-lg font-semibold text-indigo-700 hover:underline">{{ j.name }}</a>
+            <p class="text-sm text-gray-500">{{ j.description or 'No description' }}</p>
+            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if j.status == 'active' else 'bg-gray-100 text-gray-600' }}">
+                {{ j.status }}
+            </span>
+        </div>
+        <span class="text-sm text-gray-500">{{ j.quests.count() }} quests</span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

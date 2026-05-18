@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Active Journeys -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Active Journeys</h2>
+        {% if journeys %}
+        <ul class="space-y-2">
+            {% for j in journeys %}
+            <li>
+                <a href="{{ url_for('admin.journey_detail', journey_id=j.id) }}" class="text-indigo-600 hover:underline">
+                    {{ j.name }}
+                </a>
+                <span class="text-xs text-gray-500">({{ j.quests.count() }} quests)</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-500 text-sm">No active journeys.</p>
+        {% endif %}
+        <a href="{{ url_for('admin.journey_create') }}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">+ New Journey</a>
+    </div>
+
+    <!-- Members -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Members</h2>
+        {% if members %}
+        <ul class="space-y-2">
+            {% for m in members %}
+            <li class="text-gray-700">{{ m.name }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-500 text-sm">No members yet.</p>
+        {% endif %}
+        <a href="{{ url_for('admin.member_create') }}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">+ Add Member</a>
+    </div>
+
+    <!-- Quick Log -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Quick Activity Log</h2>
+        <a href="{{ url_for('admin.log_activity') }}" class="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition text-sm">
+            Log Activity
+        </a>
+    </div>
+</div>
+{% endblock %}
