@@ -16,16 +16,32 @@ A quest-based reward engine that tracks individual accomplishments and party goa
 
 ## Quick Start
 
-```
+```bash
 docker compose up
 ```
 
 Access at `http://localhost:5000`
 
+Admin PIN: `1234` (configure via `ADMIN_PIN` environment variable)
+
 ## Development
 
-```
+```bash
+# Using Docker dev profile (hot reload)
 docker compose --profile dev up
+
+# Or directly with Python
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+flask db upgrade
+python seed.py          # optional: load example data
+flask run --debug
+```
+
+Run tests:
+```bash
+pytest tests/
 ```
 
 See `.github/copilot-instructions.md` for development practices.
