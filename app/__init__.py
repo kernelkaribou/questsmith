@@ -18,6 +18,8 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from app import models  # noqa: F401 - register models with SQLAlchemy
+
     from app.routes import admin, dashboard
     app.register_blueprint(admin.bp)
     app.register_blueprint(dashboard.bp)
