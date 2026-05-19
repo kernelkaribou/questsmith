@@ -126,21 +126,18 @@
                             <span class="text-xs text-gray-500">{{ cp.current }} / {{ cp.goal.target_amount }}</span>
                         </div>
                         <!-- Dual-layer progress: party (translucent) + mine (opaque) + min marker -->
-                        <div class="relative w-full h-5 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="relative w-full h-5 bg-gray-200 rounded-full overflow-visible">
                             <!-- Total party progress (translucent) -->
                             <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 opacity-30"
                                  style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cp.percent }}%"></div>
                             <!-- My contribution (opaque, in front) -->
                             <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
                                  style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cp.my_percent }}%"></div>
+                            <!-- Min requirement marker (dashed black line through bar) -->
+                            {% if cp.min_marker_percent > 0 and not cp.goal.unlocked_at %}
+                            <div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-black/70 z-10" style="left: {{ cp.min_marker_percent }}%"></div>
+                            {% endif %}
                         </div>
-                        <!-- Min requirement marker (sits outside overflow to show above the bar) -->
-                        {% if cp.min_marker_percent > 0 and not cp.goal.unlocked_at %}
-                        <div class="relative w-full h-0">
-                            <div class="absolute -top-5 w-0.5 h-5 bg-red-400" style="left: {{ cp.min_marker_percent }}%"></div>
-                            <div class="absolute -top-7 text-[9px] text-red-400 font-bold -translate-x-1/2" style="left: {{ cp.min_marker_percent }}%">min</div>
-                        </div>
-                        {% endif %}
                         <div class="flex justify-between mt-1">
                             {% if cp.goal.unlocked_at %}
                             <p class="text-xs text-green-600 font-semibold">UNLOCKED! {{ cp.goal.reward_description or '' }}</p>
