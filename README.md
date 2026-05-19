@@ -1,4 +1,4 @@
-# Readers Quest
+# QuestSmith
 
 A quest-based reward engine that tracks individual accomplishments and party goals. Build themed quests for any activity — reading, chores, sports, or anything with trackable progress. Members earn XP and Gold, unlock achievements, redeem prizes, and work together on Co-Op goals.
 

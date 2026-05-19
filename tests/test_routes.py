@@ -101,7 +101,7 @@ def test_admin_login_and_index(auth_client, seeded):
 
 def test_admin_logout(auth_client):
     response = auth_client.get("/admin/logout", follow_redirects=True)
-    assert b"Choose your adventurer" in response.data
+    assert b"Forge Your Own Adventure" in response.data
 
 
 # --- Admin CRUD Tests ---

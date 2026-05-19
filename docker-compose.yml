@@ -8,7 +8,7 @@ services:
     environment:
       - FLASK_APP=app
       - FLASK_ENV=production
-      - DATABASE_PATH=/app/data/readers_quest.db
+      - DATABASE_PATH=/app/data/questsmith.db
       - ADMIN_PIN=1234
     restart: unless-stopped
 
@@ -23,7 +23,7 @@ services:
       - FLASK_APP=app
       - FLASK_ENV=development
       - FLASK_DEBUG=1
-      - DATABASE_PATH=/app/data/readers_quest.db
+      - DATABASE_PATH=/app/data/questsmith.db
       - ADMIN_PIN=1234
     command: flask run --host=0.0.0.0 --port=5000 --reload
     profiles:
