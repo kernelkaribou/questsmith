@@ -6,10 +6,10 @@
     <h1 class="text-4xl font-bold text-gray-800 mb-2">QuestSmith</h1>
     <p class="text-gray-500 mb-8">Forge Your Own Adventure</p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl w-full">
+    <div class="flex flex-wrap justify-center gap-6 max-w-3xl w-full">
         {% for m in members %}
         <a href="{{ url_for('dashboard.member_select', member_id=m.id) }}"
-           class="group bg-white rounded-xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-shadow hover:-translate-y-1 transform transition-transform">
+           class="group bg-white rounded-xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-shadow hover:-translate-y-1 transform transition-transform w-48">
             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold mb-3 group-hover:scale-110 transition-transform">
                 {{ m.name[0] }}
             </div>
