@@ -13,6 +13,8 @@ bp = Blueprint("dashboard", __name__, url_prefix="/")
 @bp.route("/")
 def index():
     """Member selection screen."""
+    session.pop("active_member_id", None)
+    session.pop("active_member_name", None)
     members = Member.query.all()
     return render_template("dashboard/index.html", members=members)
 
@@ -102,6 +104,8 @@ def quest_view(quest_id):
 def member_select(member_id):
     """Show active quests for a member to pick."""
     member = db.session.get(Member, member_id)
+    session["active_member_id"] = member.id
+    session["active_member_name"] = member.name
     quests = Quest.query.filter_by(member_id=member_id, status="active").all()
     if len(quests) == 1:
         return redirect(url_for("dashboard.quest_view", quest_id=quests[0].id))

@@ -29,19 +29,21 @@ def admin_required(f):
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
+    next_url = request.args.get("next") or request.form.get("next") or url_for("admin.index")
     if request.method == "POST":
         pin = request.form.get("pin", "")
         if pin == current_app.config["ADMIN_PIN"]:
             session["admin"] = True
-            return redirect(url_for("admin.index"))
+            return redirect(next_url)
         flash("Incorrect PIN", "error")
-    return render_template("admin/login.html")
+    return render_template("admin/login.html", next_url=next_url)
 
 
 @bp.route("/logout")
 def logout():
     session.pop("admin", None)
-    return redirect(url_for("admin.login"))
+    next_url = request.args.get("next") or request.referrer or url_for("dashboard.index")
+    return redirect(next_url)
 
 
 # --- Dashboard ---
