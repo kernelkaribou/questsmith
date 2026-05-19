@@ -231,6 +231,14 @@ def _get_completion_status(side_quest, quest_id):
             "total_completions": total,
         }
 
+    elif side_quest.repeat_type == "repeatable":
+        return {
+            "can_complete": True,
+            "last_completed": last_completed,
+            "cooldown_until": None,
+            "total_completions": total,
+        }
+
     elif side_quest.repeat_type == "daily":
         if not last_completed:
             cooldown_until = None

@@ -197,7 +197,7 @@ class SideQuest(db.Model):
 
     @property
     def repeat_type_display(self):
-        return {"one_time": "One Time", "daily": "Daily", "weekly": "Weekly"}.get(self.repeat_type, self.repeat_type)
+        return {"one_time": "One Time", "repeatable": "Repeatable", "daily": "Daily", "weekly": "Weekly"}.get(self.repeat_type, self.repeat_type)
 
 
 class SideQuestCompletion(db.Model):
