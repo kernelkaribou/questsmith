@@ -23,11 +23,11 @@ jobs:
         with:
           context: .
           push: false
-          tags: readers-quest:v${{ steps.version.outputs.version }},readers-quest:latest
-          outputs: type=docker,dest=/tmp/readers-quest.tar
+          tags: questsmith:v${{ steps.version.outputs.version }},questsmith:latest
+          outputs: type=docker,dest=/tmp/questsmith.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: readers-quest-v${{ steps.version.outputs.version }}
-          path: /tmp/readers-quest.tar
+          name: questsmith-v${{ steps.version.outputs.version }}
+          path: /tmp/questsmith.tar

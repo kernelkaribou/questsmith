@@ -1,4 +1,4 @@
-# Readers Quest - Development Instructions
+# QuestSmith - Development Instructions
 
 ## Branching & Releases
 

@@ -1,5 +1,5 @@
 {
-  "name": "readers-quest-frontend",
+  "name": "questsmith-frontend",
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify",

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Readers Quest{% endblock %}</title>
+    <title>{% block title %}QuestSmith{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -34,7 +34,7 @@
     <nav class="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
             <a href="{{ url_for('dashboard.index') }}" class="text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors">
-                Readers Quest
+                QuestSmith
             </a>
             <div class="flex items-center gap-3">
                 <a href="{{ url_for('dashboard.member_profile', member_id=active_member_id) }}"
