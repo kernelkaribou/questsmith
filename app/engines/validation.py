@@ -83,7 +83,7 @@ def get_unlocked_levels(quest_id):
 
     lifetime_earned = get_lifetime_earned(quest_id)
     levels = QuestLevel.query.filter_by(quest_id=quest_id).order_by(
-        QuestLevel.sort_order
+        QuestLevel.threshold
     ).all()
 
     # Look up persisted unlock timestamps

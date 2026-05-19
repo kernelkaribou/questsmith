@@ -3,7 +3,10 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold">{{ quest.theme_name }}</h1>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded uppercase tracking-wide">Quest</span>
+            <h1 class="text-2xl font-bold">{{ quest.theme_name }}</h1>
+        </div>
         <p class="text-gray-500 text-sm">{{ quest.member.name }}{% if quest.journey %} &middot; {{ quest.journey.name }}{% else %} &middot; Standalone{% endif %}</p>
     </div>
     <div class="flex gap-2">
