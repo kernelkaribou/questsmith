@@ -1,6 +1,6 @@
 import math
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 
 from app import db
 from app.models import (
@@ -177,12 +177,16 @@ def redeem(quest_id):
     item_id = int(request.form["item_id"])
     item = db.session.get(ShopItem, item_id)
     quest = db.session.get(Quest, quest_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if item.cost == 0:
         purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
         db.session.add(purchase)
         db.session.commit()
-        flash(f"Redeemed '{item.name}'!", "success")
+        msg = f"Redeemed '{item.name}'!"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
     else:
         txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
         if txn:
@@ -190,8 +194,14 @@ def redeem(quest_id):
             purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
             db.session.add(purchase)
             db.session.commit()
-            flash(f"Redeemed '{item.name}'!", "success")
+            msg = f"Redeemed '{item.name}'!"
+            if is_ajax:
+                return jsonify(success=True, message=msg)
+            flash(msg, "success")
         else:
-            flash(f"Not enough {quest.display_currency} for '{item.name}'", "error")
+            msg = f"Not enough {quest.display_currency} for '{item.name}'"
+            if is_ajax:
+                return jsonify(success=False, message=msg), 400
+            flash(msg, "error")
 
     return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
