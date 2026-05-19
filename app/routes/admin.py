@@ -1,4 +1,5 @@
 import json
+import math
 from functools import wraps
 from datetime import date
 
@@ -641,12 +642,15 @@ def journey_edit(journey_id):
 @admin_required
 def party_goal_create(journey_id):
     if request.method == "POST":
+        target = int(request.form["target_amount"])
+        num_members = db.session.query(Quest.member_id).filter_by(journey_id=journey_id).distinct().count()
+        min_contrib = math.ceil(target / num_members) if num_members > 0 else target
         goal = PartyGoal(
             journey_id=journey_id,
             name=request.form["name"],
             description=request.form.get("description") or None,
-            target_amount=int(request.form["target_amount"]),
-            min_individual_contribution=int(request.form.get("min_individual_contribution", 0)),
+            target_amount=target,
+            min_individual_contribution=min_contrib,
             reward_description=request.form.get("reward_description") or None,
         )
         db.session.add(goal)
@@ -664,7 +668,8 @@ def party_goal_edit(goal_id):
         goal.name = request.form["name"]
         goal.description = request.form.get("description") or None
         goal.target_amount = int(request.form["target_amount"])
-        goal.min_individual_contribution = int(request.form.get("min_individual_contribution", 0))
+        num_members = db.session.query(Quest.member_id).filter_by(journey_id=goal.journey_id).distinct().count()
+        goal.min_individual_contribution = math.ceil(goal.target_amount / num_members) if num_members > 0 else goal.target_amount
         goal.reward_description = request.form.get("reward_description") or None
         db.session.commit()
         flash("Party Goal updated", "success")

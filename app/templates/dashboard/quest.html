@@ -40,7 +40,7 @@
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                     <select name="activity_type_id" class="px-2 py-1 border rounded text-sm" required>
-                        {% for at in quest.activity_types %}
+                        {% for at in activity_types %}
                         {% if not at.is_milestone %}
                         <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
                         {% endif %}
@@ -108,15 +108,29 @@
                     <span>Max level reached!</span>
                     {% endif %}
                 </div>
-                <div class="flex flex-wrap gap-2 mt-3">
-                    {% for item in unlocked_levels %}
-                    <span class="px-2 py-0.5 rounded text-xs {{ 'bg-theme-primary text-white' if item.unlocked else 'bg-gray-200 text-gray-500' }}">
-                        {{ item.level.name }} ({{ item.level.threshold }})
-                        {% if item.unlocked and item.unlocked_at %}
-                        <span class="ml-1 bg-yellow-300 text-yellow-900 px-1 rounded text-[10px] font-bold">NEW</span>
-                        {% endif %}
-                    </span>
-                    {% endfor %}
+                <div class="mt-3" x-data="{ showLevels: false }">
+                    <button @click="showLevels = !showLevels" class="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                        <svg :class="showLevels && 'rotate-90'" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        Level Rewards ({{ unlocked_levels|length }})
+                    </button>
+                    <div x-show="showLevels" x-collapse class="mt-2 space-y-2">
+                        {% for item in unlocked_levels %}
+                        <div class="flex items-center gap-3 p-2 rounded-lg {{ 'bg-green-50 border border-green-200' if item.unlocked else 'bg-gray-50 border border-gray-100' }}">
+                            <span class="px-2 py-0.5 rounded text-xs font-bold {{ 'bg-theme-primary text-white' if item.unlocked else 'bg-gray-200 text-gray-500' }}">
+                                {{ item.level.threshold }}
+                            </span>
+                            <div class="flex-1">
+                                <span class="text-sm font-medium {{ 'text-gray-800' if item.unlocked else 'text-gray-500' }}">{{ item.level.name }}</span>
+                                {% if item.level.reward_description %}
+                                <p class="text-xs {{ 'text-green-700' if item.unlocked else 'text-gray-400' }}">{{ item.level.reward_description }}</p>
+                                {% endif %}
+                            </div>
+                            {% if item.unlocked %}
+                            <span class="text-green-600 text-xs font-bold">Unlocked</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </section>
             {% endif %}
@@ -331,7 +345,7 @@
             <!-- Activity Timeline -->
             <div class="bg-white rounded-xl shadow-lg p-4 sticky top-14">
                 <h2 class="text-sm font-bold text-gray-700 mb-3">Activity Timeline</h2>
-                {% if recent_logs %}
+                {% if recent_logs or purchases %}
                 <div class="space-y-2 max-h-[50vh] overflow-y-auto" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
                     <div @click="openLog = openLog === {{ log.id }} ? null : {{ log.id }}"
@@ -350,12 +364,46 @@
                         </div>
                     </div>
                     {% endfor %}
+                    {% for p in purchases[:5] %}
+                    <div class="p-2 rounded border border-purple-100 bg-purple-50/50 text-xs">
+                        <div class="flex justify-between">
+                            <span class="font-medium text-purple-700">&#128188; {{ p.shop_item.name }}</span>
+                            <span class="text-purple-400">-{{ p.shop_item.cost }}</span>
+                        </div>
+                        <div class="text-purple-300 text-[10px]">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
+                    </div>
+                    {% endfor %}
                 </div>
                 <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="block text-center text-xs text-indigo-600 hover:underline mt-3">View Full History</a>
                 {% else %}
                 <p class="text-xs text-gray-400">No activities yet</p>
                 {% endif %}
             </div>
+
+            <!-- Treasure Chest (Shop Purchases) -->
+            {% if purchases %}
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-lg p-4 border border-purple-200">
+                <h2 class="text-sm font-bold text-purple-800 mb-3 flex items-center gap-1">
+                    <span>&#128188;</span> Treasure Chest
+                </h2>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    {% for p in purchases %}
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-white/70 border border-purple-100">
+                        {% if p.shop_item.image_url %}
+                        <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}" alt="{{ p.shop_item.name }}" class="w-8 h-8 object-contain rounded">
+                        {% else %}
+                        <span class="text-lg">&#127873;</span>
+                        {% endif %}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-purple-900 truncate">{{ p.shop_item.name }}</p>
+                            <p class="text-[10px] text-purple-500">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</p>
+                        </div>
+                        <span class="text-[10px] text-purple-400 shrink-0">-{{ p.shop_item.cost }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Achievements -->
             {% if achievements %}

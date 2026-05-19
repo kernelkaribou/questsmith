@@ -1,9 +1,11 @@
+import math
+
 from flask import Blueprint, render_template, request, redirect, url_for, session
 
 from app import db
 from app.models import (
     Member, Journey, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
-    AchievementUnlock, Achievement, ActivityLog,
+    ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
 
@@ -37,9 +39,10 @@ def quest_view(quest_id):
         journey_totals = ledger.get_journey_totals(journey.id)
         combined_total = sum(journey_totals.values())
         my_contribution = journey_totals.get(member.id, 0)
+        num_members = db.session.query(Quest.member_id).filter_by(journey_id=journey.id).distinct().count()
         for goal in party_goals:
             target = goal.target_amount or 1
-            min_req = goal.min_individual_contribution or 0
+            min_req = math.ceil(target / num_members) if num_members > 0 else target
             goal_progress.append({
                 "goal": goal,
                 "current": combined_total,
@@ -82,6 +85,12 @@ def quest_view(quest_id):
     # Activity timeline (recent 20)
     recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(20).all()
 
+    # Shop purchase history
+    purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
+
+    # Explicit activity type list for dropdown (issue: dynamic lazy can confuse templates)
+    activity_types = ActivityType.query.filter_by(quest_id=quest_id).order_by(ActivityType.sort_order).all()
+
     # Earning progress (units toward next currency)
     earning_progress = quest_engine.get_earning_progress(quest_id)
 
@@ -105,6 +114,8 @@ def quest_view(quest_id):
         earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,
+        purchases=purchases,
+        activity_types=activity_types,
         ctx=ctx,
         is_admin=is_admin,
     )
