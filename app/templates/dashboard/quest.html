@@ -25,15 +25,15 @@
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
                 {% set ring_offset = 188 - (188 * ring_pct // 100) %}
-                <div class="relative w-20 h-20 shrink-0">
-                    <svg class="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
-                        <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="8"
-                                stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="{{ ring_offset }}"
+                <div class="relative w-24 h-24 shrink-0">
+                    <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="7"/>
+                        <circle cx="50" cy="50" r="36" fill="none" stroke="white" stroke-width="7"
+                                stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="{{ 226 - (226 * ring_pct // 100) }}"
                                 class="transition-all duration-700"/>
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-xs font-bold">{{ completion_pct }}%</span>
+                        <span class="text-sm font-bold">{{ completion_pct }}%</span>
                     </div>
                 </div>
                 {% endif %}
