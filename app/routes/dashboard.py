@@ -106,10 +106,11 @@ def member_select(member_id):
     member = db.session.get(Member, member_id)
     session["active_member_id"] = member.id
     session["active_member_name"] = member.name
-    quests = Quest.query.filter_by(member_id=member_id, status="active").all()
-    if len(quests) == 1:
+    quests = Quest.query.filter_by(member_id=member_id, status="active").filter(Quest.completed_at.is_(None)).all()
+    completed_quests = Quest.query.filter_by(member_id=member_id, status="active").filter(Quest.completed_at.isnot(None)).all()
+    if not completed_quests and len(quests) == 1:
         return redirect(url_for("dashboard.quest_view", quest_id=quests[0].id))
-    return render_template("dashboard/member_select.html", member=member, quests=quests)
+    return render_template("dashboard/member_select.html", member=member, quests=quests, completed_quests=completed_quests)
 
 
 @bp.route("/member/<int:member_id>/profile")
