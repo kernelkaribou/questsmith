@@ -1,6 +1,6 @@
 import math
 
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 
 from app import db
 from app.models import (
@@ -169,3 +169,29 @@ def quest_history(quest_id):
         logs=logs,
         ctx=ctx,
     )
+
+
+@bp.route("/quest/<int:quest_id>/redeem", methods=["POST"])
+def redeem(quest_id):
+    """Self-service shop redemption (no admin required)."""
+    item_id = int(request.form["item_id"])
+    item = db.session.get(ShopItem, item_id)
+    quest = db.session.get(Quest, quest_id)
+
+    if item.cost == 0:
+        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
+        db.session.add(purchase)
+        db.session.commit()
+        flash(f"Redeemed '{item.name}'!", "success")
+    else:
+        txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
+        if txn:
+            db.session.flush()
+            purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
+            db.session.add(purchase)
+            db.session.commit()
+            flash(f"Redeemed '{item.name}'!", "success")
+        else:
+            flash(f"Not enough {quest.display_currency} for '{item.name}'", "error")
+
+    return redirect(url_for("dashboard.quest_view", quest_id=quest_id))

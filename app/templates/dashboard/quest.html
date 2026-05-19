@@ -280,33 +280,43 @@
 
             <!-- 5. Quest Shop -->
             {% if shop_items %}
-            <section class="bg-white rounded-xl shadow-lg p-5">
+            <section class="bg-white rounded-xl shadow-lg p-5" x-data="{ confirmItem: null }">
                 <h2 class="text-lg font-bold text-gray-800 mb-3">Quest Shop</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {% for p in shop_items %}
-                    <div class="border rounded-lg p-3 text-center {{ 'border-theme-primary opacity-100' if balance >= p.cost else 'border-gray-200 opacity-50' }}">
+                    <div class="border rounded-lg p-3 text-center {{ 'border-theme-primary' if balance >= p.cost else 'border-gray-200 opacity-50' }}">
                         {% if p.image_url %}
                         <img src="{{ url_for('admin.serve_upload', filepath=p.image_url) if p.image_url.startswith('uploads/') else p.image_url }}" alt="{{ p.name }}" class="w-12 h-12 mx-auto mb-2 object-contain">
                         {% endif %}
                         <p class="text-sm font-medium">{{ p.name }}</p>
                         <p class="text-xs mt-1 font-bold text-theme-primary">{{ p.cost }} {{ ctx.currency_label }}</p>
                         {% if balance >= p.cost %}
-                        <span class="inline-block mt-1 text-xs text-green-600 font-semibold">Available!</span>
+                        <button @click="confirmItem = { id: {{ p.id }}, name: '{{ p.name }}', cost: {{ p.cost }} }"
+                                class="mt-2 bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 w-full">
+                            Redeem
+                        </button>
                         {% endif %}
                     </div>
                     {% endfor %}
                 </div>
-                {% if is_admin %}
-                <form method="POST" action="{{ url_for('admin.redeem', quest_id=quest.id) }}" class="mt-3 flex gap-2 border-t pt-3">
-                    <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                    <select name="item_id" class="flex-1 px-2 py-1 border rounded text-sm">
-                        {% for p in shop_items %}
-                        <option value="{{ p.id }}">{{ p.name }} ({{ p.cost }})</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">Redeem</button>
-                </form>
-                {% endif %}
+
+                <!-- Confirmation Modal -->
+                <div x-show="confirmItem" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="confirmItem = null">
+                    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+                        <p class="text-lg font-bold text-gray-800 mb-2">Confirm Redemption</p>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Spend <strong x-text="confirmItem?.cost"></strong> {{ ctx.currency_label }} on
+                            <strong x-text="confirmItem?.name"></strong>?
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <button @click="confirmItem = null" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Cancel</button>
+                            <form method="POST" action="{{ url_for('dashboard.redeem', quest_id=quest.id) }}">
+                                <input type="hidden" name="item_id" :value="confirmItem?.id">
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">Confirm</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </section>
             {% endif %}
 
@@ -388,17 +398,29 @@
                 </h2>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     {% for p in purchases %}
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-white/70 border border-purple-100">
+                    <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-50/50 border border-red-100' if p.refunded_at else 'bg-white/70 border border-purple-100' }}">
                         {% if p.shop_item.image_url %}
                         <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}" alt="{{ p.shop_item.name }}" class="w-8 h-8 object-contain rounded">
                         {% else %}
                         <span class="text-lg">&#127873;</span>
                         {% endif %}
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-medium text-purple-900 truncate">{{ p.shop_item.name }}</p>
-                            <p class="text-[10px] text-purple-500">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</p>
+                            <p class="text-xs font-medium {{ 'text-red-400 line-through' if p.refunded_at else 'text-purple-900' }} truncate">{{ p.shop_item.name }}</p>
+                            <p class="text-[10px] {{ 'text-red-400' if p.refunded_at else 'text-purple-500' }}">
+                                {{ p.purchased_at.strftime('%b %d, %I:%M %p') }}
+                                {% if p.refunded_at %} (refunded){% endif %}
+                            </p>
                         </div>
+                        {% if p.refunded_at %}
+                        <span class="text-[10px] text-red-400 shrink-0">Refunded</span>
+                        {% elif is_admin %}
+                        <form method="POST" action="{{ url_for('admin.refund_purchase', purchase_id=p.id) }}" class="shrink-0">
+                            <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
+                            <button type="submit" class="text-[10px] text-red-500 hover:text-red-700 underline">Refund</button>
+                        </form>
+                        {% else %}
                         <span class="text-[10px] text-purple-400 shrink-0">-{{ p.shop_item.cost }}</span>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>

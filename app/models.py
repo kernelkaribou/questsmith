@@ -320,6 +320,7 @@ class ShopPurchase(db.Model):
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
     transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
     purchased_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    refunded_at = db.Column(db.DateTime, nullable=True)
 
     shop_item = db.relationship("ShopItem", back_populates="purchases")
     quest = db.relationship("Quest", back_populates="shop_purchases")

@@ -1,7 +1,7 @@
 import json
 import math
 from functools import wraps
-from datetime import date
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory
 
@@ -9,6 +9,7 @@ from app import db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
+    ShopPurchase, Transaction,
 )
 from app.engines import quest as quest_engine
 from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine
@@ -336,9 +337,7 @@ def redeem(quest_id):
     item = db.session.get(ShopItem, item_id)
     quest = db.session.get(Quest, quest_id)
 
-    from app.models import ShopPurchase
     if item.cost == 0:
-        # Free item: no ledger transaction needed
         purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
         db.session.add(purchase)
         db.session.commit()
@@ -353,6 +352,38 @@ def redeem(quest_id):
             flash(f"{quest.member.name} redeemed '{item.name}'", "success")
         else:
             flash(f"Insufficient balance for '{item.name}'", "error")
+
+    next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
+    return redirect(next_url)
+
+
+@bp.route("/purchases/<int:purchase_id>/refund", methods=["POST"])
+@admin_required
+def refund_purchase(purchase_id):
+    """Refund a shop purchase: credit currency back, mark as refunded."""
+    purchase = db.session.get(ShopPurchase, purchase_id)
+    if not purchase or purchase.refunded_at:
+        flash("Purchase not found or already refunded", "error")
+        next_url = request.form.get("next") or url_for("admin.index")
+        return redirect(next_url)
+
+    quest_id = purchase.quest_id
+    item = purchase.shop_item
+
+    # Credit the currency back
+    if item.cost > 0:
+        txn = Transaction(
+            quest_id=quest_id,
+            type="earn",
+            amount=item.cost,
+            description=f"Refund: {item.name}",
+        )
+        db.session.add(txn)
+
+    # Mark as refunded
+    purchase.refunded_at = datetime.now(timezone.utc)
+    db.session.commit()
+    flash(f"Refunded '{item.name}' (+{item.cost} returned)", "success")
 
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
     return redirect(next_url)
