@@ -24,13 +24,25 @@
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
-                {% set ring_offset = 188 - (188 * ring_pct // 100) %}
                 <div class="relative w-24 h-24 shrink-0">
                     <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="7"/>
-                        <circle cx="50" cy="50" r="36" fill="none" stroke="white" stroke-width="7"
-                                stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="{{ 226 - (226 * ring_pct // 100) }}"
+                        <!-- Track ring -->
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10"/>
+                        <!-- Progress ring (can overlap past 100%) -->
+                        <circle cx="50" cy="50" r="38" fill="none"
+                                stroke="white" stroke-width="10"
+                                stroke-linecap="round"
+                                stroke-dasharray="{{ (3.1416 * 2 * 38 * completion_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
+                                filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"
                                 class="transition-all duration-700"/>
+                        {% if completion_pct > 100 %}
+                        <!-- Glow effect for exceeding goal -->
+                        <circle cx="50" cy="50" r="38" fill="none"
+                                stroke="rgba(255,255,255,0.3)" stroke-width="14"
+                                stroke-linecap="round"
+                                stroke-dasharray="{{ (3.1416 * 2 * 38 * completion_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
+                                class="transition-all duration-700"/>
+                        {% endif %}
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
                         <span class="text-sm font-bold">{{ completion_pct }}%</span>
