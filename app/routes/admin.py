@@ -267,6 +267,42 @@ def quest_edit(quest_id):
     return render_template("admin/quest_form.html", quest=quest, members=members, journeys=journeys)
 
 
+# --- Activity Type Management ---
+
+@bp.route("/activity-type/<int:at_id>/delete", methods=["POST"])
+@admin_required
+def activity_type_delete(at_id):
+    """Remove an activity type from a quest."""
+    at = db.session.get(ActivityType, at_id)
+    if not at:
+        flash("Activity type not found", "error")
+        return redirect(url_for("admin.index"))
+
+    quest_id = at.quest_id
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    # Check if there are logged activities using this type
+    log_count = at.activity_logs.count()
+    if log_count > 0:
+        msg = f"Cannot delete: {log_count} activities already logged with this type"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
+        return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+
+    # Delete earning rules first, then the activity type
+    for rule in at.earning_rules:
+        db.session.delete(rule)
+    db.session.delete(at)
+    db.session.commit()
+
+    msg = f"Removed activity type: {at.name}"
+    if is_ajax:
+        return jsonify(success=True, message=msg)
+    flash(msg, "success")
+    return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+
+
 # --- Activity Logging ---
 
 @bp.route("/log", methods=["GET", "POST"])

@@ -65,6 +65,34 @@
 </section>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Activity Types -->
+    <section class="bg-white rounded-lg shadow p-4">
+        <h2 class="font-semibold mb-3">Activity Types</h2>
+        {% if quest.activity_types|list %}
+        <div class="space-y-2">
+            {% for at in quest.activity_types %}
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                <div>
+                    <span class="font-medium">{{ at.name }}</span>
+                    <span class="text-gray-500 ml-1">({{ at.unit_label }})</span>
+                    {% if at.is_milestone %}<span class="text-xs bg-yellow-100 text-yellow-700 px-1 rounded ml-1">milestone</span>{% endif %}
+                    {% for rule in at.earning_rules %}
+                    <span class="text-xs text-gray-400 ml-1">+{{ rule.currency_reward }}/{{ rule.quantity_required }}{{ at.unit_label }}</span>
+                    {% endfor %}
+                </div>
+                <form method="POST" action="{{ url_for('admin.activity_type_delete', at_id=at.id) }}"
+                      onsubmit="return confirm('Remove {{ at.name }}? This only works if no activities have been logged with it.')">
+                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-sm">No activity types defined.</p>
+        {% endif %}
+        <p class="text-xs text-gray-400 mt-2">Add new types via <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="text-indigo-500 hover:underline">Edit Quest</a></p>
+    </section>
+
     <!-- Levels -->
     <section class="bg-white rounded-lg shadow p-4">
         <div class="flex justify-between items-center mb-3">
