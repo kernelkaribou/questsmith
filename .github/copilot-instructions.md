@@ -19,7 +19,11 @@
 - Break disparate tasks into individual approaches; never lump unrelated work together
 - Always check `dev` commit history vs `main` when starting new tasks
 - Docker is the preferred environment for both the end result and testing
-- Minimize host changes; use virtual environments or Docker local builds for testing
+- Use `docker-compose.dev.yml` for development (hot-reload, pytest included)
+- Use `docker-compose.yml` for production builds (gunicorn)
+- Full dev rebuild: `rm -f data/questsmith.db && docker compose -f docker-compose.dev.yml down && docker compose -f docker-compose.dev.yml up --build -d && docker compose -f docker-compose.dev.yml exec dev python seed.py`
+- Run tests inside the dev container: `docker compose -f docker-compose.dev.yml exec dev python -m pytest tests/ -q`
+- Minimize host changes; use the dev container for all testing
 - Unit tests are required as we approach a release
 
 ## Audits
