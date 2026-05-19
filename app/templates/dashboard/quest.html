@@ -81,7 +81,7 @@
             <!-- 2. Level / Rank Progress -->
             {% if levels %}
             <section class="bg-white rounded-xl shadow-lg p-5">
-                {% set ns = namespace(current_level='Unranked', next_threshold=0) %}
+                {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
                 {% for item in unlocked_levels %}
                     {% if item.unlocked %}
                         {% set ns.current_level = item.level.name %}
