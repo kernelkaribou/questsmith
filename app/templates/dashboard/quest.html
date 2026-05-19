@@ -480,8 +480,8 @@
 </div>
 
 <!-- Toast notification container (managed by JS) -->
-<div id="quest-toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-md px-4 pointer-events-none" style="display:none;">
-    <div id="quest-toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white text-center transition-all duration-300"></div>
+<div id="quest-toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-md px-4 pointer-events-none transition-opacity duration-700 opacity-0" style="display:none;">
+    <div id="quest-toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white text-center"></div>
 </div>
 
 <script>
@@ -492,10 +492,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const toast = document.getElementById('quest-toast');
         const inner = document.getElementById('quest-toast-inner');
         inner.textContent = message;
-        inner.className = 'px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white text-center transition-all duration-300 ' +
+        inner.className = 'px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white text-center ' +
             (success ? 'bg-green-600' : 'bg-red-600');
         toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        requestAnimationFrame(() => { toast.classList.remove('opacity-0'); toast.classList.add('opacity-100'); });
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+            setTimeout(() => { toast.style.display = 'none'; }, 700);
+        }, 6000);
     }
 
     function refreshPageContent() {
