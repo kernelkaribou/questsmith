@@ -179,6 +179,21 @@ def redeem(quest_id):
     quest = db.session.get(Quest, quest_id)
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
+    if not item or not quest:
+        msg = "Invalid item or quest"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
+        return redirect(url_for("dashboard.index"))
+
+    # Validate item belongs to this quest or its journey
+    if item.quest_id != quest_id and not (quest.journey_id and item.journey_id == quest.journey_id):
+        msg = "Item not available for this quest"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 403
+        flash(msg, "error")
+        return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
+
     if item.cost == 0:
         purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
         db.session.add(purchase)

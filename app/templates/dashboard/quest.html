@@ -289,7 +289,7 @@
                         <p class="text-sm font-medium">{{ p.name }}</p>
                         <p class="text-xs mt-1 font-bold text-theme-primary">{{ p.cost }} {{ ctx.currency_label }}</p>
                         {% if balance >= p.cost %}
-                        <button @click="confirmItem = { id: {{ p.id }}, name: '{{ p.name }}', cost: {{ p.cost }} }"
+                        <button @click='confirmItem = {{ {"id": p.id, "name": p.name, "cost": p.cost}|tojson }}'
                                 class="mt-2 bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 w-full">
                             Redeem
                         </button>
@@ -373,12 +373,12 @@
                     </div>
                     {% endfor %}
                     {% for p in purchases[:5] %}
-                    <div class="p-2 rounded border border-purple-100 bg-purple-50/50 text-xs">
+                    <div class="p-2 rounded border {{ 'border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/50' }} text-xs">
                         <div class="flex justify-between">
-                            <span class="font-medium text-purple-700">&#128188; {{ p.shop_item.name }}</span>
-                            <span class="text-purple-400">-{{ p.shop_item.cost }}</span>
+                            <span class="font-medium {{ 'text-red-700 line-through' if p.refunded_at else 'text-purple-700' }}">&#128188; {{ p.shop_item.name }}</span>
+                            <span class="{{ 'text-red-400' if p.refunded_at else 'text-purple-400' }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
-                        <div class="text-purple-300 text-[10px]">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="{{ 'text-red-300' if p.refunded_at else 'text-purple-300' }} text-[10px]">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                 </div>
@@ -512,6 +512,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newContent = doc.querySelector('.min-h-screen.pb-16');
                 if (newContent && pageContainer) {
                     pageContainer.innerHTML = newContent.innerHTML;
+                    // Re-init Alpine on new DOM nodes
+                    if (window.Alpine) {
+                        Alpine.initTree(pageContainer);
+                    }
                     bindForms();
                 }
             });
@@ -520,6 +524,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
         const formData = new FormData(form);
 
         fetch(form.action, {
@@ -531,14 +537,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(({ ok, data }) => {
             showToast(data.message, data.success);
             if (data.success) {
-                // Clear form inputs
                 form.querySelectorAll('input[type="number"], input[type="text"]').forEach(el => el.value = '');
-                // Refresh page content in place
                 refreshPageContent();
+            } else if (btn) {
+                btn.disabled = false;
             }
         })
         .catch(() => {
             showToast('Something went wrong', false);
+            if (btn) btn.disabled = false;
         });
     }
 

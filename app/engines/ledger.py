@@ -7,7 +7,7 @@ def get_balance(quest_id):
     """Calculate current spendable balance for a quest."""
     earned = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
         Transaction.quest_id == quest_id,
-        Transaction.type.in_(["earn", "side_quest_reward", "completion_bonus", "adjustment"]),
+        Transaction.type.in_(["earn", "side_quest_reward", "completion_bonus", "adjustment", "refund"]),
     ).scalar()
 
     spent = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
