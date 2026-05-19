@@ -70,6 +70,11 @@ class Quest(db.Model):
     progress_label = db.Column(db.String(50), nullable=True)
     party_goal_label = db.Column(db.String(50), nullable=True)
 
+    # Completion / victory
+    completion_target = db.Column(db.Integer, nullable=True)
+    completion_bonus = db.Column(db.Integer, nullable=True, default=0)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
     status = db.Column(db.String(20), nullable=False, default="active")
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -79,6 +84,7 @@ class Quest(db.Model):
     transactions = db.relationship("Transaction", back_populates="quest", lazy="dynamic")
     activity_logs = db.relationship("ActivityLog", back_populates="quest", lazy="dynamic")
     quest_levels = db.relationship("QuestLevel", back_populates="quest", lazy="dynamic")
+    level_unlocks = db.relationship("QuestLevelUnlock", back_populates="quest", lazy="dynamic")
     side_quests = db.relationship("SideQuest", back_populates="quest", lazy="dynamic")
     side_quest_chains = db.relationship("SideQuestChain", back_populates="quest", lazy="dynamic")
     shop_items = db.relationship("ShopItem", back_populates="quest", lazy="dynamic")
@@ -110,6 +116,24 @@ class QuestLevel(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     quest = db.relationship("Quest", back_populates="quest_levels")
+    unlocks = db.relationship("QuestLevelUnlock", back_populates="quest_level", lazy="dynamic")
+
+
+class QuestLevelUnlock(db.Model):
+    """Persists the moment a level was unlocked (for 'NEW!' badges and history)."""
+    __tablename__ = "quest_level_unlocks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
+    quest_level_id = db.Column(db.Integer, db.ForeignKey("quest_levels.id"), nullable=False)
+    unlocked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    quest = db.relationship("Quest", back_populates="level_unlocks")
+    quest_level = db.relationship("QuestLevel", back_populates="unlocks")
+
+    __table_args__ = (
+        db.UniqueConstraint("quest_id", "quest_level_id", name="uq_quest_level_unlock"),
+    )
 
 
 class SideQuestChain(db.Model):
@@ -243,6 +267,11 @@ class EarningRule(db.Model):
 
     activity_type = db.relationship("ActivityType", back_populates="earning_rules")
 
+    __table_args__ = (
+        db.CheckConstraint("quantity_required > 0", name="ck_earning_rule_qty_positive"),
+        db.CheckConstraint("currency_reward > 0", name="ck_earning_rule_reward_positive"),
+    )
+
 
 class ActivityLog(db.Model):
     __tablename__ = "activity_logs"
@@ -271,6 +300,7 @@ class Transaction(db.Model):
     description = db.Column(db.Text, nullable=True)
     activity_log_id = db.Column(db.Integer, db.ForeignKey("activity_logs.id"), nullable=True)
     earning_rule_id = db.Column(db.Integer, db.ForeignKey("earning_rules.id"), nullable=True)
+    batches_awarded = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     quest = db.relationship("Quest", back_populates="transactions")
@@ -278,6 +308,7 @@ class Transaction(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint("activity_log_id", "earning_rule_id", name="uq_log_rule"),
+        db.CheckConstraint("amount > 0", name="ck_transaction_positive_amount"),
     )
 
 
@@ -287,7 +318,7 @@ class ShopPurchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     shop_item_id = db.Column(db.Integer, db.ForeignKey("shop_items.id"), nullable=False)
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
-    transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=False)
+    transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
     purchased_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     shop_item = db.relationship("ShopItem", back_populates="purchases")

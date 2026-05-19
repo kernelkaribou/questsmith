@@ -1,8 +1,10 @@
 """Validation Engine: Party goal fairness checks and quest level unlock logic."""
 from datetime import datetime, timezone
 
+from sqlalchemy.exc import IntegrityError
+
 from app import db
-from app.models import PartyGoal, QuestLevel, Quest, Transaction
+from app.models import PartyGoal, QuestLevel, QuestLevelUnlock, Quest, Transaction
 from app.engines.ledger import get_journey_totals, get_lifetime_earned
 
 
@@ -39,13 +41,15 @@ def check_party_goal(goal):
     all_quests = Quest.query.filter_by(journey_id=goal.journey_id).all()
     for quest in all_quests:
         if quest.member_id not in member_totals:
-            all_fair = False
+            meets_min = goal.min_individual_contribution == 0
+            if not meets_min:
+                all_fair = False
             fairness_details.append({
                 "member_id": quest.member_id,
                 "earned": 0,
                 "required": goal.min_individual_contribution,
-                "meets_minimum": goal.min_individual_contribution == 0,
-                "shortfall": goal.min_individual_contribution,
+                "meets_minimum": meets_min,
+                "shortfall": max(0, goal.min_individual_contribution),
             })
 
     unlocked = volume_met and all_fair
@@ -82,7 +86,41 @@ def get_unlocked_levels(quest_id):
         QuestLevel.sort_order
     ).all()
 
+    # Look up persisted unlock timestamps
+    existing_unlocks = {
+        u.quest_level_id: u.unlocked_at
+        for u in QuestLevelUnlock.query.filter_by(quest_id=quest_id).all()
+    }
+
     return [
-        {"level": level, "unlocked": lifetime_earned >= level.threshold, "progress": lifetime_earned}
+        {
+            "level": level,
+            "unlocked": lifetime_earned >= level.threshold,
+            "progress": lifetime_earned,
+            "unlocked_at": existing_unlocks.get(level.id),
+        }
         for level in levels
     ]
+
+
+def check_level_unlocks(quest_id):
+    """Persist any newly unlocked levels. Returns list of newly unlocked QuestLevelUnlock."""
+    lifetime_earned = get_lifetime_earned(quest_id)
+    levels = QuestLevel.query.filter_by(quest_id=quest_id).all()
+    new_unlocks = []
+
+    for level in levels:
+        if lifetime_earned >= level.threshold:
+            existing = QuestLevelUnlock.query.filter_by(
+                quest_id=quest_id, quest_level_id=level.id
+            ).first()
+            if not existing:
+                unlock = QuestLevelUnlock(quest_id=quest_id, quest_level_id=level.id)
+                db.session.add(unlock)
+                try:
+                    db.session.flush()
+                    new_unlocks.append(unlock)
+                except IntegrityError:
+                    db.session.rollback()
+
+    return new_unlocks

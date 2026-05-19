@@ -39,6 +39,8 @@ def seed():
             currency_label="Pokeballs",
             progress_label="Trainer XP",
             party_goal_label="Gym Battle",
+            completion_target=200,
+            completion_bonus=25,
         )
         quest_b = Quest(
             member_id=kid_b.id,
@@ -50,6 +52,8 @@ def seed():
             currency_label="Spirit Points",
             progress_label="Cheer Energy",
             party_goal_label="Team Rally",
+            completion_target=150,
+            completion_bonus=20,
         )
         db.session.add_all([quest_a, quest_b])
         db.session.flush()

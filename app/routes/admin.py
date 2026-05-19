@@ -174,6 +174,12 @@ def quest_edit(quest_id):
         quest.progress_label = request.form.get("progress_label") or None
         quest.party_goal_label = request.form.get("party_goal_label") or None
 
+        # Completion settings
+        completion_target = request.form.get("completion_target")
+        quest.completion_target = int(completion_target) if completion_target else None
+        completion_bonus = request.form.get("completion_bonus")
+        quest.completion_bonus = int(completion_bonus) if completion_bonus else 0
+
         journey_id = request.form.get("journey_id") or None
         quest.journey_id = int(journey_id) if journey_id else None
 
@@ -234,6 +240,10 @@ def log_activity():
         description = request.form.get("description") or None
         notes = request.form.get("notes") or None
 
+        if quantity <= 0:
+            flash("Quantity must be greater than zero", "error")
+            return redirect(request.form.get("next") or url_for("admin.log_activity"))
+
         log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description, notes)
         if log:
             quest = db.session.get(Quest, quest_id)
@@ -256,7 +266,14 @@ def log_activity():
                 p = at_progress[0]
                 progress_msg = f" ({p['units_to_next']} {p['activity_type'].unit_label} to next)"
             milestone_msg = f" + {len(milestone_ids)} milestone(s)" if milestone_ids else ""
-            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}", "success")
+
+            # Check for quest completion notification
+            quest = db.session.get(Quest, quest_id)
+            completion_msg = ""
+            if quest.completed_at:
+                completion_msg = " QUEST COMPLETE!"
+
+            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}{completion_msg}", "success")
         else:
             flash("Failed to log activity", "error")
 
@@ -282,15 +299,22 @@ def redeem(quest_id):
     quest = db.session.get(Quest, quest_id)
 
     from app.models import ShopPurchase
-    txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
-    if txn:
-        db.session.flush()
-        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
+    if item.cost == 0:
+        # Free item: no ledger transaction needed
+        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
         db.session.add(purchase)
         db.session.commit()
-        flash(f"{quest.member.name} redeemed '{item.name}'", "success")
+        flash(f"{quest.member.name} redeemed '{item.name}' (free)", "success")
     else:
-        flash(f"Insufficient balance for '{item.name}'", "error")
+        txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
+        if txn:
+            db.session.flush()
+            purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
+            db.session.add(purchase)
+            db.session.commit()
+            flash(f"{quest.member.name} redeemed '{item.name}'", "success")
+        else:
+            flash(f"Insufficient balance for '{item.name}'", "error")
 
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
     return redirect(next_url)

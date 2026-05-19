@@ -133,11 +133,13 @@ def complete_side_quest(side_quest_id, quest_id):
     )
     db.session.add(completion)
 
-    txn = record_side_quest_reward(
-        quest_id=quest_id,
-        amount=side_quest.currency_reward,
-        description=f"Side quest: {side_quest.name}",
-    )
+    txn = None
+    if side_quest.currency_reward > 0:
+        txn = record_side_quest_reward(
+            quest_id=quest_id,
+            amount=side_quest.currency_reward,
+            description=f"Side quest: {side_quest.name}",
+        )
 
     return {"completion": completion, "transaction": txn}
 
@@ -186,11 +188,12 @@ def complete_chain_step(side_quest_id, quest_id):
     if updated_status["is_complete"]:
         chain.completed_at = now
         chain_completed = True
-        txn = record_side_quest_reward(
-            quest_id=quest_id,
-            amount=chain.currency_reward,
-            description=f"Chain complete: {chain.name}",
-        )
+        if chain.currency_reward > 0:
+            txn = record_side_quest_reward(
+                quest_id=quest_id,
+                amount=chain.currency_reward,
+                description=f"Chain complete: {chain.name}",
+            )
 
     return {
         "completion": completion,

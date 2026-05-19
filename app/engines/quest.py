@@ -1,9 +1,11 @@
 """Quest Engine: Theme/label resolution and earning rule calculation."""
+from datetime import datetime, timezone
+
 from app import db
 from app.models import (
     Quest, ActivityType, EarningRule, ActivityLog, Transaction,
 )
-from app.engines.ledger import record_earn
+from app.engines.ledger import record_earn, record_completion_bonus, get_lifetime_earned
 
 
 def get_quest_context(quest_id):
@@ -35,6 +37,8 @@ def log_activity(quest_id, activity_type_id, quantity, description=None, notes=N
         return None, []
     if activity_type.quest_id != quest_id:
         return None, []
+    if quantity <= 0:
+        return None, []
 
     # Create activity log
     log = ActivityLog(
@@ -50,6 +54,15 @@ def log_activity(quest_id, activity_type_id, quantity, description=None, notes=N
     # Apply earning rules
     transactions = _apply_earning_rules(quest, activity_type, log)
 
+    # Check quest completion
+    completion_txn = _check_quest_completion(quest)
+    if completion_txn:
+        transactions.append(completion_txn)
+
+    # Check level unlocks
+    from app.engines.validation import check_level_unlocks
+    check_level_unlocks(quest_id)
+
     return log, transactions
 
 
@@ -59,7 +72,7 @@ def _apply_earning_rules(quest, activity_type, activity_log):
     transactions = []
 
     for rule in rules:
-        earned = _calculate_reward(rule, quest.id, activity_type.id, activity_log)
+        earned, batches = _calculate_reward(rule, quest.id, activity_type.id, activity_log)
         if earned > 0:
             txn = record_earn(
                 quest_id=quest.id,
@@ -67,6 +80,7 @@ def _apply_earning_rules(quest, activity_type, activity_log):
                 description=f"{activity_log.quantity} {activity_type.unit_label} logged",
                 activity_log_id=activity_log.id,
                 earning_rule_id=rule.id,
+                batches_awarded=batches,
             )
             transactions.append(txn)
 
@@ -76,10 +90,10 @@ def _apply_earning_rules(quest, activity_type, activity_log):
 def _calculate_reward(rule, quest_id, activity_type_id, activity_log):
     """
     Calculate currency reward based on rule type.
+    Returns (amount_earned, batches_awarded).
 
     per_batch: Uses cumulative total across all logs for this activity type.
               Compares total batches possible vs already paid to find new earnings.
-              e.g., log 40 pages then 30 pages (rule: 50→10): 70//50=1 batch, 10 currency.
 
     per_log: If the logged quantity >= quantity_required, award currency_reward once.
     """
@@ -92,25 +106,45 @@ def _calculate_reward(rule, quest_id, activity_type_id, activity_log):
             ActivityLog.activity_type_id == activity_type_id,
         ).scalar()
 
-        # Count batches already paid via transactions linked to this rule
-        total_already_paid = db.session.query(
-            db.func.coalesce(db.func.sum(Transaction.amount), 0)
+        # Count batches already awarded (robust against rule edits)
+        batches_already_paid = db.session.query(
+            db.func.coalesce(db.func.sum(Transaction.batches_awarded), 0)
         ).filter(
             Transaction.quest_id == quest_id,
             Transaction.earning_rule_id == rule.id,
+            Transaction.type == "earn",
         ).scalar()
 
         total_batches_ever = total_logged // rule.quantity_required
-        batches_already_paid = total_already_paid // rule.currency_reward if rule.currency_reward else 0
         new_batches = total_batches_ever - batches_already_paid
 
-        return max(0, new_batches * rule.currency_reward)
+        if new_batches > 0:
+            return new_batches * rule.currency_reward, new_batches
+        return 0, 0
 
     elif rule.rule_type == "per_log":
         if activity_log.quantity >= rule.quantity_required:
-            return rule.currency_reward
+            return rule.currency_reward, None
 
-    return 0
+    return 0, None
+
+
+def _check_quest_completion(quest):
+    """Check if quest has reached its completion target and award bonus."""
+    if quest.completion_target is None or quest.completed_at:
+        return None
+
+    lifetime = get_lifetime_earned(quest.id)
+    if lifetime >= quest.completion_target:
+        quest.completed_at = datetime.now(timezone.utc)
+        db.session.add(quest)
+
+        if quest.completion_bonus and quest.completion_bonus > 0:
+            return record_completion_bonus(
+                quest.id, quest.completion_bonus,
+                "Quest Complete! Victory bonus!",
+            )
+    return None
 
 
 def get_earning_progress(quest_id):

@@ -399,3 +399,166 @@ class TestAchievementEngine:
 
             achievements = get_member_achievements(seeded["member_a_id"])
             assert achievements[0]["unlocked"] is True
+
+
+class TestInputValidation:
+    def test_negative_quantity_rejected(self, app, seeded):
+        from app.engines.quest import log_activity
+        with app.app_context():
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], -5)
+            assert log is None
+            assert txns == []
+
+    def test_zero_quantity_rejected(self, app, seeded):
+        from app.engines.quest import log_activity
+        with app.app_context():
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 0)
+            assert log is None
+            assert txns == []
+
+    def test_negative_earn_raises(self, app, seeded):
+        from app.engines.ledger import record_earn
+        with app.app_context():
+            with pytest.raises(ValueError):
+                record_earn(seeded["quest_a_id"], -10, "bad earn")
+
+    def test_negative_spend_raises(self, app, seeded):
+        from app.engines.ledger import record_earn, record_spend
+        with app.app_context():
+            record_earn(seeded["quest_a_id"], 100, "seed")
+            db.session.commit()
+            with pytest.raises(ValueError):
+                record_spend(seeded["quest_a_id"], -5, "bad spend")
+
+
+class TestPartyGoalFairnessFixed:
+    def test_zero_contribution_member_with_zero_minimum(self, app, seeded):
+        """When min_individual_contribution=0, zero-contribution members should NOT block."""
+        from app.engines.validation import check_party_goal
+        from app.engines.ledger import record_earn
+        with app.app_context():
+            goal = PartyGoal(
+                journey_id=seeded["journey_id"], name="Easy Goal",
+                target_amount=50, min_individual_contribution=0,
+            )
+            db.session.add(goal)
+            # Only member A earns, member B has zero
+            record_earn(seeded["quest_a_id"], 60, "earn")
+            db.session.commit()
+
+            result = check_party_goal(goal)
+            assert result["volume_met"] is True
+            assert result["all_fair"] is True
+            assert result["unlocked"] is True
+
+
+class TestEarningRuleEditSafety:
+    def test_rule_reward_change_does_not_break_batch_calc(self, app, seeded):
+        """Changing currency_reward shouldn't reinterpret historical transactions."""
+        from app.engines.quest import log_activity
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            # Log 100 pages: 2 batches * 10 = 20 earned
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 100)
+            db.session.commit()
+            assert get_balance(seeded["quest_a_id"]) == 20
+
+            # Admin changes reward from 10 to 5 (now batches give 5 instead of 10)
+            rule = db.session.get(EarningRule, seeded["rule_a_id"])
+            rule.currency_reward = 5
+            db.session.commit()
+
+            # Log 50 more pages: cumulative 150 = 3 batches total, 2 already paid
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 50)
+            db.session.commit()
+            # Should earn 1 new batch * 5 (new reward) = 5
+            assert get_balance(seeded["quest_a_id"]) == 25
+
+
+class TestQuestCompletion:
+    def test_quest_completes_at_target(self, app, seeded):
+        from app.engines.quest import log_activity
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            quest = db.session.get(Quest, seeded["quest_a_id"])
+            quest.completion_target = 20
+            quest.completion_bonus = 5
+            db.session.commit()
+
+            # Log 100 pages = 2 batches * 10 = 20 earned, hits target
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 100)
+            db.session.commit()
+
+            quest = db.session.get(Quest, seeded["quest_a_id"])
+            assert quest.completed_at is not None
+            # Balance = 20 (earning) + 5 (completion bonus) = 25
+            assert get_balance(seeded["quest_a_id"]) == 25
+
+    def test_quest_no_double_completion(self, app, seeded):
+        from app.engines.quest import log_activity
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            quest = db.session.get(Quest, seeded["quest_a_id"])
+            quest.completion_target = 10
+            quest.completion_bonus = 5
+            db.session.commit()
+
+            log_activity(seeded["quest_a_id"], seeded["pages_id"], 50)
+            db.session.commit()
+
+            # Log again - should NOT get second completion bonus
+            log_activity(seeded["quest_a_id"], seeded["pages_id"], 50)
+            db.session.commit()
+
+            # 50 pages = 1 batch * 10 = 10 + 5 bonus (first log)
+            # 100 total = 2 batches * 10 = 20 (cumulative) + 5 bonus
+            assert get_balance(seeded["quest_a_id"]) == 25
+
+
+class TestLevelUnlockPersistence:
+    def test_level_unlocks_persisted(self, app, seeded):
+        from app.engines.validation import check_level_unlocks, get_unlocked_levels
+        from app.engines.ledger import record_earn
+        from app.models import QuestLevelUnlock
+        with app.app_context():
+            QuestLevel.query.delete()
+            db.session.add_all([
+                QuestLevel(quest_id=seeded["quest_a_id"], name="Bronze", threshold=50, sort_order=1),
+                QuestLevel(quest_id=seeded["quest_a_id"], name="Silver", threshold=150, sort_order=2),
+            ])
+            record_earn(seeded["quest_a_id"], 100, "earn")
+            db.session.commit()
+
+            new_unlocks = check_level_unlocks(seeded["quest_a_id"])
+            db.session.commit()
+
+            # Bronze should be newly unlocked (100 >= 50)
+            assert len(new_unlocks) == 1
+            assert new_unlocks[0].quest_level.name == "Bronze"
+
+            # Persisted in DB
+            persisted = QuestLevelUnlock.query.filter_by(quest_id=seeded["quest_a_id"]).all()
+            assert len(persisted) == 1
+
+            # Running again doesn't create duplicates
+            more = check_level_unlocks(seeded["quest_a_id"])
+            db.session.commit()
+            assert len(more) == 0
+
+    def test_unlocked_levels_includes_timestamp(self, app, seeded):
+        from app.engines.validation import check_level_unlocks, get_unlocked_levels
+        from app.engines.ledger import record_earn
+        with app.app_context():
+            QuestLevel.query.delete()
+            db.session.add_all([
+                QuestLevel(quest_id=seeded["quest_a_id"], name="Bronze", threshold=50, sort_order=1),
+            ])
+            record_earn(seeded["quest_a_id"], 100, "earn")
+            db.session.commit()
+
+            check_level_unlocks(seeded["quest_a_id"])
+            db.session.commit()
+
+            levels = get_unlocked_levels(seeded["quest_a_id"])
+            assert levels[0]["unlocked"] is True
+            assert levels[0]["unlocked_at"] is not None

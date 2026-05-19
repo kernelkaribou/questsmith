@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 
 from app import db
 from app.models import (
-    Member, Journey, Quest, PartyGoal, QuestLevel, ShopItem,
+    Member, Journey, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
     AchievementUnlock, Achievement, ActivityLog,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
@@ -44,6 +44,12 @@ def quest_view(quest_id):
     # Quest Levels (belong to quest now)
     levels = QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.threshold).all()
     unlocked_levels = validation.get_unlocked_levels(quest_id)
+
+    # Check for new level unlocks (only relevant if admin just logged)
+    from app.engines.validation import check_level_unlocks
+    new_level_unlocks = check_level_unlocks(quest_id)
+    if new_level_unlocks:
+        db.session.commit()
 
     # Combined Shop: quest-owned + journey-owned
     shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()

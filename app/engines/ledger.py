@@ -7,7 +7,7 @@ def get_balance(quest_id):
     """Calculate current spendable balance for a quest."""
     earned = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
         Transaction.quest_id == quest_id,
-        Transaction.type.in_(["earn", "side_quest_reward", "adjustment"]),
+        Transaction.type.in_(["earn", "side_quest_reward", "completion_bonus", "adjustment"]),
     ).scalar()
 
     spent = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
@@ -22,7 +22,7 @@ def get_lifetime_earned(quest_id):
     """Total currency ever earned (never decreases). Used for prize tier unlocks."""
     return db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
         Transaction.quest_id == quest_id,
-        Transaction.type.in_(["earn", "side_quest_reward"]),
+        Transaction.type.in_(["earn", "side_quest_reward", "completion_bonus"]),
     ).scalar()
 
 
@@ -40,8 +40,11 @@ def get_journey_totals(journey_id):
     return {r.member_id: r.total_earned for r in results}
 
 
-def record_earn(quest_id, amount, description, activity_log_id=None, earning_rule_id=None):
+def record_earn(quest_id, amount, description, activity_log_id=None, earning_rule_id=None, batches_awarded=None):
     """Record a currency earn transaction."""
+    if amount <= 0:
+        raise ValueError(f"Earn amount must be positive, got {amount}")
+
     txn = Transaction(
         quest_id=quest_id,
         type="earn",
@@ -49,6 +52,7 @@ def record_earn(quest_id, amount, description, activity_log_id=None, earning_rul
         description=description,
         activity_log_id=activity_log_id,
         earning_rule_id=earning_rule_id,
+        batches_awarded=batches_awarded,
     )
     db.session.add(txn)
     return txn
@@ -56,6 +60,9 @@ def record_earn(quest_id, amount, description, activity_log_id=None, earning_rul
 
 def record_spend(quest_id, amount, description):
     """Record a currency spend transaction. Returns None if insufficient balance."""
+    if amount <= 0:
+        raise ValueError(f"Spend amount must be positive, got {amount}")
+
     balance = get_balance(quest_id)
     if balance < amount:
         return None
@@ -72,9 +79,27 @@ def record_spend(quest_id, amount, description):
 
 def record_side_quest_reward(quest_id, amount, description):
     """Record currency earned from a side quest."""
+    if amount <= 0:
+        raise ValueError(f"Side quest reward amount must be positive, got {amount}")
+
     txn = Transaction(
         quest_id=quest_id,
         type="side_quest_reward",
+        amount=amount,
+        description=description,
+    )
+    db.session.add(txn)
+    return txn
+
+
+def record_completion_bonus(quest_id, amount, description):
+    """Record currency earned from completing a quest."""
+    if amount <= 0:
+        raise ValueError(f"Completion bonus must be positive, got {amount}")
+
+    txn = Transaction(
+        quest_id=quest_id,
+        type="completion_bonus",
         amount=amount,
         description=description,
     )
