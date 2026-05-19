@@ -129,6 +129,28 @@ class TestQuestEngine:
             assert len(txns) == 0
             assert get_balance(seeded["quest_a_id"]) == 0
 
+    def test_log_activity_cumulative_carry_forward(self, app, seeded):
+        from app.engines.quest import log_activity, get_earning_progress
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            # Log 40 pages (below 50 threshold)
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 40)
+            db.session.commit()
+            assert len(txns) == 0
+            assert get_balance(seeded["quest_a_id"]) == 0
+
+            # Log 30 more (cumulative 70: 1 batch of 50, remainder 20)
+            log, txns = log_activity(seeded["quest_a_id"], seeded["pages_id"], 30)
+            db.session.commit()
+            assert len(txns) == 1
+            assert get_balance(seeded["quest_a_id"]) == 10
+
+            # Check progress: remainder should be 20, need 30 more for next
+            progress = get_earning_progress(seeded["quest_a_id"])
+            pages_progress = [p for p in progress if p["activity_type"].name == "Pages Read"][0]
+            assert pages_progress["remainder"] == 20
+            assert pages_progress["units_to_next"] == 30
+
     def test_wrong_activity_type_rejected(self, app, seeded):
         from app.engines.quest import log_activity
         with app.app_context():

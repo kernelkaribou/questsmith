@@ -59,7 +59,7 @@ def _apply_earning_rules(quest, activity_type, activity_log):
     transactions = []
 
     for rule in rules:
-        earned = _calculate_reward(rule, activity_log)
+        earned = _calculate_reward(rule, quest.id, activity_type.id, activity_log)
         if earned > 0:
             txn = record_earn(
                 quest_id=quest.id,
@@ -73,22 +73,78 @@ def _apply_earning_rules(quest, activity_type, activity_log):
     return transactions
 
 
-def _calculate_reward(rule, activity_log):
+def _calculate_reward(rule, quest_id, activity_type_id, activity_log):
     """
-    Calculate currency reward based on rule type and logged quantity.
+    Calculate currency reward based on rule type.
 
-    per_batch: for every quantity_required units, award currency_reward.
-               e.g., 120 pages with rule (50 pages → 10 currency) = 20 currency
-               Remainder carries forward implicitly via cumulative calculation.
+    per_batch: Uses cumulative total across all logs for this activity type.
+              Compares total batches possible vs already paid to find new earnings.
+              e.g., log 40 pages then 30 pages (rule: 50→10): 70//50=1 batch, 10 currency.
 
-    per_log: if the logged quantity >= quantity_required, award currency_reward once.
-             e.g., log any books >= 1 → earn 25 currency.
+    per_log: If the logged quantity >= quantity_required, award currency_reward once.
     """
     if rule.rule_type == "per_batch":
-        return (activity_log.quantity // rule.quantity_required) * rule.currency_reward
+        # Sum all logged quantity for this activity type on this quest
+        total_logged = db.session.query(
+            db.func.coalesce(db.func.sum(ActivityLog.quantity), 0)
+        ).filter(
+            ActivityLog.quest_id == quest_id,
+            ActivityLog.activity_type_id == activity_type_id,
+        ).scalar()
+
+        # Count batches already paid via transactions linked to this rule
+        total_already_paid = db.session.query(
+            db.func.coalesce(db.func.sum(Transaction.amount), 0)
+        ).filter(
+            Transaction.quest_id == quest_id,
+            Transaction.earning_rule_id == rule.id,
+        ).scalar()
+
+        total_batches_ever = total_logged // rule.quantity_required
+        batches_already_paid = total_already_paid // rule.currency_reward if rule.currency_reward else 0
+        new_batches = total_batches_ever - batches_already_paid
+
+        return max(0, new_batches * rule.currency_reward)
 
     elif rule.rule_type == "per_log":
         if activity_log.quantity >= rule.quantity_required:
             return rule.currency_reward
 
     return 0
+
+
+def get_earning_progress(quest_id):
+    """
+    Get progress toward next currency for each per_batch earning rule.
+    Returns list of dicts with rule info, cumulative progress, and remainder.
+    """
+    from app.models import ActivityType
+    quest = db.session.get(Quest, quest_id)
+    if not quest:
+        return []
+
+    activity_types = ActivityType.query.filter_by(quest_id=quest_id).all()
+    progress = []
+
+    for at in activity_types:
+        rules = EarningRule.query.filter_by(activity_type_id=at.id, rule_type="per_batch").all()
+        total_logged = db.session.query(
+            db.func.coalesce(db.func.sum(ActivityLog.quantity), 0)
+        ).filter(
+            ActivityLog.quest_id == quest_id,
+            ActivityLog.activity_type_id == at.id,
+        ).scalar()
+
+        for rule in rules:
+            remainder = total_logged % rule.quantity_required
+            units_to_next = rule.quantity_required - remainder
+            progress.append({
+               "activity_type": at,
+               "rule": rule,
+               "total_logged": total_logged,
+               "remainder": remainder,
+               "units_to_next": units_to_next,
+               "percent": int(remainder / rule.quantity_required * 100) if rule.quantity_required else 0,
+            })
+
+    return progress

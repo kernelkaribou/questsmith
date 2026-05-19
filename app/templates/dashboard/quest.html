@@ -71,6 +71,27 @@
                 {% endif %}
             </section>
 
+            <!-- Earning Progress -->
+            {% if earning_progress %}
+            <section class="bg-white rounded-xl shadow-lg p-5">
+                <h2 class="text-lg font-bold text-gray-800 mb-3">Next {{ ctx.currency_label }}</h2>
+                <div class="space-y-3">
+                    {% for ep in earning_progress %}
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">{{ ep.activity_type.name }}</span>
+                            <span class="text-xs text-gray-500">{{ ep.remainder }}/{{ ep.rule.quantity_required }} {{ ep.activity_type.unit_label }}</span>
+                        </div>
+                        <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ ep.percent }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">{{ ep.units_to_next }} more {{ ep.activity_type.unit_label }} → +{{ ep.rule.currency_reward }} {{ ctx.currency_label }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
             <!-- Party Goals -->
             {% if goal_progress %}
             <section class="bg-white rounded-xl shadow-lg p-5">

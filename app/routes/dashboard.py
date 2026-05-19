@@ -65,6 +65,9 @@ def quest_view(quest_id):
     # Activity timeline (recent 20)
     recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(20).all()
 
+    # Earning progress (units toward next currency)
+    earning_progress = quest_engine.get_earning_progress(quest_id)
+
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)
 
@@ -81,6 +84,7 @@ def quest_view(quest_id):
         shop_items=shop_items,
         sq_status=sq_status,
         chain_data=chain_data,
+        earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,
         ctx=ctx,

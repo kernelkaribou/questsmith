@@ -240,7 +240,14 @@ def log_activity():
             db.session.commit()
 
             earned = sum(t.amount for t in txns)
-            flash(f"Logged {quantity} - earned {earned} currency", "success")
+            # Show progress toward next currency
+            progress = quest_engine.get_earning_progress(quest_id)
+            at_progress = [p for p in progress if p["activity_type"].id == activity_type_id]
+            progress_msg = ""
+            if at_progress:
+                p = at_progress[0]
+                progress_msg = f" ({p['units_to_next']} {p['activity_type'].unit_label} to next)"
+            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}", "success")
         else:
             flash("Failed to log activity", "error")
 
