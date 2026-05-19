@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from app import create_app, db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
 
 
@@ -252,6 +252,93 @@ class TestSideQuestEngine:
             # Same day blocked
             available = get_available_side_quests(seeded["quest_a_id"])
             assert available[0]["can_complete"] is False
+
+    def test_chain_sequential_completion(self, app, seeded):
+        from app.engines.side_quest import get_available_chains, complete_chain_step
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            chain = SideQuestChain(
+                quest_id=seeded["quest_a_id"], name="Test Chain",
+                currency_reward=50, visibility_mode="checklist_sequential",
+            )
+            db.session.add(chain)
+            db.session.flush()
+
+            step1 = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=1, name="Step 1")
+            step2 = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=2, name="Step 2")
+            step3 = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=3, name="Step 3")
+            db.session.add_all([step1, step2, step3])
+            db.session.commit()
+
+            # Can't skip to step 2
+            result = complete_chain_step(step2.id, seeded["quest_a_id"])
+            assert result is None
+
+            # Complete step 1
+            result = complete_chain_step(step1.id, seeded["quest_a_id"])
+            db.session.commit()
+            assert result is not None
+            assert result["chain_completed"] is False
+            assert get_balance(seeded["quest_a_id"]) == 0
+
+            # Complete step 2
+            result = complete_chain_step(step2.id, seeded["quest_a_id"])
+            db.session.commit()
+            assert result["chain_completed"] is False
+
+            # Complete step 3 -> chain complete, reward awarded
+            result = complete_chain_step(step3.id, seeded["quest_a_id"])
+            db.session.commit()
+            assert result["chain_completed"] is True
+            assert get_balance(seeded["quest_a_id"]) == 50
+
+    def test_chain_any_order(self, app, seeded):
+        from app.engines.side_quest import complete_chain_step
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            chain = SideQuestChain(
+                quest_id=seeded["quest_a_id"], name="Any Order Chain",
+                currency_reward=30, visibility_mode="checklist_any_order",
+            )
+            db.session.add(chain)
+            db.session.flush()
+
+            step1 = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=1, name="A")
+            step2 = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=2, name="B")
+            db.session.add_all([step1, step2])
+            db.session.commit()
+
+            # Can complete step 2 first (any order)
+            result = complete_chain_step(step2.id, seeded["quest_a_id"])
+            db.session.commit()
+            assert result is not None
+            assert result["chain_completed"] is False
+
+            # Complete step 1 -> chain done
+            result = complete_chain_step(step1.id, seeded["quest_a_id"])
+            db.session.commit()
+            assert result["chain_completed"] is True
+            assert get_balance(seeded["quest_a_id"]) == 30
+
+    def test_chain_steps_excluded_from_standalone(self, app, seeded):
+        from app.engines.side_quest import get_available_side_quests
+        with app.app_context():
+            chain = SideQuestChain(
+                quest_id=seeded["quest_a_id"], name="Hidden Chain",
+                currency_reward=10, visibility_mode="checklist_sequential",
+            )
+            db.session.add(chain)
+            db.session.flush()
+
+            standalone = SideQuest(quest_id=seeded["quest_a_id"], name="Visible", currency_reward=5, repeat_type="one_time")
+            chained = SideQuest(quest_id=seeded["quest_a_id"], chain_id=chain.id, chain_order=1, name="Hidden Step")
+            db.session.add_all([standalone, chained])
+            db.session.commit()
+
+            available = get_available_side_quests(seeded["quest_a_id"])
+            names = [item["side_quest"].name for item in available]
+            assert "Visible" in names
+            assert "Hidden Step" not in names
 
 
 class TestAchievementEngine:

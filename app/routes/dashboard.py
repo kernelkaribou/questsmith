@@ -55,6 +55,9 @@ def quest_view(quest_id):
     sq_data = side_quest_engine.get_available_side_quests(quest_id)
     sq_status = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data]
 
+    # Quest chains
+    chain_data = side_quest_engine.get_available_chains(quest_id)
+
     # Achievements for this member
     unlocks = AchievementUnlock.query.filter_by(member_id=member.id).all()
     achievements = [db.session.get(Achievement, u.achievement_id) for u in unlocks]
@@ -77,6 +80,7 @@ def quest_view(quest_id):
         unlocked_levels=unlocked_levels,
         shop_items=shop_items,
         sq_status=sq_status,
+        chain_data=chain_data,
         achievements=achievements,
         recent_logs=recent_logs,
         ctx=ctx,

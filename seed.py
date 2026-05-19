@@ -2,7 +2,7 @@
 from app import create_app, db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
 
 
@@ -119,6 +119,42 @@ def seed():
             SideQuest(quest_id=quest_a.id, name="Library Visit", description="Visit the library and check out a book", currency_reward=30, repeat_type="one_time", sort_order=2),
             SideQuest(quest_id=quest_b.id, name="Read to a Sibling", description="Read aloud to a brother or sister", currency_reward=20, repeat_type="daily", sort_order=1),
             SideQuest(quest_id=quest_b.id, name="Library Visit", description="Visit the library and check out a book", currency_reward=30, repeat_type="one_time", sort_order=2),
+        ])
+
+        # Side Quest Chains (multi-step quests)
+        chain_a = SideQuestChain(
+            quest_id=quest_a.id,
+            name="The Lost Pokedex",
+            description="Help Professor Oak recover the lost Pokedex entries",
+            currency_reward=50,
+            visibility_mode="checklist_sequential",
+            sort_order=1,
+        )
+        chain_b = SideQuestChain(
+            quest_id=quest_b.id,
+            name="Spirit Week Challenge",
+            description="Complete all Spirit Week activities to earn bonus points",
+            currency_reward=40,
+            visibility_mode="mystery_sequential",
+            sort_order=1,
+        )
+        db.session.add_all([chain_a, chain_b])
+        db.session.flush()
+
+        # Chain steps
+        db.session.add_all([
+            SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=1,
+                      name="Talk to Professor Oak", description="Read a non-fiction book about animals"),
+            SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=2,
+                      name="Search the Tall Grass", description="Read 100 pages in one day"),
+            SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=3,
+                      name="Return the Pokedex", description="Write a short book report"),
+            SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=1,
+                      name="Monday: Pep Rally", description="Read for 30 minutes straight"),
+            SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=2,
+                      name="Wednesday: Halftime Show", description="Read a new genre"),
+            SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=3,
+                      name="Friday: Championship", description="Finish a chapter book"),
         ])
 
         # Party Goals (journey-level shared goals)

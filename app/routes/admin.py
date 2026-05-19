@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from app import db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
 from app.engines import quest as quest_engine
 from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine
@@ -154,7 +154,9 @@ def quest_detail(quest_id):
         balance=balance,
         lifetime_earned=lifetime_earned,
         levels=QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.sort_order).all(),
-        side_quests=SideQuest.query.filter_by(quest_id=quest_id).order_by(SideQuest.sort_order).all(),
+        side_quests=SideQuest.query.filter_by(quest_id=quest_id, chain_id=None).order_by(SideQuest.sort_order).all(),
+        chains=side_quest_engine.get_available_chains(quest_id),
+        all_chains=SideQuestChain.query.filter_by(quest_id=quest_id).order_by(SideQuestChain.sort_order).all(),
         shop_items=shop_items,
         recent_logs=quest.activity_logs.order_by(db.text("logged_at DESC")).limit(10).all(),
     )
@@ -359,6 +361,117 @@ def side_quest_edit(side_quest_id):
         flash("Side Quest updated", "success")
         return redirect(url_for("admin.quest_detail", quest_id=sq.quest_id))
     return render_template("admin/generic_form.html", type_name="Side Quest", item=sq, quest_id=sq.quest_id)
+
+
+# --- Side Quest Chains ---
+
+@bp.route("/quests/<int:quest_id>/chains/new", methods=["GET", "POST"])
+@admin_required
+def chain_create(quest_id):
+    if request.method == "POST":
+        chain = SideQuestChain(
+            quest_id=quest_id,
+            name=request.form["name"],
+            description=request.form.get("description") or None,
+            currency_reward=int(request.form["currency_reward"]),
+            visibility_mode=request.form.get("visibility_mode", "checklist_sequential"),
+            expires_at=_parse_date(request.form.get("expires_at")),
+        )
+        db.session.add(chain)
+        db.session.commit()
+        flash("Chain created", "success")
+        return redirect(url_for("admin.chain_detail", chain_id=chain.id))
+    return render_template("admin/chain_form.html", chain=None, quest_id=quest_id)
+
+
+@bp.route("/chains/<int:chain_id>")
+@admin_required
+def chain_detail(chain_id):
+    chain = db.session.get(SideQuestChain, chain_id)
+    status = side_quest_engine.get_chain_status(chain, chain.quest_id)
+    return render_template("admin/chain_detail.html", chain=chain, status=status)
+
+
+@bp.route("/chains/<int:chain_id>/edit", methods=["GET", "POST"])
+@admin_required
+def chain_edit(chain_id):
+    chain = db.session.get(SideQuestChain, chain_id)
+    if request.method == "POST":
+        chain.name = request.form["name"]
+        chain.description = request.form.get("description") or None
+        chain.currency_reward = int(request.form["currency_reward"])
+        chain.visibility_mode = request.form.get("visibility_mode", "checklist_sequential")
+        chain.expires_at = _parse_date(request.form.get("expires_at"))
+        db.session.commit()
+        flash("Chain updated", "success")
+        return redirect(url_for("admin.chain_detail", chain_id=chain.id))
+    return render_template("admin/chain_form.html", chain=chain, quest_id=chain.quest_id)
+
+
+@bp.route("/chains/<int:chain_id>/steps/new", methods=["GET", "POST"])
+@admin_required
+def chain_step_create(chain_id):
+    chain = db.session.get(SideQuestChain, chain_id)
+    if request.method == "POST":
+        max_order = db.session.query(db.func.max(SideQuest.chain_order)).filter_by(chain_id=chain_id).scalar() or 0
+        step = SideQuest(
+            quest_id=chain.quest_id,
+            chain_id=chain_id,
+            chain_order=max_order + 1,
+            name=request.form["name"],
+            description=request.form.get("description") or None,
+            currency_reward=0,
+            repeat_type="one_time",
+        )
+        db.session.add(step)
+        db.session.commit()
+        flash(f"Step added: {step.name}", "success")
+        return redirect(url_for("admin.chain_detail", chain_id=chain_id))
+    return render_template("admin/chain_step_form.html", chain=chain, step=None)
+
+
+@bp.route("/chains/<int:chain_id>/steps/<int:step_id>/edit", methods=["GET", "POST"])
+@admin_required
+def chain_step_edit(chain_id, step_id):
+    chain = db.session.get(SideQuestChain, chain_id)
+    step = db.session.get(SideQuest, step_id)
+    if request.method == "POST":
+        step.name = request.form["name"]
+        step.description = request.form.get("description") or None
+        if request.form.get("chain_order"):
+            step.chain_order = int(request.form["chain_order"])
+        db.session.commit()
+        flash("Step updated", "success")
+        return redirect(url_for("admin.chain_detail", chain_id=chain_id))
+    return render_template("admin/chain_step_form.html", chain=chain, step=step)
+
+
+@bp.route("/chains/<int:chain_id>/steps/<int:step_id>/complete", methods=["POST"])
+@admin_required
+def chain_step_complete(chain_id, step_id):
+    chain = db.session.get(SideQuestChain, chain_id)
+    result = side_quest_engine.complete_chain_step(step_id, chain.quest_id)
+    if result:
+        db.session.commit()
+        if result["chain_completed"]:
+            flash(f"Chain '{chain.name}' completed! Reward awarded.", "success")
+        else:
+            step = db.session.get(SideQuest, step_id)
+            flash(f"Step '{step.name}' completed!", "success")
+    else:
+        flash("Step not available", "error")
+    return redirect(url_for("admin.chain_detail", chain_id=chain_id))
+
+
+def _parse_date(value):
+    """Parse a date string from form input, returning None if empty."""
+    if not value:
+        return None
+    from datetime import datetime, timezone
+    try:
+        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
 
 
 # --- Quest Shop Items (belong to quest) ---

@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Edit" if step else "New" }} Chain Step{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <h1 class="text-2xl font-bold mb-2">{{ "Edit" if step else "Add" }} Step</h1>
+    <p class="text-gray-500 mb-6">Chain: {{ chain.name }}</p>
+
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Step Name</label>
+            <input type="text" name="name" value="{{ step.name if step else '' }}" required
+                   placeholder="e.g. Talk to the village elder"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Description (optional)</label>
+            <textarea name="description" rows="2" placeholder="What must be done to complete this step?"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{{ step.description if step else '' }}</textarea>
+        </div>
+        {% if step %}
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Order</label>
+            <input type="number" name="chain_order" value="{{ step.chain_order }}" min="1"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        {% endif %}
+        <div class="flex gap-3">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
+            <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}"
+               class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

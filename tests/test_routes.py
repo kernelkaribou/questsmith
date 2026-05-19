@@ -1,6 +1,6 @@
 import pytest
 from app import create_app, db
-from app.models import Member, Journey, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest
+from app.models import Member, Journey, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain
 
 
 @pytest.fixture
@@ -197,6 +197,29 @@ def test_admin_quest_detail(auth_client, seeded):
     r = auth_client.get(f"/admin/quests/{seeded['quest_id']}")
     assert r.status_code == 200
     assert b"Pokemon" in r.data
+
+
+def test_admin_chain_crud(auth_client, seeded, app):
+    # Create chain
+    r = auth_client.post(f"/admin/quests/{seeded['quest_id']}/chains/new", data={
+        "name": "The Lost Treasure",
+        "currency_reward": "50",
+        "visibility_mode": "checklist_sequential",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert b"The Lost Treasure" in r.data
+
+    # Get chain id
+    with app.app_context():
+        chain = SideQuestChain.query.filter_by(name="The Lost Treasure").first()
+        chain_id = chain.id
+
+    # Add step
+    r = auth_client.post(f"/admin/chains/{chain_id}/steps/new", data={
+        "name": "Find the Map",
+    }, follow_redirects=True)
+    assert r.status_code == 200
+    assert b"Find the Map" in r.data
 
 
 def test_admin_achievements_page(auth_client):

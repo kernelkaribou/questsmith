@@ -87,6 +87,7 @@
                 <div>
                     <span class="font-medium">{{ sq.name }}</span>
                     <span class="text-gray-500 ml-1">(+{{ sq.currency_reward }}, {{ sq.repeat_type_display }})</span>
+                    {% if sq.expires_at %}<span class="text-xs text-orange-500 ml-1">expires {{ sq.expires_at.strftime('%b %d') }}</span>{% endif %}
                 </div>
                 <div class="flex gap-2">
                     <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.id) }}">
@@ -98,7 +99,38 @@
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No side quests defined yet.</p>
+        <p class="text-gray-400 text-sm">No standalone side quests yet.</p>
+        {% endif %}
+    </section>
+
+    <!-- Quest Chains -->
+    <section class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="font-semibold">Quest Chains</h2>
+            <a href="{{ url_for('admin.chain_create', quest_id=quest.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+        </div>
+        {% if all_chains %}
+        <div class="space-y-2">
+            {% for chain in all_chains %}
+            <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}"
+               class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 block">
+                <div>
+                    <span class="font-medium">{{ chain.name }}</span>
+                    <span class="text-gray-500 ml-1">(+{{ chain.currency_reward }})</span>
+                    {% if chain.completed_at %}
+                    <span class="text-xs bg-green-100 text-green-700 px-1 rounded ml-1">completed</span>
+                    {% elif chain.expires_at %}
+                    <span class="text-xs text-orange-500 ml-1">expires {{ chain.expires_at.strftime('%b %d') }}</span>
+                    {% endif %}
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ chain.steps.count() }} steps &middot; {{ chain.visibility_display }}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-sm">No quest chains yet.</p>
         {% endif %}
     </section>
 

@@ -80,6 +80,7 @@ class Quest(db.Model):
     activity_logs = db.relationship("ActivityLog", back_populates="quest", lazy="dynamic")
     quest_levels = db.relationship("QuestLevel", back_populates="quest", lazy="dynamic")
     side_quests = db.relationship("SideQuest", back_populates="quest", lazy="dynamic")
+    side_quest_chains = db.relationship("SideQuestChain", back_populates="quest", lazy="dynamic")
     shop_items = db.relationship("ShopItem", back_populates="quest", lazy="dynamic")
     side_quest_completions = db.relationship("SideQuestCompletion", back_populates="quest", lazy="dynamic")
     shop_purchases = db.relationship("ShopPurchase", back_populates="quest", lazy="dynamic")
@@ -111,21 +112,64 @@ class QuestLevel(db.Model):
     quest = db.relationship("Quest", back_populates="quest_levels")
 
 
-class SideQuest(db.Model):
-    __tablename__ = "side_quests"
+class SideQuestChain(db.Model):
+    """Multi-step side quest chain. Reward only on full completion."""
+    __tablename__ = "side_quest_chains"
 
     id = db.Column(db.Integer, primary_key=True)
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     currency_reward = db.Column(db.Integer, nullable=False)
+    visibility_mode = db.Column(db.String(30), nullable=False, default="checklist_sequential")
+    expires_at = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    quest = db.relationship("Quest", back_populates="side_quest_chains")
+    steps = db.relationship(
+        "SideQuest", back_populates="chain", lazy="dynamic",
+        order_by="SideQuest.chain_order",
+    )
+
+    @property
+    def visibility_display(self):
+        return {
+            "checklist_any_order": "Checklist (Any Order)",
+            "checklist_sequential": "Checklist (Sequential)",
+            "mystery_sequential": "Mystery (Sequential)",
+        }.get(self.visibility_mode, self.visibility_mode)
+
+
+class SideQuest(db.Model):
+    __tablename__ = "side_quests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
+    chain_id = db.Column(db.Integer, db.ForeignKey("side_quest_chains.id"), nullable=True)
+    chain_order = db.Column(db.Integer, nullable=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    currency_reward = db.Column(db.Integer, nullable=False, default=0)
     repeat_type = db.Column(db.String(20), nullable=False, default="one_time")
+    expires_at = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     quest = db.relationship("Quest", back_populates="side_quests")
+    chain = db.relationship("SideQuestChain", back_populates="steps")
     completions = db.relationship("SideQuestCompletion", back_populates="side_quest", lazy="dynamic")
+
+    __table_args__ = (
+        db.UniqueConstraint("chain_id", "chain_order", name="uq_chain_step_order"),
+    )
+
+    @property
+    def is_chain_step(self):
+        return self.chain_id is not None
 
     @property
     def repeat_type_display(self):
