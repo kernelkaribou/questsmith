@@ -144,7 +144,7 @@
                             {% if cp.goal.unlocked_at %}
                             <p class="text-xs text-green-600 font-semibold">UNLOCKED! {{ cp.goal.reward_description or '' }}</p>
                             {% else %}
-                            <p class="text-xs text-gray-500">My contribution: <strong>{{ cp.my_contribution }}</strong> ({{ cp.my_remaining }} more needed from me)</p>
+                            <p class="text-xs text-gray-500">My contribution: <strong>{{ cp.my_contribution }}</strong>{% if cp.min_required > 0 %} ({{ cp.my_remaining }} of {{ cp.min_required }} needed from me){% endif %}</p>
                             {% endif %}
                             <span class="text-xs text-gray-400">Party: {{ cp.percent }}%</span>
                         </div>
