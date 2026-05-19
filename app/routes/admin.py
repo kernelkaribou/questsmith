@@ -332,7 +332,6 @@ def log_activity():
         ])
     return render_template("admin/log_activity.html", quests=quests)
 
-
 # --- Redemption ---
 
 @bp.route("/quests/<int:quest_id>/redeem", methods=["POST"])
