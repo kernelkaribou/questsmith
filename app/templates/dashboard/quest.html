@@ -19,21 +19,21 @@
                 {% endif %}
                 <div class="flex-1 min-w-0">
                     <h1 class="text-2xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <p class="text-sm opacity-80">{{ member.name }}{% if journey %} &middot; {{ journey.name }}{% endif %}</p>
+                    <p class="text-sm opacity-90">{{ member.name }}{% if journey %} &middot; {{ journey.name }}{% endif %}</p>
                 </div>
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
                 {% set ring_offset = 188 - (188 * ring_pct // 100) %}
-                <div class="relative w-16 h-16 shrink-0">
-                    <svg class="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
+                <div class="relative w-20 h-20 shrink-0">
+                    <svg class="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
                         <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="8"
                                 stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="{{ ring_offset }}"
                                 class="transition-all duration-700"/>
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-sm font-bold">{{ completion_pct }}%</span>
+                        <span class="text-base font-bold">{{ completion_pct }}%</span>
                     </div>
                 </div>
                 {% endif %}
@@ -43,7 +43,7 @@
             {% if quest.completed_at %}
             <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 mb-4 text-center border border-white/30">
                 <p class="font-bold text-lg">Quest Complete!</p>
-                <p class="text-xs opacity-80">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if completion_pct > 100 %} &middot; {{ completion_pct }}% beyond the goal{% endif %}</p>
+                <p class="text-xs opacity-90">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if completion_pct > 100 %} &middot; {{ completion_pct }}% beyond the goal{% endif %}</p>
             </div>
             {% endif %}
 
@@ -51,11 +51,11 @@
             <div class="grid grid-cols-3 gap-3">
                 <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
                     <p class="text-2xl font-bold">{{ balance }}</p>
-                    <p class="text-[10px] uppercase tracking-wide opacity-70">{{ ctx.currency_label }}</p>
+                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.currency_label }}</p>
                 </div>
                 <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
                     <p class="text-2xl font-bold">{{ total_earned }}</p>
-                    <p class="text-[10px] uppercase tracking-wide opacity-70">{{ ctx.progress_label }}</p>
+                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.progress_label }}</p>
                 </div>
                 {% if levels %}
                 {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
@@ -65,12 +65,12 @@
                 {% endfor %}
                 <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
                     <p class="text-lg font-bold truncate">{{ ns.current_level }}</p>
-                    <p class="text-[10px] uppercase tracking-wide opacity-70">Rank</p>
+                    <p class="text-[11px] uppercase tracking-wide opacity-90">Rank</p>
                 </div>
                 {% else %}
                 <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
                     <p class="text-2xl font-bold">{{ quest.activity_logs.count() }}</p>
-                    <p class="text-[10px] uppercase tracking-wide opacity-70">Activities</p>
+                    <p class="text-[11px] uppercase tracking-wide opacity-90">Activities</p>
                 </div>
                 {% endif %}
             </div>
@@ -84,7 +84,7 @@
             <!-- Next Step: Earning Progress -->
             {% if earning_progress %}
             <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Next Reward</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Next Reward</h2>
                 <div class="space-y-4">
                     {% for ep in earning_progress %}
                     <div>
@@ -98,7 +98,7 @@
                             </div>
                             <span class="text-sm font-bold text-gray-700 whitespace-nowrap">{{ ep.remainder }}/{{ ep.rule.quantity_required }}</span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">{{ ep.units_to_next }} more {{ ep.activity_type.unit_label }} to earn</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ ep.units_to_next }} more {{ ep.activity_type.unit_label }} to earn</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -108,7 +108,7 @@
             <!-- Level Path -->
             {% if levels %}
             <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Level Progress</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Level Progress</h2>
                 <div class="relative">
                     <!-- Vertical path line -->
                     <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
@@ -139,7 +139,7 @@
                     </div>
                 </div>
                 {% if ns.next_threshold > 0 %}
-                <p class="text-xs text-gray-400 mt-3 pl-12">{{ ns.next_threshold - total_earned }} {{ ctx.progress_label }} until next rank</p>
+                <p class="text-xs text-gray-500 mt-3 pl-12">{{ ns.next_threshold - total_earned }} {{ ctx.progress_label }} until next rank</p>
                 {% endif %}
             </section>
             {% endif %}
@@ -147,7 +147,7 @@
             <!-- Party Goals -->
             {% if goal_progress %}
             <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}s</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}s</h2>
                 <div class="space-y-5">
                     {% for cp in goal_progress %}
                     <div class="relative">
@@ -175,10 +175,10 @@
                             {% else %}
                             <p class="text-xs text-gray-500">My contribution: <strong>{{ cp.my_contribution }}</strong>{% if cp.my_remaining > 0 %} ({{ cp.my_remaining }} more needed from me){% endif %}</p>
                             {% endif %}
-                            <span class="text-xs text-gray-400">Party: {{ cp.percent }}%</span>
+                            <span class="text-xs text-gray-500">Party: {{ cp.percent }}%</span>
                         </div>
                         {% if cp.goal.reward_description and not cp.goal.unlocked_at %}
-                        <p class="text-xs text-gray-400 mt-0.5 italic">Reward: {{ cp.goal.reward_description }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5 italic">Reward: {{ cp.goal.reward_description }}</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -189,7 +189,7 @@
             <!-- Side Quests -->
             {% if sq_available or sq_completed or chain_data %}
             <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Side Quests</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Side Quests</h2>
 
                 <!-- Available Missions -->
                 {% if sq_available %}
@@ -294,7 +294,7 @@
             <!-- Quest Shop -->
             {% if shop_items %}
             <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5" x-data="{ confirmItem: null }">
-                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Treasure Shop</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Treasure Shop</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {% for p in shop_items %}
                     <div class="rounded-lg p-3 text-center transition-all
@@ -374,7 +374,7 @@
                             <span class="font-semibold text-gray-700">{{ log.activity_type.name }}</span>
                             <span class="font-medium" style="color: var(--color-primary)">+{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
                         </div>
-                        <div class="text-gray-400 text-[10px] mt-0.5">{{ log.logged_at.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="text-gray-500 text-[10px] mt-0.5">{{ log.logged_at.strftime('%b %d, %I:%M %p') }}</div>
                         <div x-show="openLog === {{ log.id }}" x-cloak x-collapse class="mt-2 p-2 bg-gray-50 rounded text-[11px] text-gray-600 border-t">
                             {% if log.notes %}<p><strong>Notes:</strong> {{ log.notes }}</p>{% endif %}
                             {% set earned = log.transactions|list %}
@@ -394,7 +394,7 @@
                 </div>
                 <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="block text-center text-xs font-medium hover:underline mt-3" style="color: var(--color-primary)">View Full History</a>
                 {% else %}
-                <p class="text-xs text-gray-400 italic">No adventures yet — get started!</p>
+                <p class="text-xs text-gray-500 italic">No adventures yet — get started!</p>
                 {% endif %}
             </div>
 
