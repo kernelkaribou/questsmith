@@ -171,6 +171,54 @@ def quest_history(quest_id):
     )
 
 
+@bp.route("/journey/<int:journey_id>")
+def journey_view(journey_id):
+    """Journey overview scorecard — game-show style party display."""
+    journey = db.session.get(Journey, journey_id)
+    quests = Quest.query.filter_by(journey_id=journey_id, status="active").all()
+    journey_totals = ledger.get_journey_totals(journey_id)
+    combined_total = sum(journey_totals.values())
+
+    # Build adventurer data
+    adventurers = []
+    for q in quests:
+        member = q.member
+        contribution = journey_totals.get(member.id, 0)
+        levels = QuestLevel.query.filter_by(quest_id=q.id).order_by(QuestLevel.threshold).all()
+        current_level = "Level 0"
+        for lv in levels:
+            earned = ledger.get_lifetime_earned(q.id)
+            if earned >= lv.threshold:
+                current_level = lv.name
+        adventurers.append({
+            "member": member,
+            "quest": q,
+            "contribution": contribution,
+            "current_level": current_level,
+        })
+
+    # Party goals
+    party_goals = PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all()
+    goals_data = []
+    for goal in party_goals:
+        target = goal.target_amount or 1
+        pct = min(100, int(combined_total / target * 100))
+        goals_data.append({
+            "goal": goal,
+            "current": combined_total,
+            "percent": pct,
+            "complete": combined_total >= target,
+        })
+
+    return render_template(
+        "dashboard/journey.html",
+        journey=journey,
+        adventurers=adventurers,
+        goals=goals_data,
+        combined_total=combined_total,
+    )
+
+
 @bp.route("/quest/<int:quest_id>/redeem", methods=["POST"])
 def redeem(quest_id):
     """Self-service shop redemption (no admin required)."""

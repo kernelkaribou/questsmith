@@ -19,7 +19,7 @@
                 {% endif %}
                 <div class="flex-1 min-w-0">
                     <h1 class="text-2xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <p class="text-sm opacity-90">{{ member.name }}{% if journey %} &middot; {{ journey.name }}{% endif %}</p>
+                    <p class="text-sm opacity-90">{{ member.name }}{% if journey %} &middot; <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="underline underline-offset-2 hover:opacity-100">{{ journey.name }}</a>{% endif %}</p>
                 </div>
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
