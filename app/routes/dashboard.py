@@ -48,6 +48,7 @@ def quest_view(quest_id):
                 "percent": min(100, int(combined_total / target * 100)),
                 "my_remaining": max(0, min_req - my_contribution),
                 "min_required": min_req,
+                "min_marker_percent": min(100, int(min_req / target * 100)) if min_req else 0,
             })
 
     # Quest Levels (belong to quest now)
