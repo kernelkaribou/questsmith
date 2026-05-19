@@ -34,14 +34,14 @@
     </div>
 </section>
 
-<!-- Co-Op Goals -->
+<!-- Party Goals -->
 <section class="mb-8">
     <div class="flex justify-between items-center mb-3">
-        <h2 class="text-lg font-semibold">Co-Op Goals</h2>
-        <a href="{{ url_for('admin.coop_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Goal</a>
+        <h2 class="text-lg font-semibold">Party Goals</h2>
+        <a href="{{ url_for('admin.party_goal_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Goal</a>
     </div>
     <div class="space-y-3">
-        {% for g in coop_goals %}
+        {% for g in party_goals %}
         <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center">
             <div>
                 <span class="font-medium">{{ g.name }}</span>
@@ -50,45 +50,45 @@
                 <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Unlocked</span>
                 {% endif %}
             </div>
-            <a href="{{ url_for('admin.coop_edit', goal_id=g.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            <a href="{{ url_for('admin.party_goal_edit', goal_id=g.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
         </div>
         {% endfor %}
     </div>
 </section>
 
-<!-- Prize Shop -->
+<!-- Quest Shop -->
 <section class="mb-8">
     <div class="flex justify-between items-center mb-3">
-        <h2 class="text-lg font-semibold">Prize Shop</h2>
-        <a href="{{ url_for('admin.prize_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Prize</a>
+        <h2 class="text-lg font-semibold">Quest Shop</h2>
+        <a href="{{ url_for('admin.shop_item_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Item</a>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {% for p in prizes %}
+        {% for p in shop_items %}
         <div class="bg-white rounded-lg shadow p-3">
             <div class="flex justify-between">
                 <span class="font-medium text-sm">{{ p.name }}</span>
                 <span class="text-indigo-700 font-bold text-sm">{{ p.cost }}</span>
             </div>
-            <a href="{{ url_for('admin.prize_edit', prize_id=p.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            <a href="{{ url_for('admin.shop_item_edit', item_id=p.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
         </div>
         {% endfor %}
     </div>
 </section>
 
-<!-- Prize Tiers -->
+<!-- Quest Levels -->
 <section class="mb-8">
     <div class="flex justify-between items-center mb-3">
-        <h2 class="text-lg font-semibold">Prize Tiers</h2>
-        <a href="{{ url_for('admin.tier_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Tier</a>
+        <h2 class="text-lg font-semibold">Quest Levels</h2>
+        <a href="{{ url_for('admin.level_create', journey_id=journey.id) }}" class="text-sm text-indigo-600 hover:underline">+ Add Level</a>
     </div>
     <div class="space-y-2">
-        {% for t in tiers %}
+        {% for t in quest_levels %}
         <div class="bg-white rounded-lg shadow p-3 flex justify-between items-center">
             <div>
                 <span class="font-medium text-sm">{{ t.name }}</span>
                 <span class="text-gray-500 text-sm ml-2">at {{ t.threshold }} earned</span>
             </div>
-            <a href="{{ url_for('admin.tier_edit', tier_id=t.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            <a href="{{ url_for('admin.level_edit', level_id=t.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
         </div>
         {% endfor %}
     </div>
@@ -105,29 +105,56 @@
         <div class="bg-white rounded-lg shadow p-3 flex justify-between items-center">
             <div>
                 <span class="font-medium text-sm">{{ sq.name }}</span>
-                <span class="text-gray-500 text-sm ml-2">+{{ sq.currency_reward }} ({{ sq.repeat_type }})</span>
+                <span class="text-gray-500 text-sm ml-2">+{{ sq.currency_reward }} ({{ sq.repeat_type_display }})</span>
             </div>
-            <a href="{{ url_for('admin.side_quest_edit', side_quest_id=sq.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            <div class="flex gap-3 items-center">
+                {% for q in quests %}
+                <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=q.id, side_quest_id=sq.id) }}" class="inline">
+                    <button type="submit" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="Award to {{ q.member.name }}">Award {{ q.member.name }}</button>
+                </form>
+                {% endfor %}
+                <a href="{{ url_for('admin.side_quest_edit', side_quest_id=sq.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            </div>
         </div>
         {% endfor %}
     </div>
 </section>
 
-<!-- Redemption Center -->
+<!-- Quick Log & Redemption -->
 <section class="mb-8">
-    <h2 class="text-lg font-semibold mb-3">Redemption Center</h2>
+    <h2 class="text-lg font-semibold mb-3">Quick Actions</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {% for q in quests %}
         <div class="bg-white rounded-lg shadow p-4">
-            <h3 class="font-semibold">{{ q.member.name }} <span class="text-sm text-gray-500">({{ balances[q.id] }} {{ q.display_currency }})</span></h3>
-            <form method="POST" action="{{ url_for('admin.redeem', quest_id=q.id) }}" class="mt-2 flex gap-2">
-                <select name="prize_id" class="flex-1 px-2 py-1 border rounded text-sm">
-                    {% for p in prizes %}
+            <h3 class="font-semibold mb-2">{{ q.member.name }} <span class="text-sm text-gray-500">({{ balances[q.id] }} {{ q.display_currency }})</span></h3>
+
+            <!-- Quick Log -->
+            <form method="POST" action="{{ url_for('admin.log_activity') }}" class="mb-3 flex gap-2 items-end">
+                <input type="hidden" name="quest_id" value="{{ q.id }}">
+                <input type="hidden" name="next" value="{{ url_for('admin.journey_detail', journey_id=journey.id) }}">
+                <div class="flex-1">
+                    <select name="activity_type_id" class="w-full px-2 py-1 border rounded text-sm" required>
+                        {% for at in q.activity_types %}
+                        <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-16 px-2 py-1 border rounded text-sm">
+                <input type="text" name="notes" placeholder="Notes" class="w-24 px-2 py-1 border rounded text-sm">
+                <button type="submit" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Log</button>
+            </form>
+
+            <!-- Redeem -->
+            {% if shop_items %}
+            <form method="POST" action="{{ url_for('admin.redeem', quest_id=q.id) }}" class="flex gap-2">
+                <select name="item_id" class="flex-1 px-2 py-1 border rounded text-sm">
+                    {% for p in shop_items %}
                     <option value="{{ p.id }}">{{ p.name }} ({{ p.cost }})</option>
                     {% endfor %}
                 </select>
                 <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">Redeem</button>
             </form>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

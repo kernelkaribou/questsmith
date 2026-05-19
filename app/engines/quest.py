@@ -17,15 +17,13 @@ def get_quest_context(quest_id):
         "theme_name": quest.theme_name,
         "graphic_url": quest.theme_graphic_url,
         "colors": {"primary": quest.color_primary, "secondary": quest.color_secondary},
-        "labels": {
-            "currency": quest.display_currency,
-            "progress": quest.display_progress,
-            "coop": quest.display_coop,
-        },
+        "currency_label": quest.display_currency,
+        "progress_label": quest.display_progress,
+        "party_goal_label": quest.display_party_goal,
     }
 
 
-def log_activity(quest_id, activity_type_id, quantity, description=None):
+def log_activity(quest_id, activity_type_id, quantity, description=None, notes=None):
     """
     Log an activity and apply earning rules to generate transactions.
     Returns the activity log entry and any transactions created.
@@ -44,9 +42,10 @@ def log_activity(quest_id, activity_type_id, quantity, description=None):
         activity_type_id=activity_type_id,
         quantity=quantity,
         description=description,
+        notes=notes,
     )
     db.session.add(log)
-    db.session.flush()  # Get log.id for transaction FK
+    db.session.flush()
 
     # Apply earning rules
     transactions = _apply_earning_rules(quest, activity_type, log)

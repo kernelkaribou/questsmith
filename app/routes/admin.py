@@ -2,15 +2,16 @@ import json
 from functools import wraps
 from datetime import date
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory
 
 from app import db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    CoOpGoal, PrizeTier, PrizeItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
 )
 from app.engines import quest as quest_engine
 from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine
+from app.engines.uploads import save_uploaded_image
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -65,9 +66,14 @@ def members():
 @admin_required
 def member_create():
     if request.method == "POST":
+        avatar_url = request.form.get("avatar_url") or None
+        uploaded = request.files.get("avatar_file")
+        if uploaded and uploaded.filename:
+            avatar_url = save_uploaded_image(uploaded)
+
         member = Member(
             name=request.form["name"],
-            avatar_url=request.form.get("avatar_url") or None,
+            avatar_url=avatar_url,
         )
         db.session.add(member)
         db.session.commit()
@@ -82,7 +88,11 @@ def member_edit(member_id):
     member = db.session.get(Member, member_id)
     if request.method == "POST":
         member.name = request.form["name"]
-        member.avatar_url = request.form.get("avatar_url") or None
+        uploaded = request.files.get("avatar_file")
+        if uploaded and uploaded.filename:
+            member.avatar_url = save_uploaded_image(uploaded)
+        elif request.form.get("avatar_url"):
+            member.avatar_url = request.form["avatar_url"]
         db.session.commit()
         flash("Member updated", "success")
         return redirect(url_for("admin.members"))
@@ -126,9 +136,9 @@ def journey_detail(journey_id):
         journey=journey,
         quests=quests,
         balances=balances,
-        coop_goals=CoOpGoal.query.filter_by(journey_id=journey_id).order_by(CoOpGoal.sort_order).all(),
-        prizes=PrizeItem.query.filter_by(journey_id=journey_id).order_by(PrizeItem.sort_order).all(),
-        tiers=PrizeTier.query.filter_by(journey_id=journey_id).order_by(PrizeTier.sort_order).all(),
+        party_goals=PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all(),
+        shop_items=ShopItem.query.filter_by(journey_id=journey_id).order_by(ShopItem.sort_order).all(),
+        quest_levels=QuestLevel.query.filter_by(journey_id=journey_id).order_by(QuestLevel.sort_order).all(),
         side_quests=SideQuest.query.filter_by(journey_id=journey_id).order_by(SideQuest.sort_order).all(),
     )
 
@@ -155,16 +165,21 @@ def journey_edit(journey_id):
 @admin_required
 def quest_create(journey_id):
     if request.method == "POST":
+        graphic_url = request.form.get("theme_graphic_url") or None
+        uploaded = request.files.get("theme_graphic_file")
+        if uploaded and uploaded.filename:
+            graphic_url = save_uploaded_image(uploaded)
+
         quest = Quest(
             member_id=int(request.form["member_id"]),
             journey_id=journey_id,
             theme_name=request.form["theme_name"],
-            theme_graphic_url=request.form.get("theme_graphic_url") or None,
+            theme_graphic_url=graphic_url,
             color_primary=request.form.get("color_primary", "#4F46E5"),
             color_secondary=request.form.get("color_secondary", "#818CF8"),
             currency_label=request.form.get("currency_label") or None,
             progress_label=request.form.get("progress_label") or None,
-            coop_label=request.form.get("coop_label") or None,
+            party_goal_label=request.form.get("party_goal_label") or None,
         )
         db.session.add(quest)
         db.session.commit()
@@ -180,12 +195,18 @@ def quest_edit(quest_id):
     quest = db.session.get(Quest, quest_id)
     if request.method == "POST":
         quest.theme_name = request.form["theme_name"]
-        quest.theme_graphic_url = request.form.get("theme_graphic_url") or None
         quest.color_primary = request.form.get("color_primary", "#4F46E5")
         quest.color_secondary = request.form.get("color_secondary", "#818CF8")
         quest.currency_label = request.form.get("currency_label") or None
         quest.progress_label = request.form.get("progress_label") or None
-        quest.coop_label = request.form.get("coop_label") or None
+        quest.party_goal_label = request.form.get("party_goal_label") or None
+
+        # Handle graphic upload or URL
+        uploaded = request.files.get("theme_graphic_file")
+        if uploaded and uploaded.filename:
+            quest.theme_graphic_url = save_uploaded_image(uploaded)
+        elif request.form.get("theme_graphic_url"):
+            quest.theme_graphic_url = request.form["theme_graphic_url"]
 
         # Add new activity type if provided
         new_name = request.form.get("new_activity_name")
@@ -205,6 +226,17 @@ def quest_edit(quest_id):
                 )
                 db.session.add(rule)
 
+        # Edit existing earning rules
+        for key, value in request.form.items():
+            if key.startswith("rule_qty_") and value:
+                rule_id = int(key.replace("rule_qty_", ""))
+                rule = db.session.get(EarningRule, rule_id)
+                if rule:
+                    rule.quantity_required = int(value)
+                    reward_key = f"rule_reward_{rule_id}"
+                    if reward_key in request.form and request.form[reward_key]:
+                        rule.currency_reward = int(request.form[reward_key])
+
         db.session.commit()
         flash("Quest updated", "success")
         return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
@@ -221,10 +253,10 @@ def log_activity():
         activity_type_id = int(request.form["activity_type_id"])
         quantity = int(request.form["quantity"])
         description = request.form.get("description") or None
+        notes = request.form.get("notes") or None
 
-        log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description)
+        log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description, notes)
         if log:
-            # Check achievements for the member
             quest = db.session.get(Quest, quest_id)
             achievement_engine.check_achievements(quest.member_id)
             db.session.commit()
@@ -233,9 +265,10 @@ def log_activity():
             flash(f"Logged {quantity} - earned {earned} currency", "success")
         else:
             flash("Failed to log activity", "error")
-        return redirect(url_for("admin.log_activity"))
 
-    # Get all active quests with their activity types as JSON
+        next_url = request.form.get("next") or url_for("admin.log_activity")
+        return redirect(next_url)
+
     quests = Quest.query.join(Journey).filter(Journey.status == "active").all()
     for q in quests:
         q.activity_types_json = json.dumps([
@@ -250,30 +283,46 @@ def log_activity():
 @bp.route("/quests/<int:quest_id>/redeem", methods=["POST"])
 @admin_required
 def redeem(quest_id):
-    prize_id = int(request.form["prize_id"])
-    prize = db.session.get(PrizeItem, prize_id)
+    item_id = int(request.form["item_id"])
+    item = db.session.get(ShopItem, item_id)
     quest = db.session.get(Quest, quest_id)
 
-    from app.models import PrizePurchase
-    txn = ledger.record_spend(quest_id, prize.cost, f"Purchased: {prize.name}")
+    from app.models import ShopPurchase
+    txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
     if txn:
         db.session.flush()
-        purchase = PrizePurchase(prize_item_id=prize.id, quest_id=quest_id, transaction_id=txn.id)
+        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
         db.session.add(purchase)
         db.session.commit()
-        flash(f"{quest.member.name} redeemed '{prize.name}'", "success")
+        flash(f"{quest.member.name} redeemed '{item.name}'", "success")
     else:
-        flash(f"Insufficient balance for '{prize.name}'", "error")
+        flash(f"Insufficient balance for '{item.name}'", "error")
     return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
 
 
-# --- Co-Op Goals ---
+# --- Side Quest Award ---
 
-@bp.route("/journeys/<int:journey_id>/coop/new", methods=["GET", "POST"])
+@bp.route("/quests/<int:quest_id>/side-quest/<int:side_quest_id>/award", methods=["POST"])
 @admin_required
-def coop_create(journey_id):
+def side_quest_award(quest_id, side_quest_id):
+    result = side_quest_engine.complete_side_quest(side_quest_id, quest_id)
+    if result:
+        db.session.commit()
+        sq = db.session.get(SideQuest, side_quest_id)
+        flash(f"Side quest '{sq.name}' awarded!", "success")
+    else:
+        flash("Side quest not available (already completed or on cooldown)", "error")
+    quest = db.session.get(Quest, quest_id)
+    return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
+
+
+# --- Party Goals ---
+
+@bp.route("/journeys/<int:journey_id>/party-goals/new", methods=["GET", "POST"])
+@admin_required
+def party_goal_create(journey_id):
     if request.method == "POST":
-        goal = CoOpGoal(
+        goal = PartyGoal(
             journey_id=journey_id,
             name=request.form["name"],
             description=request.form.get("description") or None,
@@ -283,15 +332,15 @@ def coop_create(journey_id):
         )
         db.session.add(goal)
         db.session.commit()
-        flash("Co-Op Goal created", "success")
+        flash("Party Goal created", "success")
         return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Co-Op Goal", item=None, journey_id=journey_id)
+    return render_template("admin/generic_form.html", type_name="Party Goal", item=None, journey_id=journey_id)
 
 
-@bp.route("/coop/<int:goal_id>/edit", methods=["GET", "POST"])
+@bp.route("/party-goals/<int:goal_id>/edit", methods=["GET", "POST"])
 @admin_required
-def coop_edit(goal_id):
-    goal = db.session.get(CoOpGoal, goal_id)
+def party_goal_edit(goal_id):
+    goal = db.session.get(PartyGoal, goal_id)
     if request.method == "POST":
         goal.name = request.form["name"]
         goal.description = request.form.get("description") or None
@@ -299,75 +348,84 @@ def coop_edit(goal_id):
         goal.min_individual_contribution = int(request.form.get("min_individual_contribution", 0))
         goal.reward_description = request.form.get("reward_description") or None
         db.session.commit()
-        flash("Co-Op Goal updated", "success")
+        flash("Party Goal updated", "success")
         return redirect(url_for("admin.journey_detail", journey_id=goal.journey_id))
-    return render_template("admin/generic_form.html", type_name="Co-Op Goal", item=goal, journey_id=goal.journey_id)
+    return render_template("admin/generic_form.html", type_name="Party Goal", item=goal, journey_id=goal.journey_id)
 
 
-# --- Prize Items ---
+# --- Quest Shop ---
 
-@bp.route("/journeys/<int:journey_id>/prizes/new", methods=["GET", "POST"])
+@bp.route("/journeys/<int:journey_id>/shop/new", methods=["GET", "POST"])
 @admin_required
-def prize_create(journey_id):
+def shop_item_create(journey_id):
     if request.method == "POST":
-        prize = PrizeItem(
+        image_url = request.form.get("image_url") or None
+        uploaded = request.files.get("image_file")
+        if uploaded and uploaded.filename:
+            image_url = save_uploaded_image(uploaded)
+
+        item = ShopItem(
             journey_id=journey_id,
             name=request.form["name"],
             cost=int(request.form["cost"]),
-            image_url=request.form.get("image_url") or None,
+            image_url=image_url,
         )
-        db.session.add(prize)
+        db.session.add(item)
         db.session.commit()
-        flash("Prize created", "success")
+        flash("Shop item created", "success")
         return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Prize", item=None, journey_id=journey_id)
+    return render_template("admin/generic_form.html", type_name="Shop Item", item=None, journey_id=journey_id)
 
 
-@bp.route("/prizes/<int:prize_id>/edit", methods=["GET", "POST"])
+@bp.route("/shop/<int:item_id>/edit", methods=["GET", "POST"])
 @admin_required
-def prize_edit(prize_id):
-    prize = db.session.get(PrizeItem, prize_id)
+def shop_item_edit(item_id):
+    item = db.session.get(ShopItem, item_id)
     if request.method == "POST":
-        prize.name = request.form["name"]
-        prize.cost = int(request.form["cost"])
-        prize.image_url = request.form.get("image_url") or None
+        item.name = request.form["name"]
+        item.cost = int(request.form["cost"])
+        uploaded = request.files.get("image_file")
+        if uploaded and uploaded.filename:
+            item.image_url = save_uploaded_image(uploaded)
+        elif request.form.get("image_url"):
+            item.image_url = request.form["image_url"]
         db.session.commit()
-        flash("Prize updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=prize.journey_id))
-    return render_template("admin/generic_form.html", type_name="Prize", item=prize, journey_id=prize.journey_id)
+        flash("Shop item updated", "success")
+        return redirect(url_for("admin.journey_detail", journey_id=item.journey_id))
+    return render_template("admin/generic_form.html", type_name="Shop Item", item=item, journey_id=item.journey_id)
 
 
-# --- Prize Tiers ---
+# --- Quest Levels ---
 
-@bp.route("/journeys/<int:journey_id>/tiers/new", methods=["GET", "POST"])
+@bp.route("/journeys/<int:journey_id>/levels/new", methods=["GET", "POST"])
 @admin_required
-def tier_create(journey_id):
+def level_create(journey_id):
     if request.method == "POST":
-        tier = PrizeTier(
+        level = QuestLevel(
             journey_id=journey_id,
             name=request.form["name"],
             threshold=int(request.form["threshold"]),
             reward_description=request.form.get("reward_description") or None,
         )
-        db.session.add(tier)
+        db.session.add(level)
         db.session.commit()
-        flash("Prize Tier created", "success")
+        flash("Quest Level created", "success")
         return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Prize Tier", item=None, journey_id=journey_id)
+    return render_template("admin/generic_form.html", type_name="Quest Level", item=None, journey_id=journey_id)
 
 
-@bp.route("/tiers/<int:tier_id>/edit", methods=["GET", "POST"])
+@bp.route("/levels/<int:level_id>/edit", methods=["GET", "POST"])
 @admin_required
-def tier_edit(tier_id):
-    tier = db.session.get(PrizeTier, tier_id)
+def level_edit(level_id):
+    level = db.session.get(QuestLevel, level_id)
     if request.method == "POST":
-        tier.name = request.form["name"]
-        tier.threshold = int(request.form["threshold"])
-        tier.reward_description = request.form.get("reward_description") or None
+        level.name = request.form["name"]
+        level.threshold = int(request.form["threshold"])
+        level.reward_description = request.form.get("reward_description") or None
         db.session.commit()
-        flash("Prize Tier updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=tier.journey_id))
-    return render_template("admin/generic_form.html", type_name="Prize Tier", item=tier, journey_id=tier.journey_id)
+        flash("Quest Level updated", "success")
+        return redirect(url_for("admin.journey_detail", journey_id=level.journey_id))
+    return render_template("admin/generic_form.html", type_name="Quest Level", item=level, journey_id=level.journey_id)
 
 
 # --- Side Quests ---
@@ -476,6 +534,18 @@ def achievement_award(achievement_id):
         return redirect(url_for("admin.achievements_list"))
     members = Member.query.all()
     return render_template("admin/achievement_award.html", achievement=ach, members=members)
+
+
+# --- Image Uploads ---
+
+@bp.route("/uploads/<path:filepath>")
+def serve_upload(filepath):
+    import os
+    upload_root = os.path.join(current_app.root_path, "..", "data", "uploads")
+    upload_root = os.path.abspath(upload_root)
+    directory = os.path.dirname(os.path.join(upload_root, filepath))
+    filename = os.path.basename(filepath)
+    return send_from_directory(directory, filename)
 
 
 # --- Helpers ---

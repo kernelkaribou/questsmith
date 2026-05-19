@@ -2,7 +2,7 @@
 from app import create_app, db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    CoOpGoal, PrizeTier, PrizeItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
 )
 
 
@@ -38,7 +38,7 @@ def seed():
             color_secondary="#FCA5A5",
             currency_label="Pokeballs",
             progress_label="Trainer XP",
-            coop_label="Gym Battle",
+            party_goal_label="Gym Battle",
         )
         quest_b = Quest(
             member_id=kid_b.id,
@@ -49,7 +49,7 @@ def seed():
             color_secondary="#F9A8D4",
             currency_label="Spirit Points",
             progress_label="Cheer Energy",
-            coop_label="Team Rally",
+            party_goal_label="Team Rally",
         )
         db.session.add_all([quest_a, quest_b])
         db.session.flush()
@@ -89,9 +89,9 @@ def seed():
             ),
         ])
 
-        # Co-Op Goals
+        # Party Goals
         db.session.add_all([
-            CoOpGoal(
+            PartyGoal(
                 journey_id=journey.id,
                 name="Family Movie Night",
                 description="Earn 500 combined currency to unlock a family movie trip",
@@ -100,7 +100,7 @@ def seed():
                 reward_description="Movie night with popcorn",
                 sort_order=1,
             ),
-            CoOpGoal(
+            PartyGoal(
                 journey_id=journey.id,
                 name="Ice Cream Party",
                 description="Earn 1000 combined currency for an ice cream outing",
@@ -111,18 +111,18 @@ def seed():
             ),
         ])
 
-        # Prize Tiers
+        # Quest Levels
         db.session.add_all([
-            PrizeTier(journey_id=journey.id, name="Bronze", threshold=100, reward_description="Unlock the prize shop", sort_order=1),
-            PrizeTier(journey_id=journey.id, name="Silver", threshold=300, reward_description="Stay up 30 min late", sort_order=2),
-            PrizeTier(journey_id=journey.id, name="Gold", threshold=600, reward_description="Pick a new book", sort_order=3),
+            QuestLevel(journey_id=journey.id, name="Bronze", threshold=100, reward_description="Unlock the prize shop", sort_order=1),
+            QuestLevel(journey_id=journey.id, name="Silver", threshold=300, reward_description="Stay up 30 min late", sort_order=2),
+            QuestLevel(journey_id=journey.id, name="Gold", threshold=600, reward_description="Pick a new book", sort_order=3),
         ])
 
-        # Prize Items
+        # Shop Items
         db.session.add_all([
-            PrizeItem(journey_id=journey.id, name="Extra Screen Time (30 min)", cost=50, sort_order=1),
-            PrizeItem(journey_id=journey.id, name="Choose Dinner", cost=100, sort_order=2),
-            PrizeItem(journey_id=journey.id, name="Small Toy", cost=200, sort_order=3),
+            ShopItem(journey_id=journey.id, name="Extra Screen Time (30 min)", cost=50, sort_order=1),
+            ShopItem(journey_id=journey.id, name="Choose Dinner", cost=100, sort_order=2),
+            ShopItem(journey_id=journey.id, name="Small Toy", cost=200, sort_order=3),
         ])
 
         # Side Quests

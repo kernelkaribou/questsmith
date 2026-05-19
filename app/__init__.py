@@ -1,9 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 
 db = SQLAlchemy()
-migrate = Migrate()
 
 
 def create_app(config_class=None):
@@ -16,12 +14,15 @@ def create_app(config_class=None):
         app.config.from_object(Config)
 
     db.init_app(app)
-    migrate.init_app(app, db)
 
     from app import models  # noqa: F401 - register models with SQLAlchemy
 
     from app.routes import admin, dashboard
     app.register_blueprint(admin.bp)
     app.register_blueprint(dashboard.bp)
+
+    # Create tables if they don't exist (alpha — no migrations)
+    with app.app_context():
+        db.create_all()
 
     return app

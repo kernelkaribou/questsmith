@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from app import create_app, db
 from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
-    CoOpGoal, PrizeTier, PrizeItem, SideQuest, Achievement,
+    PartyGoal, QuestLevel, ShopItem, SideQuest, Achievement,
 )
 
 
@@ -140,30 +140,30 @@ class TestQuestEngine:
         from app.engines.quest import get_quest_context
         with app.app_context():
             ctx = get_quest_context(seeded["quest_a_id"])
-            assert ctx["labels"]["currency"] == "Pokeballs"
+            assert ctx["currency_label"] == "Pokeballs"
             assert ctx["colors"]["primary"] == "#FF0000"
 
 
 class TestValidationEngine:
-    def test_coop_goal_locked_initially(self, app, seeded):
-        from app.engines.validation import check_coop_goal
+    def test_party_goal_locked_initially(self, app, seeded):
+        from app.engines.validation import check_party_goal
         with app.app_context():
-            goal = CoOpGoal(
+            goal = PartyGoal(
                 journey_id=seeded["journey_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=30,
             )
             db.session.add(goal)
             db.session.commit()
 
-            result = check_coop_goal(goal)
+            result = check_party_goal(goal)
             assert result["unlocked"] is False
             assert result["volume_met"] is False
 
-    def test_coop_goal_unlocks_when_met(self, app, seeded):
-        from app.engines.validation import check_coop_goal
+    def test_party_goal_unlocks_when_met(self, app, seeded):
+        from app.engines.validation import check_party_goal
         from app.engines.ledger import record_earn
         with app.app_context():
-            goal = CoOpGoal(
+            goal = PartyGoal(
                 journey_id=seeded["journey_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=30,
             )
@@ -172,16 +172,16 @@ class TestValidationEngine:
             record_earn(seeded["quest_b_id"], 50, "earn b")
             db.session.commit()
 
-            result = check_coop_goal(goal)
+            result = check_party_goal(goal)
             assert result["unlocked"] is True
             assert result["volume_met"] is True
             assert result["all_fair"] is True
 
-    def test_coop_goal_fairness_blocks(self, app, seeded):
-        from app.engines.validation import check_coop_goal
+    def test_party_goal_fairness_blocks(self, app, seeded):
+        from app.engines.validation import check_party_goal
         from app.engines.ledger import record_earn
         with app.app_context():
-            goal = CoOpGoal(
+            goal = PartyGoal(
                 journey_id=seeded["journey_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=40,
             )
@@ -191,26 +191,26 @@ class TestValidationEngine:
             record_earn(seeded["quest_b_id"], 20, "earn b")
             db.session.commit()
 
-            result = check_coop_goal(goal)
+            result = check_party_goal(goal)
             assert result["unlocked"] is False
             assert result["volume_met"] is True
             assert result["all_fair"] is False
 
-    def test_prize_tier_unlocks(self, app, seeded):
-        from app.engines.validation import get_unlocked_tiers
+    def test_quest_level_unlocks(self, app, seeded):
+        from app.engines.validation import get_unlocked_levels
         from app.engines.ledger import record_earn
         with app.app_context():
-            PrizeTier.query.delete()
+            QuestLevel.query.delete()
             db.session.add_all([
-                PrizeTier(journey_id=seeded["journey_id"], name="Bronze", threshold=50, sort_order=1),
-                PrizeTier(journey_id=seeded["journey_id"], name="Silver", threshold=150, sort_order=2),
+                QuestLevel(journey_id=seeded["journey_id"], name="Bronze", threshold=50, sort_order=1),
+                QuestLevel(journey_id=seeded["journey_id"], name="Silver", threshold=150, sort_order=2),
             ])
             record_earn(seeded["quest_a_id"], 100, "earn")
             db.session.commit()
 
-            tiers = get_unlocked_tiers(seeded["quest_a_id"])
-            assert tiers[0]["unlocked"] is True  # Bronze (100 >= 50)
-            assert tiers[1]["unlocked"] is False  # Silver (100 < 150)
+            levels = get_unlocked_levels(seeded["quest_a_id"])
+            assert levels[0]["unlocked"] is True  # Bronze (100 >= 50)
+            assert levels[1]["unlocked"] is False  # Silver (100 < 150)
 
 
 class TestSideQuestEngine:

@@ -1,14 +1,14 @@
-"""Validation Engine: Co-Op goal fairness checks and prize tier unlock logic."""
+"""Validation Engine: Party goal fairness checks and quest level unlock logic."""
 from datetime import datetime, timezone
 
 from app import db
-from app.models import CoOpGoal, PrizeTier, Quest, Transaction
+from app.models import PartyGoal, QuestLevel, Quest, Transaction
 from app.engines.ledger import get_journey_totals, get_lifetime_earned
 
 
-def check_coop_goal(goal):
+def check_party_goal(goal):
     """
-    Check if a Co-Op goal is unlocked.
+    Check if a party goal is unlocked.
     Returns dict with status and details.
     """
     if goal.unlocked_at:
@@ -50,7 +50,6 @@ def check_coop_goal(goal):
 
     unlocked = volume_met and all_fair
 
-    # Persist unlock if newly achieved
     if unlocked and not goal.unlocked_at:
         goal.unlocked_at = datetime.now(timezone.utc)
         db.session.add(goal)
@@ -66,24 +65,24 @@ def check_coop_goal(goal):
     }
 
 
-def check_all_coop_goals(journey_id):
-    """Check all Co-Op goals for a journey."""
-    goals = CoOpGoal.query.filter_by(journey_id=journey_id).order_by(CoOpGoal.sort_order).all()
-    return [{"goal": goal, **check_coop_goal(goal)} for goal in goals]
+def check_all_party_goals(journey_id):
+    """Check all party goals for a journey."""
+    goals = PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all()
+    return [{"goal": goal, **check_party_goal(goal)} for goal in goals]
 
 
-def get_unlocked_tiers(quest_id):
-    """Get which prize tiers a quest has unlocked based on lifetime earned."""
+def get_unlocked_levels(quest_id):
+    """Get which quest levels a quest has unlocked based on lifetime earned."""
     quest = db.session.get(Quest, quest_id)
     if not quest:
         return []
 
     lifetime_earned = get_lifetime_earned(quest_id)
-    tiers = PrizeTier.query.filter_by(journey_id=quest.journey_id).order_by(
-        PrizeTier.sort_order
+    levels = QuestLevel.query.filter_by(journey_id=quest.journey_id).order_by(
+        QuestLevel.sort_order
     ).all()
 
     return [
-        {"tier": tier, "unlocked": lifetime_earned >= tier.threshold, "progress": lifetime_earned}
-        for tier in tiers
+        {"level": level, "unlocked": lifetime_earned >= level.threshold, "progress": lifetime_earned}
+        for level in levels
     ]

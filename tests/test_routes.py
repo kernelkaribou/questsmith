@@ -1,6 +1,6 @@
 import pytest
 from app import create_app, db
-from app.models import Member, Journey, Quest, ActivityType, EarningRule, CoOpGoal, PrizeItem, SideQuest
+from app.models import Member, Journey, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest
 
 
 @pytest.fixture
@@ -41,9 +41,9 @@ def seeded(app):
     db.session.flush()
     rule = EarningRule(activity_type_id=at.id, rule_type="per_batch", quantity_required=50, currency_reward=10)
     db.session.add(rule)
-    goal = CoOpGoal(journey_id=j.id, name="Movie Night", target_amount=100, min_individual_contribution=0)
+    goal = PartyGoal(journey_id=j.id, name="Movie Night", target_amount=100, min_individual_contribution=0)
     db.session.add(goal)
-    prize = PrizeItem(journey_id=j.id, name="Ice Cream", cost=20)
+    prize = ShopItem(journey_id=j.id, name="Ice Cream", cost=20)
     db.session.add(prize)
     sq = SideQuest(journey_id=j.id, name="Read Outside", currency_reward=5, repeat_type="daily")
     db.session.add(sq)
@@ -159,7 +159,7 @@ def test_admin_redeem_prize(auth_client, seeded):
         "quantity": "150",
     })
     r = auth_client.post(f"/admin/quests/{seeded['quest_id']}/redeem", data={
-        "prize_id": seeded["prize_id"],
+        "item_id": seeded["prize_id"],
     }, follow_redirects=True)
     assert r.status_code == 200
     assert b"redeemed" in r.data
@@ -167,13 +167,13 @@ def test_admin_redeem_prize(auth_client, seeded):
 
 def test_admin_redeem_insufficient_balance(auth_client, seeded):
     r = auth_client.post(f"/admin/quests/{seeded['quest_id']}/redeem", data={
-        "prize_id": seeded["prize_id"],
+        "item_id": seeded["prize_id"],
     }, follow_redirects=True)
     assert b"Insufficient" in r.data
 
 
-def test_admin_coop_goal_crud(auth_client, seeded):
-    r = auth_client.post(f"/admin/journeys/{seeded['journey_id']}/coop/new", data={
+def test_admin_party_goal_crud(auth_client, seeded):
+    r = auth_client.post(f"/admin/journeys/{seeded['journey_id']}/party-goals/new", data={
         "name": "Library Trip",
         "target_amount": "200",
         "min_individual_contribution": "50",
