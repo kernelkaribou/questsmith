@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
     <title>{% block title %}QuestSmith{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -33,7 +34,8 @@
     {% if active_member_id %}
     <nav class="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-            <a href="{{ url_for('dashboard.index') }}" class="text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors">
+            <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors">
+                <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-6 h-6">
                 QuestSmith
             </a>
             <div class="flex items-center gap-3">

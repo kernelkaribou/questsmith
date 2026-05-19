@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
     <title>{% block title %}QuestSmith{% endblock %} - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -11,7 +12,10 @@
 <body class="bg-gray-100 min-h-screen">
     <nav class="bg-indigo-700 text-white shadow-md">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="{{ url_for('admin.index') }}" class="text-lg font-bold">QuestSmith Admin</a>
+            <a href="{{ url_for('admin.index') }}" class="flex items-center gap-2 text-lg font-bold">
+                <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-7 h-7">
+                QuestSmith Admin
+            </a>
             <div class="flex gap-4 text-sm">
                 <a href="{{ url_for('dashboard.index') }}" class="hover:text-indigo-200">View App</a>
                 <a href="{{ url_for('admin.journeys') }}" class="hover:text-indigo-200">Journeys</a>

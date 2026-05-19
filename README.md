@@ -1,4 +1,9 @@
-# QuestSmith
+<p align="center">
+  <img src="app/static/img/logo-256.webp" alt="QuestSmith Logo" width="128">
+</p>
+
+<h1 align="center">QuestSmith</h1>
+<p align="center"><em>Forge Your Own Adventure</em></p>
 
 A quest-based reward engine that tracks individual accomplishments and party goals. Build themed quests for any activity — reading, chores, sports, or anything with trackable progress. Members earn XP and Gold, unlock achievements, redeem prizes, and work together on Co-Op goals.
 
