@@ -14,11 +14,13 @@ bp = Blueprint("dashboard", __name__, url_prefix="/")
 
 @bp.route("/")
 def index():
-    """Member selection screen."""
+    """Landing page — show active journeys (campaigns)."""
     session.pop("active_member_id", None)
     session.pop("active_member_name", None)
-    members = Member.query.all()
-    return render_template("dashboard/index.html", members=members)
+    journeys = Journey.query.filter_by(status="active").all()
+    # Also find solo quests (not in any journey)
+    solo_quests = Quest.query.filter_by(journey_id=None, status="active").filter(Quest.completed_at.is_(None)).all()
+    return render_template("dashboard/index.html", journeys=journeys, solo_quests=solo_quests)
 
 
 @bp.route("/quest/<int:quest_id>")
