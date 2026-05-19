@@ -25,6 +25,7 @@
                 Unlock
             </button>
         </form>
+        <a href="{{ next_url if next_url != url_for('admin.index') else url_for('dashboard.index') }}" class="block text-center text-sm text-gray-400 hover:text-gray-600 mt-4">Back</a>
     </div>
 </body>
 </html>
