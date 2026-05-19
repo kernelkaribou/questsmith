@@ -1,15 +1,13 @@
 import pytest
 from app import create_app, db
 from app.models import Member, Journey, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain
+from tests.conftest import TestConfig
 
 
 @pytest.fixture
 def app():
-    application = create_app()
-    application.config["TESTING"] = True
-    application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    application = create_app(TestConfig)
     with application.app_context():
-        db.create_all()
         yield application
 
 

@@ -7,17 +7,14 @@ from app.models import (
     Member, Journey, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
+from tests.conftest import TestConfig
 
 
 @pytest.fixture
 def app():
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app = create_app(TestConfig)
     with app.app_context():
-        db.create_all()
         yield app
-        db.drop_all()
 
 
 @pytest.fixture
