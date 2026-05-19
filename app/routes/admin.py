@@ -3,7 +3,7 @@ import math
 from functools import wraps
 from datetime import date, datetime, timezone
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory, jsonify
 
 from app import db
 from app.models import (
@@ -312,8 +312,13 @@ def log_activity():
             if quest.completed_at:
                 completion_msg = " QUEST COMPLETE!"
 
-            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}{completion_msg}", "success")
+            msg = f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}{completion_msg}"
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(success=True, message=msg)
+            flash(msg, "success")
         else:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(success=False, message="Failed to log activity"), 400
             flash("Failed to log activity", "error")
 
         next_url = request.form.get("next") or url_for("admin.log_activity")
@@ -336,12 +341,16 @@ def redeem(quest_id):
     item_id = int(request.form["item_id"])
     item = db.session.get(ShopItem, item_id)
     quest = db.session.get(Quest, quest_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if item.cost == 0:
         purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
         db.session.add(purchase)
         db.session.commit()
-        flash(f"{quest.member.name} redeemed '{item.name}' (free)", "success")
+        msg = f"{quest.member.name} redeemed '{item.name}' (free)"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
     else:
         txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
         if txn:
@@ -349,9 +358,15 @@ def redeem(quest_id):
             purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
             db.session.add(purchase)
             db.session.commit()
-            flash(f"{quest.member.name} redeemed '{item.name}'", "success")
+            msg = f"{quest.member.name} redeemed '{item.name}'"
+            if is_ajax:
+                return jsonify(success=True, message=msg)
+            flash(msg, "success")
         else:
-            flash(f"Insufficient balance for '{item.name}'", "error")
+            msg = f"Insufficient balance for '{item.name}'"
+            if is_ajax:
+                return jsonify(success=False, message=msg), 400
+            flash(msg, "error")
 
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
     return redirect(next_url)
@@ -383,7 +398,10 @@ def refund_purchase(purchase_id):
     # Mark as refunded
     purchase.refunded_at = datetime.now(timezone.utc)
     db.session.commit()
-    flash(f"Refunded '{item.name}' (+{item.cost} returned)", "success")
+    msg = f"Refunded '{item.name}' (+{item.cost} returned)"
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify(success=True, message=msg)
+    flash(msg, "success")
 
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
     return redirect(next_url)
@@ -394,13 +412,20 @@ def refund_purchase(purchase_id):
 @bp.route("/quests/<int:quest_id>/side-quest/<int:side_quest_id>/award", methods=["POST"])
 @admin_required
 def side_quest_award(quest_id, side_quest_id):
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     result = side_quest_engine.complete_side_quest(side_quest_id, quest_id)
     if result:
         db.session.commit()
         sq = db.session.get(SideQuest, side_quest_id)
-        flash(f"Side quest '{sq.name}' awarded!", "success")
+        msg = f"Side quest '{sq.name}' awarded!"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
     else:
-        flash("Side quest not available (already completed or on cooldown)", "error")
+        msg = "Side quest not available (already completed or on cooldown)"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
     return redirect(next_url)
 
@@ -560,16 +585,23 @@ def chain_step_edit(chain_id, step_id):
 @admin_required
 def chain_step_complete(chain_id, step_id):
     chain = db.session.get(SideQuestChain, chain_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     result = side_quest_engine.complete_chain_step(step_id, chain.quest_id)
     if result:
         db.session.commit()
         if result["chain_completed"]:
-            flash(f"Chain '{chain.name}' completed! Reward awarded.", "success")
+            msg = f"Chain '{chain.name}' completed! Reward awarded."
         else:
             step = db.session.get(SideQuest, step_id)
-            flash(f"Step '{step.name}' completed!", "success")
+            msg = f"Step '{step.name}' completed!"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
     else:
-        flash("Step not available", "error")
+        msg = "Step not available"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
     next_url = request.form.get("next") or url_for("admin.chain_detail", chain_id=chain_id)
     return redirect(next_url)
 
