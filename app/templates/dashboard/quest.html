@@ -80,33 +80,50 @@
                 {% endif %}
             </section>
 
-            <!-- 2. Level Progress -->
-            <section class="bg-white rounded-xl shadow-lg p-5">
-                <h2 class="text-lg font-bold text-gray-800 mb-3">{{ ctx.progress_label }} Progress</h2>
-                {% if quest.completion_target and not quest.completed_at %}
-                <div class="mb-3">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-medium text-gray-700">Quest Victory</span>
-                        <span class="text-xs text-gray-500">{{ total_earned }} / {{ quest.completion_target }}</span>
-                    </div>
-                    {% set completion_pct = [((total_earned / quest.completion_target) * 100)|int, 100]|min %}
-                    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full bg-gradient-to-r from-yellow-400 to-amber-500" style="width: {{ completion_pct }}%"></div>
-                    </div>
+            <!-- 2a. Quest Victory (overall goal) -->
+            {% if quest.completion_target and not quest.completed_at %}
+            <section class="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl shadow p-5">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-bold text-amber-800">Quest Victory</h2>
+                    <span class="text-sm font-bold text-amber-700">{{ total_earned }} / {{ quest.completion_target }}</span>
                 </div>
-                {% endif %}
-                <div class="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden">
-                    {% set max_threshold = levels[-1].threshold if levels else 100 %}
+                <p class="text-xs text-amber-600 mb-2">Earn {{ quest.completion_target }} total {{ ctx.currency_label }} to complete this quest</p>
+                {% set completion_pct = [((total_earned / quest.completion_target) * 100)|int, 100]|min %}
+                <div class="w-full h-5 bg-amber-100 rounded-full overflow-hidden border border-amber-200">
+                    <div class="h-full rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500" style="width: {{ completion_pct }}%"></div>
+                </div>
+                <p class="text-xs text-amber-600 mt-1 text-right">{{ quest.completion_target - total_earned }} more to go</p>
+            </section>
+            {% endif %}
+
+            <!-- 2b. Level / Rank Progress -->
+            {% if levels %}
+            <section class="bg-white rounded-xl shadow-lg p-5">
+                {% set ns = namespace(current_level='Unranked', next_threshold=0) %}
+                {% for item in unlocked_levels %}
+                    {% if item.unlocked %}
+                        {% set ns.current_level = item.level.name %}
+                    {% elif ns.next_threshold == 0 %}
+                        {% set ns.next_threshold = item.level.threshold %}
+                    {% endif %}
+                {% endfor %}
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-gray-800">Level</h2>
+                    <span class="px-3 py-1 bg-theme-primary text-white rounded-full text-sm font-bold">{{ ns.current_level }}</span>
+                </div>
+                {% set max_threshold = levels[-1].threshold %}
+                <div class="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                     {% set pct = [((total_earned / max_threshold) * 100)|int, 100]|min if max_threshold else 0 %}
                     <div class="progress-fill h-full rounded-full" style="width: {{ pct }}%"></div>
                 </div>
                 <div class="flex justify-between mt-2 text-xs text-gray-500">
-                    <span>{{ total_earned }} lifetime earned</span>
-                    {% if levels %}
-                    <span>Next: {{ levels[-1].threshold }}</span>
+                    <span>{{ total_earned }} XP earned</span>
+                    {% if ns.next_threshold > 0 %}
+                    <span>Next level: {{ ns.next_threshold }} XP</span>
+                    {% else %}
+                    <span>Max level reached!</span>
                     {% endif %}
                 </div>
-                {% if levels %}
                 <div class="flex flex-wrap gap-2 mt-3">
                     {% for item in unlocked_levels %}
                     <span class="px-2 py-0.5 rounded text-xs {{ 'bg-theme-primary text-white' if item.unlocked else 'bg-gray-200 text-gray-500' }}">
@@ -117,8 +134,8 @@
                     </span>
                     {% endfor %}
                 </div>
-                {% endif %}
             </section>
+            {% endif %}
 
             <!-- 3. Journey Progress (Party Goals) -->
             {% if goal_progress %}
