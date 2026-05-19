@@ -41,7 +41,7 @@
         <div class="flex gap-2 items-end">
             <div class="flex-1">
                 <select name="activity_type_id" class="w-full px-2 py-1 border rounded text-sm" required>
-                    {% for at in quest.activity_types if not at.is_milestone %}
+                    {% for at in quest.activity_types %}
                     <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
                     {% endfor %}
                 </select>

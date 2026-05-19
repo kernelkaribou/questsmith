@@ -41,9 +41,7 @@
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                     <select name="activity_type_id" class="px-2 py-1 border rounded text-sm" required>
                         {% for at in activity_types %}
-                        {% if not at.is_milestone %}
                         <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
-                        {% endif %}
                         {% endfor %}
                     </select>
                     <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 border rounded text-sm">
