@@ -13,33 +13,34 @@
         <div class="relative max-w-4xl mx-auto px-4 py-6 text-white">
             <!-- Quest Identity Row -->
             <div class="flex items-center gap-4 mb-4">
-                {% if quest.theme_graphic_url %}
-                <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}"
-                     alt="{{ quest.theme_name }}" class="w-14 h-14 object-contain rounded-lg bg-white/10 p-1 shadow-lg">
-                {% endif %}
+                <!-- Adventurer avatar + quest icon stacked -->
+                <div class="relative shrink-0">
+                    {% if member.avatar_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-16 h-16 rounded-full object-cover ring-3 ring-white/40 shadow-lg">
+                    {% else %}
+                    <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold ring-3 ring-white/40 shadow-lg">{{ member.name[0] }}</div>
+                    {% endif %}
+                    {% if quest.theme_graphic_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}"
+                         alt="{{ quest.theme_name }}" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain rounded-md bg-white/90 p-0.5 shadow-md">
+                    {% endif %}
+                </div>
                 <div class="flex-1 min-w-0">
                     <h1 class="text-3xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        {% if member.avatar_url %}
-                        <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-6 h-6 rounded-full object-cover ring-1 ring-white/50">
-                        {% else %}
-                        <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{{ member.name[0] }}</div>
-                        {% endif %}
-                        <span class="text-base font-medium opacity-95">{{ member.name }}</span>
-                        {% if journey %}
-                        <span class="opacity-50">&middot;</span>
-                        <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="text-sm opacity-80 underline underline-offset-2 hover:opacity-100">{{ journey.name }}</a>
-                        {% endif %}
-                    </div>
+                    <p class="text-base font-medium opacity-95 mt-0.5">{{ member.name }}</p>
+                    {% if journey %}
+                    <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="text-sm opacity-75 hover:opacity-100 underline underline-offset-2 transition">{{ journey.name }}</a>
+                    {% endif %}
                 </div>
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
                 <div class="relative w-24 h-24 shrink-0">
                     <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                        <!-- Track ring -->
-                        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="10"/>
-                        <!-- Progress ring (can overlap past 100%) -->
+                        <!-- Track ring (always visible) -->
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="10"/>
+                        {% if completion_pct > 0 %}
+                        <!-- Progress ring -->
                         <circle cx="50" cy="50" r="38" fill="none"
                                 stroke="white" stroke-width="10"
                                 stroke-linecap="round"
@@ -47,12 +48,13 @@
                                 filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"
                                 class="transition-all duration-700"/>
                         {% if completion_pct > 100 %}
-                        <!-- Glow effect for exceeding goal -->
+                        <!-- Glow for exceeding goal -->
                         <circle cx="50" cy="50" r="38" fill="none"
                                 stroke="rgba(255,255,255,0.3)" stroke-width="14"
                                 stroke-linecap="round"
                                 stroke-dasharray="{{ (3.1416 * 2 * 38 * completion_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
                                 class="transition-all duration-700"/>
+                        {% endif %}
                         {% endif %}
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
@@ -100,14 +102,14 @@
         </div>
     </header>
 
-    <div class="max-w-4xl mx-auto px-4 mt-6 flex flex-col lg:flex-row gap-6">
+    <div class="max-w-4xl mx-auto px-4 mt-6 pb-4 flex flex-col lg:flex-row gap-6" style="background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 5%, white) 0%, white 200px);">
         <!-- Main Content -->
         <main class="flex-1 space-y-5">
 
             <!-- Next Step: Earning Progress -->
             {% if earning_progress %}
-            <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Next Reward</h2>
+            <section class="rounded-2xl shadow-lg bg-white p-5 border-l-4" style="border-left-color: var(--color-primary)">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">🎁 Next Reward</h2>
                 <div class="space-y-4">
                     {% for ep in earning_progress %}
                     <div>
@@ -130,19 +132,19 @@
 
             <!-- Level Path -->
             {% if levels %}
-            <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Level Progress</h2>
+            <section class="rounded-2xl shadow-lg bg-white p-5 border-l-4" style="border-left-color: var(--color-secondary)">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">🗺️ Level Progress</h2>
                 <div class="relative">
                     <!-- Vertical path line -->
-                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                    <div class="space-y-0">
+                    <div class="absolute left-5 top-0 bottom-0 w-0.5" style="background: linear-gradient(to bottom, var(--color-primary), var(--color-secondary))"></div>
+                    <div class="space-y-1">
                         {% for item in unlocked_levels %}
-                        <div class="relative flex items-start gap-4 py-2">
+                        <div class="relative flex items-start gap-4 py-2.5">
                             <!-- Milestone dot -->
-                            <div class="relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm
-                                {{ 'bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-white' if item.unlocked else 'bg-gray-100 border-2 border-gray-300 text-gray-400' }}">
+                            <div class="relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-md
+                                {{ 'bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-white' if item.unlocked else 'bg-gray-50 border-2 border-gray-300 text-gray-400' }}">
                                 {% if item.unlocked %}
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                 {% else %}
                                 <span class="text-xs font-bold">{{ item.level.threshold }}</span>
                                 {% endif %}
@@ -169,8 +171,8 @@
 
             <!-- Party Goals -->
             {% if goal_progress %}
-            <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}s</h2>
+            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">⚔️ {{ ctx.party_goal_label }}s</h2>
                 <div class="space-y-5">
                     {% for cp in goal_progress %}
                     <div class="relative">
@@ -211,8 +213,8 @@
 
             <!-- Side Quests -->
             {% if sq_available or sq_completed or chain_data %}
-            <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Side Quests</h2>
+            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">🏹 Side Quests</h2>
 
                 <!-- Available Missions -->
                 {% if sq_available %}
@@ -316,8 +318,8 @@
 
             <!-- Quest Shop -->
             {% if shop_items %}
-            <section class="rounded-xl shadow-md border border-gray-100 bg-white p-5" x-data="{ confirmItem: null }">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Treasure Shop</h2>
+            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5" x-data="{ confirmItem: null }">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">💎 Treasure Shop</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {% for p in shop_items %}
                     <div class="rounded-lg p-3 text-center transition-all
@@ -366,28 +368,28 @@
         <aside class="lg:w-72 w-full space-y-5">
             <!-- Quick Log (Admin) -->
             {% if is_admin %}
-            <div class="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 p-4">
-                <h2 class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Quick Log</h2>
+            <div class="rounded-2xl shadow-lg bg-white p-4 border-t-4" style="border-top-color: var(--color-primary)">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">⚡ Quick Log</h2>
                 <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                    <select name="activity_type_id" class="w-full px-2 py-1.5 border border-amber-200 rounded-lg text-sm bg-white" required>
+                    <select name="activity_type_id" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]" required>
                         {% for at in activity_types %}
                         <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
                         {% endfor %}
                     </select>
                     <div class="flex gap-2">
-                        <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1.5 border border-amber-200 rounded-lg text-sm bg-white">
-                        <input type="text" name="notes" placeholder="Notes" class="flex-1 px-2 py-1.5 border border-amber-200 rounded-lg text-sm bg-white">
+                        <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
+                        <input type="text" name="notes" placeholder="Notes" class="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     </div>
-                    <button type="submit" class="w-full bg-amber-600 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-amber-700 transition shadow-sm">Log Activity</button>
+                    <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Log Activity</button>
                 </form>
             </div>
             {% endif %}
 
             <!-- Adventure Journal -->
-            <div class="rounded-xl shadow-md border border-gray-100 bg-white p-4">
-                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Adventure Journal</h2>
+            <div class="rounded-2xl shadow-lg bg-white p-4 border-l-4 border-indigo-300">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">📖 Adventure Journal</h2>
                 {% if recent_logs or purchases %}
                 <div class="space-y-2" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
@@ -417,14 +419,17 @@
                 </div>
                 <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="block text-center text-xs font-medium hover:underline mt-3" style="color: var(--color-primary)">View Full History</a>
                 {% else %}
-                <p class="text-xs text-gray-500 italic">No adventures yet — get started!</p>
+                <div class="text-center py-4">
+                    <p class="text-sm text-gray-500">No adventures yet</p>
+                    <p class="text-xs text-gray-400 mt-1">Log your first quest to begin!</p>
+                </div>
                 {% endif %}
             </div>
 
             <!-- Treasure Chest -->
             {% if purchases %}
-            <div class="rounded-xl shadow-md border border-purple-100 bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
-                <h2 class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-3">Treasure Chest</h2>
+            <div class="rounded-2xl shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 p-4 ring-1 ring-purple-100">
+                <h2 class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-3">🎒 Treasure Chest</h2>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     {% for p in purchases %}
                     <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-50/80 border border-red-100' if p.refunded_at else 'bg-white/70 border border-purple-100' }}">
@@ -455,8 +460,8 @@
 
             <!-- Achievements -->
             {% if achievements %}
-            <div class="rounded-xl shadow-md border border-gray-100 bg-white p-4">
-                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Achievements</h2>
+            <div class="rounded-2xl shadow-lg bg-white p-4 ring-1 ring-black/5">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">🏆 Achievements</h2>
                 <div class="grid grid-cols-2 gap-2">
                     {% for a in achievements %}
                     <div class="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
