@@ -82,8 +82,8 @@ def quest_view(quest_id):
     unlocks = AchievementUnlock.query.filter_by(member_id=member.id).all()
     achievements = [db.session.get(Achievement, u.achievement_id) for u in unlocks]
 
-    # Activity timeline (recent 20)
-    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(20).all()
+    # Activity timeline (recent 5; full log accessible via View Full History)
+    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(5).all()
 
     # Shop purchase history
     purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()

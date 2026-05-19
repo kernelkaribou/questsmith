@@ -343,10 +343,10 @@
             {% endif %}
 
             <!-- Activity Timeline -->
-            <div class="bg-white rounded-xl shadow-lg p-4 sticky top-14">
+            <div class="bg-white rounded-xl shadow-lg p-4">
                 <h2 class="text-sm font-bold text-gray-700 mb-3">Activity Timeline</h2>
                 {% if recent_logs or purchases %}
-                <div class="space-y-2 max-h-[50vh] overflow-y-auto" x-data="{ openLog: null }">
+                <div class="space-y-2" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
                     <div @click="openLog = openLog === {{ log.id }} ? null : {{ log.id }}"
                          class="p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer text-xs">
