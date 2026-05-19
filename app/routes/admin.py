@@ -377,19 +377,23 @@ def redeem(quest_id):
 def refund_purchase(purchase_id):
     """Refund a shop purchase: credit currency back, mark as refunded."""
     purchase = db.session.get(ShopPurchase, purchase_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     if not purchase or purchase.refunded_at:
-        flash("Purchase not found or already refunded", "error")
+        msg = "Purchase not found or already refunded"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
         next_url = request.form.get("next") or url_for("admin.index")
         return redirect(next_url)
 
     quest_id = purchase.quest_id
     item = purchase.shop_item
 
-    # Credit the currency back
+    # Credit the currency back (refund type: included in balance, excluded from lifetime/party)
     if item.cost > 0:
         txn = Transaction(
             quest_id=quest_id,
-            type="earn",
+            type="refund",
             amount=item.cost,
             description=f"Refund: {item.name}",
         )
