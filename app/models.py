@@ -221,6 +221,7 @@ class ActivityType(db.Model):
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     unit_label = db.Column(db.String(50), nullable=False)
+    is_milestone = db.Column(db.Boolean, nullable=False, default=False)
     icon = db.Column(db.String(500), nullable=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

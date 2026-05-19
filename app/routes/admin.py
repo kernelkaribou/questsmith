@@ -188,7 +188,8 @@ def quest_edit(quest_id):
         new_name = request.form.get("new_activity_name")
         new_unit = request.form.get("new_activity_unit")
         if new_name and new_unit:
-            at = ActivityType(quest_id=quest.id, name=new_name, unit_label=new_unit)
+            is_milestone = "new_activity_milestone" in request.form
+            at = ActivityType(quest_id=quest.id, name=new_name, unit_label=new_unit, is_milestone=is_milestone)
             db.session.add(at)
             db.session.flush()
             new_qty = request.form.get("new_rule_qty")
@@ -196,7 +197,7 @@ def quest_edit(quest_id):
             if new_qty and new_reward:
                 rule = EarningRule(
                     activity_type_id=at.id,
-                    rule_type="per_batch",
+                    rule_type="per_log" if is_milestone else "per_batch",
                     quantity_required=int(new_qty),
                     currency_reward=int(new_reward),
                 )
@@ -236,6 +237,13 @@ def log_activity():
         log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description, notes)
         if log:
             quest = db.session.get(Quest, quest_id)
+
+            # Handle milestone checkboxes
+            milestone_ids = request.form.getlist("milestones")
+            for mid in milestone_ids:
+                m_log, m_txns = quest_engine.log_activity(quest_id, int(mid), 1, notes=f"Milestone (with {quantity} {log.activity_type.unit_label})")
+                txns.extend(m_txns)
+
             achievement_engine.check_achievements(quest.member_id)
             db.session.commit()
 
@@ -247,7 +255,8 @@ def log_activity():
             if at_progress:
                 p = at_progress[0]
                 progress_msg = f" ({p['units_to_next']} {p['activity_type'].unit_label} to next)"
-            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}", "success")
+            milestone_msg = f" + {len(milestone_ids)} milestone(s)" if milestone_ids else ""
+            flash(f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}", "success")
         else:
             flash("Failed to log activity", "error")
 
@@ -257,7 +266,7 @@ def log_activity():
     quests = Quest.query.filter_by(status="active").all()
     for q in quests:
         q.activity_types_json = json.dumps([
-            {"id": at.id, "name": at.name, "unit": at.unit_label}
+            {"id": at.id, "name": at.name, "unit": at.unit_label, "is_milestone": at.is_milestone}
             for at in q.activity_types
         ])
     return render_template("admin/log_activity.html", quests=quests)

@@ -59,12 +59,15 @@ def seed():
             quest_id=quest_a.id, name="Pages Read", unit_label="pages", sort_order=1
         )
         books_type = ActivityType(
-            quest_id=quest_a.id, name="Books Finished", unit_label="books", sort_order=2
+            quest_id=quest_a.id, name="Books Finished", unit_label="books", is_milestone=True, sort_order=2
         )
         minutes_type = ActivityType(
             quest_id=quest_b.id, name="Minutes Read", unit_label="minutes", sort_order=1
         )
-        db.session.add_all([pages_type, books_type, minutes_type])
+        chapters_type = ActivityType(
+            quest_id=quest_b.id, name="Chapters Finished", unit_label="chapters", is_milestone=True, sort_order=2
+        )
+        db.session.add_all([pages_type, books_type, minutes_type, chapters_type])
         db.session.flush()
 
         # Earning Rules
@@ -86,6 +89,12 @@ def seed():
                 rule_type="per_batch",
                 quantity_required=30,
                 currency_reward=10,
+            ),
+            EarningRule(
+                activity_type_id=chapters_type.id,
+                rule_type="per_log",
+                quantity_required=1,
+                currency_reward=15,
             ),
         ])
 

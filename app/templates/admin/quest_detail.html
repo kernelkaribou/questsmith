@@ -31,19 +31,32 @@
 <!-- Quick Log -->
 <section class="bg-white rounded-lg shadow p-4 mb-6">
     <h2 class="font-semibold mb-3">Quick Log</h2>
-    <form method="POST" action="{{ url_for('admin.log_activity') }}" class="flex gap-2 items-end">
+    <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
         <input type="hidden" name="quest_id" value="{{ quest.id }}">
         <input type="hidden" name="next" value="{{ url_for('admin.quest_detail', quest_id=quest.id) }}">
-        <div class="flex-1">
-            <select name="activity_type_id" class="w-full px-2 py-1 border rounded text-sm" required>
-                {% for at in quest.activity_types %}
-                <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
-                {% endfor %}
-            </select>
+        <div class="flex gap-2 items-end">
+            <div class="flex-1">
+                <select name="activity_type_id" class="w-full px-2 py-1 border rounded text-sm" required>
+                    {% for at in quest.activity_types if not at.is_milestone %}
+                    <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 border rounded text-sm">
+            <input type="text" name="notes" placeholder="Notes" class="w-32 px-2 py-1 border rounded text-sm">
+            <button type="submit" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Log</button>
         </div>
-        <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 border rounded text-sm">
-        <input type="text" name="notes" placeholder="Notes" class="w-32 px-2 py-1 border rounded text-sm">
-        <button type="submit" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Log</button>
+        {% set milestone_types = quest.activity_types | selectattr("is_milestone") | list %}
+        {% if milestone_types %}
+        <div class="flex flex-wrap gap-3 pt-1 pl-1">
+            {% for mt in milestone_types %}
+            <label class="flex items-center gap-1 text-xs text-gray-600">
+                <input type="checkbox" name="milestones" value="{{ mt.id }}" class="rounded border-gray-300 text-indigo-600">
+                {{ mt.name }}
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
     </form>
 </section>
 
