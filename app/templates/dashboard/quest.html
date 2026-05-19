@@ -329,7 +329,7 @@
                     <div class="relative rounded-xl p-4 text-center transition-all
                         {{ 'bg-gradient-to-b from-white to-[var(--color-primary)]/5 ring-2 ring-[var(--color-primary)]/30 hover:shadow-lg hover:-translate-y-1 cursor-pointer' if balance >= p.cost else 'bg-gray-50 ring-1 ring-gray-200 opacity-60' }}">
                         {% if balance >= p.cost %}
-                        <div class="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">Yours!</div>
+                        <div class="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">Available!</div>
                         {% endif %}
                         {% if p.image_url %}
                         <img src="{{ url_for('admin.serve_upload', filepath=p.image_url[8:]) if p.image_url.startswith('uploads/') else p.image_url }}" alt="{{ p.name }}" class="w-14 h-14 mx-auto mb-2 object-contain drop-shadow-sm">
