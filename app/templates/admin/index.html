@@ -3,14 +3,37 @@
 {% block content %}
 <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <!-- Active Quests -->
-    <div class="bg-white rounded-lg shadow p-6 col-span-1 md:col-span-2">
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">Active Quests</h2>
+<div class="space-y-8">
+    <!-- Journeys -->
+    <section>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-800">Journeys</h2>
+            <a href="{{ url_for('admin.journey_create') }}" class="text-sm text-indigo-600 hover:underline">+ New Journey</a>
+        </div>
+        {% if journeys %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for j in journeys %}
+            <a href="{{ url_for('admin.journey_detail', journey_id=j.id) }}" class="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
+                <h3 class="font-semibold text-indigo-700">{{ j.name }}</h3>
+                <p class="text-xs text-gray-500 mt-1">{{ j.quests|list|length }} quest{{ 's' if j.quests|list|length != 1 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No active journeys.</p>
+        {% endif %}
+    </section>
+
+    <!-- Quests -->
+    <section>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-800">Quests</h2>
+            <a href="{{ url_for('admin.quest_create') }}" class="text-sm text-indigo-600 hover:underline">+ New Quest</a>
+        </div>
         {% if quests %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for q in quests %}
-            <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="flex items-center gap-3 p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+            <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="bg-white rounded-lg shadow p-4 hover:shadow-md transition flex items-center gap-3">
                 <div class="w-4 h-4 rounded-full flex-shrink-0" style="background-color: {{ q.color_primary }}"></div>
                 <div>
                     <span class="font-medium text-sm">{{ q.theme_name }}</span>
@@ -27,34 +50,28 @@
         {% else %}
         <p class="text-gray-500 text-sm">No active quests.</p>
         {% endif %}
-        <a href="{{ url_for('admin.quest_create') }}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">+ New Quest</a>
-    </div>
+    </section>
 
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">Quick Actions</h2>
-        <div class="space-y-3">
-            <a href="{{ url_for('admin.log_activity') }}" class="block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition text-sm text-center">
-                Log Activity
-            </a>
-            <a href="{{ url_for('admin.quest_create') }}" class="block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm text-center">
-                New Quest
-            </a>
-            <a href="{{ url_for('admin.member_create') }}" class="block bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm text-center">
-                Add Member
-            </a>
+    <!-- Adventurers -->
+    <section>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-800">Adventurers</h2>
+            <a href="{{ url_for('admin.member_create') }}" class="text-sm text-indigo-600 hover:underline">+ Add Member</a>
         </div>
-
-        <hr class="my-4">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Journeys</h3>
-        {% if journeys %}
-        <ul class="space-y-1">
-            {% for j in journeys %}
-            <li><a href="{{ url_for('admin.journey_detail', journey_id=j.id) }}" class="text-sm text-indigo-600 hover:underline">{{ j.name }}</a></li>
+        {% if members %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {% for m in members %}
+            <a href="{{ url_for('admin.member_edit', member_id=m.id) }}" class="bg-white rounded-lg shadow p-3 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-lg font-bold mx-auto mb-2">
+                    {{ m.name[0] }}
+                </div>
+                <span class="text-sm font-medium text-gray-700">{{ m.name }}</span>
+            </a>
             {% endfor %}
-        </ul>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No members yet.</p>
         {% endif %}
-        <a href="{{ url_for('admin.journey_create') }}" class="mt-2 inline-block text-xs text-indigo-600 hover:underline">+ New Journey</a>
-    </div>
+    </section>
 </div>
 {% endblock %}
