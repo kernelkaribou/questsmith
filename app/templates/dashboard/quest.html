@@ -18,8 +18,19 @@
                      alt="{{ quest.theme_name }}" class="w-14 h-14 object-contain rounded-lg bg-white/10 p-1 shadow-lg">
                 {% endif %}
                 <div class="flex-1 min-w-0">
-                    <h1 class="text-2xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <p class="text-sm opacity-90">{{ member.name }}{% if journey %} &middot; <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="underline underline-offset-2 hover:opacity-100">{{ journey.name }}</a>{% endif %}</p>
+                    <h1 class="text-3xl font-bold truncate">{{ quest.theme_name }}</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        {% if member.avatar_url %}
+                        <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-6 h-6 rounded-full object-cover ring-1 ring-white/50">
+                        {% else %}
+                        <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{{ member.name[0] }}</div>
+                        {% endif %}
+                        <span class="text-base font-medium opacity-95">{{ member.name }}</span>
+                        {% if journey %}
+                        <span class="opacity-50">&middot;</span>
+                        <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="text-sm opacity-80 underline underline-offset-2 hover:opacity-100">{{ journey.name }}</a>
+                        {% endif %}
+                    </div>
                 </div>
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
