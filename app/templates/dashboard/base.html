@@ -54,6 +54,19 @@
 
     {% block body %}{% endblock %}
 
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="fixed top-14 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 space-y-2" x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" x-transition>
+        {% for category, message in messages %}
+        <div class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium {{ 'bg-green-600 text-white' if category == 'success' else 'bg-red-600 text-white' if category == 'error' else 'bg-indigo-600 text-white' }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <!-- Global Admin Floating Button -->
     {% set is_admin = session.get('admin', False) %}
     {% if is_admin %}

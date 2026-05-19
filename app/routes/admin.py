@@ -334,7 +334,8 @@ def side_quest_award(quest_id, side_quest_id):
         flash(f"Side quest '{sq.name}' awarded!", "success")
     else:
         flash("Side quest not available (already completed or on cooldown)", "error")
-    return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+    next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
+    return redirect(next_url)
 
 
 # --- Quest Levels (belong to quest) ---
@@ -502,7 +503,8 @@ def chain_step_complete(chain_id, step_id):
             flash(f"Step '{step.name}' completed!", "success")
     else:
         flash("Step not available", "error")
-    return redirect(url_for("admin.chain_detail", chain_id=chain_id))
+    next_url = request.form.get("next") or url_for("admin.chain_detail", chain_id=chain_id)
+    return redirect(next_url)
 
 
 def _parse_date(value):
