@@ -1,19 +1,20 @@
 {% extends "dashboard/base.html" %}
 {% block title %}QuestSmith - Choose Adventurer{% endblock %}
 {% block body %}
-<div class="flex flex-col items-center justify-center min-h-screen p-6">
-    <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-24 h-24 mb-4">
-    <h1 class="text-4xl font-bold text-gray-800 mb-2">QuestSmith</h1>
-    <p class="text-gray-500 mb-8">Forge Your Own Adventure</p>
+<div class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-indigo-50 via-white to-purple-50">
+    <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-20 h-20 mb-3 drop-shadow-lg">
+    <h1 class="text-3xl font-bold text-gray-800 mb-1">QuestSmith</h1>
+    <p class="text-gray-500 text-sm mb-10">Choose Your Adventurer</p>
 
     <div class="flex flex-wrap justify-center gap-6 max-w-3xl w-full">
         {% for m in members %}
         <a href="{{ url_for('dashboard.member_select', member_id=m.id) }}"
-           class="group bg-white rounded-xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-shadow hover:-translate-y-1 transform transition-transform w-48">
-            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold mb-3 group-hover:scale-110 transition-transform">
+           class="group bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-all hover:-translate-y-1 transform w-44 border border-gray-100">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold mb-3 group-hover:scale-110 transition-transform shadow-md ring-4 ring-white">
                 {{ m.name[0] }}
             </div>
-            <span class="text-lg font-semibold text-gray-700">{{ m.name }}</span>
+            <span class="text-lg font-bold text-gray-800">{{ m.name }}</span>
+            <span class="text-xs text-gray-400 mt-1">Adventurer</span>
         </a>
         {% endfor %}
     </div>
