@@ -12,7 +12,11 @@
     <div class="flex gap-2">
         <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">View as Player</a>
         <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Edit Quest</a>
-        <a href="{{ url_for('admin.index') }}" class="text-gray-500 text-sm hover:underline">Back</a>
+        <form method="POST" action="{{ url_for('admin.quest_archive', quest_id=quest.id) }}"
+              onsubmit="return confirm('Archive this quest? It will be hidden from dashboards.')">
+            <button type="submit" class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200">Archive</button>
+        </form>
+        <a href="{{ url_for('admin.index') }}" class="text-gray-500 text-sm hover:underline self-center">Back</a>
     </div>
 </div>
 
@@ -110,7 +114,13 @@
                     <span class="text-green-600 ml-1 text-xs font-bold">UNLOCKED</span>
                     {% endif %}
                 </div>
-                <a href="{{ url_for('admin.level_edit', level_id=level.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.level_edit', level_id=level.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <form method="POST" action="{{ url_for('admin.level_delete', level_id=level.id) }}"
+                          onsubmit="return confirm('Delete level: {{ level.name }}?')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -139,6 +149,10 @@
                         <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Award</button>
                     </form>
                     <a href="{{ url_for('admin.side_quest_edit', side_quest_id=sq.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <form method="POST" action="{{ url_for('admin.side_quest_delete', sq_id=sq.id) }}"
+                          onsubmit="return confirm('Delete side quest: {{ sq.name }}?')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
@@ -157,9 +171,8 @@
         {% if all_chains %}
         <div class="space-y-2">
             {% for chain in all_chains %}
-            <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}"
-               class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 block">
-                <div>
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}" class="flex-1 hover:text-indigo-600">
                     <span class="font-medium">{{ chain.name }}</span>
                     <span class="text-gray-500 ml-1">(+{{ chain.currency_reward }})</span>
                     {% if chain.completed_at %}
@@ -167,11 +180,15 @@
                     {% elif chain.expires_at %}
                     <span class="text-xs text-orange-500 ml-1">expires {{ chain.expires_at.strftime('%b %d') }}</span>
                     {% endif %}
+                </a>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">{{ chain.steps.count() }} steps</span>
+                    <form method="POST" action="{{ url_for('admin.chain_delete', chain_id=chain.id) }}"
+                          onsubmit="return confirm('Delete chain: {{ chain.name }}? All steps will be removed.')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                    </form>
                 </div>
-                <div class="text-xs text-gray-500">
-                    {{ chain.steps.count() }} steps &middot; {{ chain.visibility_display }}
-                </div>
-            </a>
+            </div>
             {% endfor %}
         </div>
         {% else %}
@@ -203,6 +220,10 @@
                     </form>
                     {% endif %}
                     <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <form method="POST" action="{{ url_for('admin.shop_item_delete', item_id=item.id) }}"
+                          onsubmit="return confirm('Delete shop item: {{ item.name }}?')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
@@ -218,13 +239,22 @@
         {% if recent_logs %}
         <div class="space-y-2">
             {% for log in recent_logs %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm {% if log.reversed %}opacity-50 line-through{% endif %}">
                 <div>
                     <span class="font-medium">{{ log.activity_type.name }}</span>
                     <span class="text-gray-500">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
                     {% if log.notes %}<span class="text-xs text-gray-400 ml-1">{{ log.notes }}</span>{% endif %}
+                    {% if log.reversed %}<span class="text-xs text-red-500 ml-1">reversed</span>{% endif %}
                 </div>
-                <span class="text-xs text-gray-400">{{ log.logged_at.strftime('%b %d') }}</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">{{ log.logged_at.strftime('%b %d') }}</span>
+                    {% if not log.reversed %}
+                    <form method="POST" action="{{ url_for('admin.activity_log_undo', log_id=log.id) }}"
+                          onsubmit="return confirm('Undo this activity? A reversal transaction will be created.')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Undo</button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
             {% endfor %}
         </div>

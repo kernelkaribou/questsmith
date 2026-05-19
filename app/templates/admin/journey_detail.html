@@ -11,7 +11,11 @@
     </div>
     <div class="flex gap-2">
         <a href="{{ url_for('admin.journey_edit', journey_id=journey.id) }}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Edit</a>
-        <a href="{{ url_for('admin.journeys') }}" class="text-gray-500 text-sm hover:underline">Back</a>
+        <form method="POST" action="{{ url_for('admin.journey_archive', journey_id=journey.id) }}"
+              onsubmit="return confirm('Archive this journey? It will be hidden from dashboards.')">
+            <button type="submit" class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200">Archive</button>
+        </form>
+        <a href="{{ url_for('admin.journeys') }}" class="text-gray-500 text-sm hover:underline self-center">Back</a>
     </div>
 </div>
 
@@ -50,7 +54,13 @@
             <div class="p-3 bg-gray-50 rounded text-sm">
                 <div class="flex justify-between items-center">
                     <span class="font-medium">{{ goal.name }}</span>
-                    <a href="{{ url_for('admin.party_goal_edit', goal_id=goal.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('admin.party_goal_edit', goal_id=goal.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                        <form method="POST" action="{{ url_for('admin.party_goal_delete', goal_id=goal.id) }}"
+                              onsubmit="return confirm('Delete party goal: {{ goal.name }}?')">
+                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        </form>
+                    </div>
                 </div>
                 <p class="text-gray-500 text-xs mt-1">Target: {{ goal.target_amount }} &middot; Min per member: {{ goal.min_individual_contribution }}</p>
                 {% if goal.reward_description %}
@@ -81,7 +91,13 @@
                     <span class="font-medium">{{ item.name }}</span>
                     <span class="text-gray-500 ml-1">({{ item.cost }} currency)</span>
                 </div>
-                <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <form method="POST" action="{{ url_for('admin.shop_item_delete', item_id=item.id) }}"
+                          onsubmit="return confirm('Delete shop item: {{ item.name }}?')">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>

@@ -15,20 +15,32 @@ def get_balance(quest_id):
         Transaction.type == "spend",
     ).scalar()
 
-    return earned - spent
+    reversed = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
+        Transaction.quest_id == quest_id,
+        Transaction.type == "reversal",
+    ).scalar()
+
+    return earned - spent - reversed
 
 
 def get_lifetime_earned(quest_id):
-    """Total currency ever earned (never decreases). Used for prize tier unlocks."""
-    return db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
+    """Total currency ever earned (minus reversals). Used for prize tier unlocks."""
+    earned = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
         Transaction.quest_id == quest_id,
         Transaction.type.in_(["earn", "side_quest_reward", "completion_bonus"]),
     ).scalar()
 
+    reversed = db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0)).filter(
+        Transaction.quest_id == quest_id,
+        Transaction.type == "reversal",
+    ).scalar()
+
+    return max(0, earned - reversed)
+
 
 def get_journey_totals(journey_id):
     """Get earned totals per quest for a journey (for Co-Op goal checking)."""
-    results = db.session.query(
+    earned_results = db.session.query(
         Quest.id,
         Quest.member_id,
         db.func.coalesce(db.func.sum(Transaction.amount), 0).label("total_earned"),
@@ -37,7 +49,17 @@ def get_journey_totals(journey_id):
         Transaction.type.in_(["earn", "side_quest_reward"]),
     ).group_by(Quest.id, Quest.member_id).all()
 
-    return {r.member_id: r.total_earned for r in results}
+    reversed_results = db.session.query(
+        Quest.id,
+        Quest.member_id,
+        db.func.coalesce(db.func.sum(Transaction.amount), 0).label("total_reversed"),
+    ).join(Transaction, Transaction.quest_id == Quest.id).filter(
+        Quest.journey_id == journey_id,
+        Transaction.type == "reversal",
+    ).group_by(Quest.id, Quest.member_id).all()
+
+    reversed_map = {r.member_id: r.total_reversed for r in reversed_results}
+    return {r.member_id: max(0, r.total_earned - reversed_map.get(r.member_id, 0)) for r in earned_results}
 
 
 def record_earn(quest_id, amount, description, activity_log_id=None, earning_rule_id=None, batches_awarded=None):

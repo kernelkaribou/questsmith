@@ -282,6 +282,7 @@ class ActivityLog(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    reversed = db.Column(db.Boolean, default=False, nullable=False)
     logged_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

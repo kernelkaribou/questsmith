@@ -27,6 +27,29 @@ def admin_required(f):
     return decorated
 
 
+def _is_ajax():
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def admin_success(message, redirect_url, payload=None):
+    """Return success response: JSON for AJAX, flash+redirect for non-JS."""
+    if _is_ajax():
+        data = {"success": True, "message": message}
+        if payload:
+            data.update(payload)
+        return jsonify(data)
+    flash(message, "success")
+    return redirect(redirect_url)
+
+
+def admin_error(message, redirect_url, status=400):
+    """Return error response: JSON for AJAX, flash+redirect for non-JS."""
+    if _is_ajax():
+        return jsonify(success=False, message=message), status
+    flash(message, "error")
+    return redirect(redirect_url)
+
+
 # --- Auth ---
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -275,32 +298,290 @@ def activity_type_delete(at_id):
     """Remove an activity type from a quest."""
     at = db.session.get(ActivityType, at_id)
     if not at:
-        flash("Activity type not found", "error")
-        return redirect(url_for("admin.index"))
+        return admin_error("Activity type not found", url_for("admin.index"))
 
     quest_id = at.quest_id
-    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
 
-    # Check if there are logged activities using this type
     log_count = at.activity_logs.count()
     if log_count > 0:
-        msg = f"Cannot delete: {log_count} activities already logged with this type"
-        if is_ajax:
-            return jsonify(success=False, message=msg), 400
-        flash(msg, "error")
-        return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+        return admin_error(f"Cannot delete: {log_count} activities already logged with this type", redirect_url)
 
-    # Delete earning rules first, then the activity type
     for rule in at.earning_rules:
         db.session.delete(rule)
     db.session.delete(at)
     db.session.commit()
+    return admin_success(f"Removed activity type: {at.name}", redirect_url)
 
-    msg = f"Removed activity type: {at.name}"
-    if is_ajax:
-        return jsonify(success=True, message=msg)
-    flash(msg, "success")
-    return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+
+# --- Delete Routes for Config Entities ---
+
+@bp.route("/level/<int:level_id>/delete", methods=["POST"])
+@admin_required
+def level_delete(level_id):
+    """Delete a quest level."""
+    level = db.session.get(QuestLevel, level_id)
+    if not level:
+        return admin_error("Level not found", url_for("admin.index"))
+
+    quest_id = level.quest_id
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
+
+    # Delete associated unlocks
+    from app.models import QuestLevelUnlock
+    QuestLevelUnlock.query.filter_by(level_id=level_id).delete()
+    db.session.delete(level)
+    db.session.commit()
+    return admin_success(f"Removed level: {level.name}", redirect_url)
+
+
+@bp.route("/side-quest/<int:sq_id>/delete", methods=["POST"])
+@admin_required
+def side_quest_delete(sq_id):
+    """Delete a side quest (standalone or chain step)."""
+    from app.models import SideQuestCompletion
+    sq = db.session.get(SideQuest, sq_id)
+    if not sq:
+        return admin_error("Side quest not found", url_for("admin.index"))
+
+    quest_id = sq.quest_id
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
+
+    completions = SideQuestCompletion.query.filter_by(side_quest_id=sq_id).count()
+    if completions > 0:
+        return admin_error(f"Cannot delete: {completions} completions exist", redirect_url)
+
+    db.session.delete(sq)
+    db.session.commit()
+    return admin_success(f"Removed side quest: {sq.name}", redirect_url)
+
+
+@bp.route("/chain/<int:chain_id>/delete", methods=["POST"])
+@admin_required
+def chain_delete(chain_id):
+    """Delete a quest chain and its steps (if no completions)."""
+    from app.models import SideQuestCompletion
+    chain = db.session.get(SideQuestChain, chain_id)
+    if not chain:
+        return admin_error("Chain not found", url_for("admin.index"))
+
+    quest_id = chain.quest_id
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
+
+    # Check if any step has completions
+    step_ids = [s.id for s in chain.steps]
+    if step_ids:
+        completions = SideQuestCompletion.query.filter(
+            SideQuestCompletion.side_quest_id.in_(step_ids)
+        ).count()
+        if completions > 0:
+            return admin_error(f"Cannot delete: chain steps have {completions} completions", redirect_url)
+
+    # Delete steps then chain
+    for step in chain.steps:
+        db.session.delete(step)
+    db.session.delete(chain)
+    db.session.commit()
+    return admin_success(f"Removed chain: {chain.name}", redirect_url)
+
+
+@bp.route("/shop-item/<int:item_id>/delete", methods=["POST"])
+@admin_required
+def shop_item_delete(item_id):
+    """Delete a shop item if no purchases exist."""
+    item = db.session.get(ShopItem, item_id)
+    if not item:
+        return admin_error("Shop item not found", url_for("admin.index"))
+
+    redirect_url = url_for("admin.quest_detail", quest_id=item.quest_id) if item.quest_id else url_for("admin.journey_detail", journey_id=item.journey_id)
+
+    purchases = ShopPurchase.query.filter_by(shop_item_id=item_id).count()
+    if purchases > 0:
+        return admin_error(f"Cannot delete: {purchases} purchases exist for this item", redirect_url)
+
+    db.session.delete(item)
+    db.session.commit()
+    return admin_success(f"Removed shop item: {item.name}", redirect_url)
+
+
+@bp.route("/earning-rule/<int:rule_id>/delete", methods=["POST"])
+@admin_required
+def earning_rule_delete(rule_id):
+    """Delete an earning rule if no transactions reference it."""
+    rule = db.session.get(EarningRule, rule_id)
+    if not rule:
+        return admin_error("Earning rule not found", url_for("admin.index"))
+
+    quest_id = rule.activity_type.quest_id
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
+
+    txn_count = Transaction.query.filter_by(earning_rule_id=rule_id).count()
+    if txn_count > 0:
+        return admin_error(f"Cannot delete: {txn_count} transactions use this rule", redirect_url)
+
+    db.session.delete(rule)
+    db.session.commit()
+    return admin_success("Removed earning rule", redirect_url)
+
+
+@bp.route("/party-goal/<int:goal_id>/delete", methods=["POST"])
+@admin_required
+def party_goal_delete(goal_id):
+    """Delete a party goal."""
+    goal = db.session.get(PartyGoal, goal_id)
+    if not goal:
+        return admin_error("Party goal not found", url_for("admin.index"))
+
+    journey_id = goal.journey_id
+    db.session.delete(goal)
+    db.session.commit()
+    return admin_success(f"Removed party goal: {goal.name}", url_for("admin.journey_detail", journey_id=journey_id))
+
+
+# --- Delete/Archive for Top-Level Entities ---
+
+@bp.route("/member/<int:member_id>/delete", methods=["POST"])
+@admin_required
+def member_delete(member_id):
+    """Delete a member if they have no quests."""
+    member = db.session.get(Member, member_id)
+    if not member:
+        return admin_error("Member not found", url_for("admin.index"))
+
+    quest_count = Quest.query.filter_by(member_id=member_id).count()
+    if quest_count > 0:
+        return admin_error(f"Cannot delete: member has {quest_count} quest(s). Archive or remove quests first.", url_for("admin.members"))
+
+    db.session.delete(member)
+    db.session.commit()
+    return admin_success(f"Removed member: {member.name}", url_for("admin.members"))
+
+
+@bp.route("/achievement/<int:ach_id>/delete", methods=["POST"])
+@admin_required
+def achievement_delete(ach_id):
+    """Delete an achievement if no one has unlocked it."""
+    from app.models import AchievementUnlock
+    ach = db.session.get(Achievement, ach_id)
+    if not ach:
+        return admin_error("Achievement not found", url_for("admin.index"))
+
+    unlocks = AchievementUnlock.query.filter_by(achievement_id=ach_id).count()
+    if unlocks > 0:
+        return admin_error(f"Cannot delete: {unlocks} members have unlocked this", url_for("admin.achievements_list"))
+
+    db.session.delete(ach)
+    db.session.commit()
+    return admin_success(f"Removed achievement: {ach.name}", url_for("admin.achievements_list"))
+
+
+@bp.route("/quest/<int:quest_id>/archive", methods=["POST"])
+@admin_required
+def quest_archive(quest_id):
+    """Archive a quest (soft-delete). Hard delete only if empty."""
+    quest = db.session.get(Quest, quest_id)
+    if not quest:
+        return admin_error("Quest not found", url_for("admin.index"))
+
+    redirect_url = url_for("admin.index")
+    log_count = quest.activity_logs.count()
+
+    if log_count == 0 and request.form.get("hard_delete"):
+        # Safe to hard delete — no activity
+        name = quest.theme_name
+        # Clean up nested entities
+        ActivityType.query.filter_by(quest_id=quest_id).delete()
+        QuestLevel.query.filter_by(quest_id=quest_id).delete()
+        SideQuest.query.filter_by(quest_id=quest_id).delete()
+        ShopItem.query.filter_by(quest_id=quest_id).delete()
+        SideQuestChain.query.filter_by(quest_id=quest_id).delete()
+        db.session.delete(quest)
+        db.session.commit()
+        return admin_success(f"Deleted quest: {name}", redirect_url)
+
+    quest.status = "archived"
+    db.session.commit()
+    return admin_success(f"Archived quest: {quest.theme_name}", redirect_url)
+
+
+@bp.route("/journey/<int:journey_id>/archive", methods=["POST"])
+@admin_required
+def journey_archive(journey_id):
+    """Archive a journey (soft-delete). Hard delete only if no quests."""
+    journey = db.session.get(Journey, journey_id)
+    if not journey:
+        return admin_error("Journey not found", url_for("admin.index"))
+
+    redirect_url = url_for("admin.index")
+    quest_count = Quest.query.filter_by(journey_id=journey_id).count()
+
+    if quest_count == 0 and request.form.get("hard_delete"):
+        name = journey.name
+        PartyGoal.query.filter_by(journey_id=journey_id).delete()
+        ShopItem.query.filter_by(journey_id=journey_id).delete()
+        db.session.delete(journey)
+        db.session.commit()
+        return admin_success(f"Deleted journey: {name}", redirect_url)
+
+    journey.status = "archived"
+    db.session.commit()
+    return admin_success(f"Archived journey: {journey.name}", redirect_url)
+
+
+# --- Activity Log Undo ---
+
+@bp.route("/activity-log/<int:log_id>/undo", methods=["POST"])
+@admin_required
+def activity_log_undo(log_id):
+    """Undo an activity log entry by creating reversal transactions."""
+    from app.models import ActivityLog
+    log = db.session.get(ActivityLog, log_id)
+    if not log:
+        return admin_error("Activity log not found", url_for("admin.index"))
+
+    quest_id = log.quest_id
+    redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
+
+    if log.reversed:
+        return admin_error("This activity has already been reversed", redirect_url)
+
+    # Create reversal transactions for each earn transaction from this log
+    transactions = Transaction.query.filter_by(activity_log_id=log.id, type="earn").all()
+    for txn in transactions:
+        reversal = Transaction(
+            quest_id=quest_id,
+            type="reversal",
+            amount=txn.amount,
+            description=f"Reversal: {txn.description or log.activity_type.name}",
+            activity_log_id=log.id,
+        )
+        db.session.add(reversal)
+
+    # Mark the log as reversed
+    log.reversed = True
+    db.session.flush()
+
+    # Recalculate quest completion state
+    quest = db.session.get(Quest, quest_id)
+    if quest.completed_at:
+        lifetime = ledger.get_lifetime_earned(quest_id)
+        if quest.completion_target and lifetime < quest.completion_target:
+            # Remove completion bonus if it exists
+            bonus_txns = Transaction.query.filter_by(
+                quest_id=quest_id, type="completion_bonus"
+            ).all()
+            for bt in bonus_txns:
+                reversal = Transaction(
+                    quest_id=quest_id,
+                    type="reversal",
+                    amount=bt.amount,
+                    description="Reversal: Quest completion bonus (quest re-opened)",
+                )
+                db.session.add(reversal)
+            quest.completed_at = None
+
+    db.session.commit()
+    return admin_success(f"Reversed activity: {log.quantity} {log.activity_type.unit_label}", redirect_url)
 
 
 # --- Activity Logging ---
