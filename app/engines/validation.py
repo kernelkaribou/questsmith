@@ -78,7 +78,7 @@ def get_unlocked_levels(quest_id):
         return []
 
     lifetime_earned = get_lifetime_earned(quest_id)
-    levels = QuestLevel.query.filter_by(journey_id=quest.journey_id).order_by(
+    levels = QuestLevel.query.filter_by(quest_id=quest_id).order_by(
         QuestLevel.sort_order
     ).all()
 

@@ -19,7 +19,7 @@ def index():
 
 @bp.route("/quest/<int:quest_id>")
 def quest_view(quest_id):
-    """Main quest dashboard for a member within a journey."""
+    """Main quest dashboard."""
     quest = db.session.get(Quest, quest_id)
     journey = quest.journey
     member = quest.member
@@ -28,26 +28,30 @@ def quest_view(quest_id):
     balance = ledger.get_balance(quest_id)
     total_earned = ledger.get_lifetime_earned(quest_id)
 
-    # Party Goals progress
-    party_goals = PartyGoal.query.filter_by(journey_id=journey.id).order_by(PartyGoal.sort_order).all()
-    journey_totals = ledger.get_journey_totals(journey.id)
-    combined_total = sum(journey_totals.values())
+    # Party Goals progress (only if quest is in a journey)
     goal_progress = []
-    for goal in party_goals:
-        goal_progress.append({
-            "goal": goal,
-            "current": combined_total,
-            "percent": min(100, int(combined_total / goal.target_amount * 100)) if goal.target_amount else 0,
-        })
+    if journey:
+        party_goals = PartyGoal.query.filter_by(journey_id=journey.id).order_by(PartyGoal.sort_order).all()
+        journey_totals = ledger.get_journey_totals(journey.id)
+        combined_total = sum(journey_totals.values())
+        for goal in party_goals:
+            goal_progress.append({
+                "goal": goal,
+                "current": combined_total,
+                "percent": min(100, int(combined_total / goal.target_amount * 100)) if goal.target_amount else 0,
+            })
 
-    # Quest Levels
-    levels = QuestLevel.query.filter_by(journey_id=journey.id).order_by(QuestLevel.sort_order).all()
+    # Quest Levels (belong to quest now)
+    levels = QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.threshold).all()
     unlocked_levels = validation.get_unlocked_levels(quest_id)
 
-    # Quest Shop
-    shop_items = ShopItem.query.filter_by(journey_id=journey.id).order_by(ShopItem.sort_order).all()
+    # Combined Shop: quest-owned + journey-owned
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
+    if journey:
+        journey_shop = ShopItem.query.filter_by(journey_id=journey.id).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + journey_shop
 
-    # Side quests
+    # Side quests (belong to quest now)
     sq_data = side_quest_engine.get_available_side_quests(quest_id)
     sq_status = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data]
 
@@ -82,9 +86,9 @@ def quest_view(quest_id):
 
 @bp.route("/member/<int:member_id>")
 def member_select(member_id):
-    """Show active quests for a member to pick which journey to enter."""
+    """Show active quests for a member to pick."""
     member = db.session.get(Member, member_id)
-    quests = Quest.query.filter_by(member_id=member_id).join(Journey).filter(Journey.status == "active").all()
+    quests = Quest.query.filter_by(member_id=member_id, status="active").all()
     if len(quests) == 1:
         return redirect(url_for("dashboard.quest_view", quest_id=quests[0].id))
     return render_template("dashboard/member_select.html", member=member, quests=quests)
@@ -102,7 +106,7 @@ def member_profile(member_id):
         ach = db.session.get(Achievement, u.achievement_id)
         achievements.append({"achievement": ach, "unlocked_at": u.unlocked_at})
 
-    all_quests = Quest.query.filter_by(member_id=member_id).join(Journey).order_by(Journey.created_at.desc()).all()
+    all_quests = Quest.query.filter_by(member_id=member_id).order_by(Quest.created_at.desc()).all()
 
     return render_template(
         "dashboard/profile.html",

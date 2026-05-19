@@ -99,6 +99,10 @@
     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
         {{ 'Save Changes' if item else 'Create' }}
     </button>
+    {% if journey_id %}
     <a href="{{ url_for('admin.journey_detail', journey_id=journey_id) }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
+    {% elif quest_id %}
+    <a href="{{ url_for('admin.quest_detail', quest_id=quest_id) }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
+    {% endif %}
 </form>
 {% endblock %}

@@ -43,9 +43,9 @@ def seeded(app):
     db.session.add(rule)
     goal = PartyGoal(journey_id=j.id, name="Movie Night", target_amount=100, min_individual_contribution=0)
     db.session.add(goal)
-    prize = ShopItem(journey_id=j.id, name="Ice Cream", cost=20)
+    prize = ShopItem(quest_id=q.id, name="Ice Cream", cost=20)
     db.session.add(prize)
-    sq = SideQuest(journey_id=j.id, name="Read Outside", currency_reward=5, repeat_type="daily")
+    sq = SideQuest(quest_id=q.id, name="Read Outside", currency_reward=5, repeat_type="daily")
     db.session.add(sq)
     db.session.commit()
     return {"member_id": m.id, "journey_id": j.id, "quest_id": q.id, "activity_type_id": at.id, "prize_id": prize.id}
@@ -121,18 +121,19 @@ def test_admin_create_journey(auth_client):
 def test_admin_journey_detail(auth_client, seeded):
     r = auth_client.get(f"/admin/journeys/{seeded['journey_id']}")
     assert r.status_code == 200
-    assert b"Pokemon" in r.data
+    assert b"Summer Reading" in r.data
 
 
 def test_admin_create_quest(auth_client, seeded, app):
-    # Need a different member (UNIQUE member+journey constraint)
+    # Need a different member
     with app.app_context():
         m2 = Member(name="Second Kid")
         db.session.add(m2)
         db.session.commit()
         member_id = m2.id
-    r = auth_client.post(f"/admin/journeys/{seeded['journey_id']}/quests/new", data={
+    r = auth_client.post("/admin/quests/new", data={
         "member_id": member_id,
+        "journey_id": seeded["journey_id"],
         "theme_name": "Cheer Camp",
         "color_primary": "#00FF00",
         "color_secondary": "#88FF88",
@@ -183,13 +184,19 @@ def test_admin_party_goal_crud(auth_client, seeded):
 
 
 def test_admin_side_quest_crud(auth_client, seeded):
-    r = auth_client.post(f"/admin/journeys/{seeded['journey_id']}/side-quests/new", data={
+    r = auth_client.post(f"/admin/quests/{seeded['quest_id']}/side-quests/new", data={
         "name": "Read before bed",
         "currency_reward": "3",
         "repeat_type": "daily",
     }, follow_redirects=True)
     assert r.status_code == 200
     assert b"Read before bed" in r.data
+
+
+def test_admin_quest_detail(auth_client, seeded):
+    r = auth_client.get(f"/admin/quests/{seeded['quest_id']}")
+    assert r.status_code == 200
+    assert b"Pokemon" in r.data
 
 
 def test_admin_achievements_page(auth_client):

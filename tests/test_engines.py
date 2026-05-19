@@ -202,8 +202,8 @@ class TestValidationEngine:
         with app.app_context():
             QuestLevel.query.delete()
             db.session.add_all([
-                QuestLevel(journey_id=seeded["journey_id"], name="Bronze", threshold=50, sort_order=1),
-                QuestLevel(journey_id=seeded["journey_id"], name="Silver", threshold=150, sort_order=2),
+                QuestLevel(quest_id=seeded["quest_a_id"], name="Bronze", threshold=50, sort_order=1),
+                QuestLevel(quest_id=seeded["quest_a_id"], name="Silver", threshold=150, sort_order=2),
             ])
             record_earn(seeded["quest_a_id"], 100, "earn")
             db.session.commit()
@@ -219,7 +219,7 @@ class TestSideQuestEngine:
         from app.engines.ledger import get_balance
         with app.app_context():
             sq = SideQuest(
-                journey_id=seeded["journey_id"], name="Library Visit",
+                quest_id=seeded["quest_a_id"], name="Library Visit",
                 currency_reward=30, repeat_type="one_time",
             )
             db.session.add(sq)
@@ -238,7 +238,7 @@ class TestSideQuestEngine:
         from app.engines.side_quest import get_available_side_quests, complete_side_quest
         with app.app_context():
             sq = SideQuest(
-                journey_id=seeded["journey_id"], name="Read Outside",
+                quest_id=seeded["quest_a_id"], name="Read Outside",
                 currency_reward=15, repeat_type="daily",
             )
             db.session.add(sq)

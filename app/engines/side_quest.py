@@ -7,13 +7,13 @@ from app.engines.ledger import record_side_quest_reward
 
 
 def get_available_side_quests(quest_id):
-    """Get side quests available for a quest's member, with completion status."""
+    """Get side quests available for a quest, with completion status."""
     quest = db.session.get(Quest, quest_id)
     if not quest:
         return []
 
     side_quests = SideQuest.query.filter_by(
-        journey_id=quest.journey_id, is_active=True
+        quest_id=quest_id, is_active=True
     ).order_by(SideQuest.sort_order).all()
 
     result = []
@@ -40,7 +40,7 @@ def complete_side_quest(side_quest_id, quest_id):
 
     if not side_quest or not quest:
         return None
-    if side_quest.journey_id != quest.journey_id:
+    if side_quest.quest_id != quest_id:
         return None
 
     status = _get_completion_status(side_quest, quest_id)

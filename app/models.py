@@ -49,79 +49,73 @@ class AchievementUnlock(db.Model):
 
 
 # ---------------------------------------------------------------------------
-# Journey-level (shared campaign)
+# Quest (the core standalone unit)
 # ---------------------------------------------------------------------------
 
-class Journey(db.Model):
-    __tablename__ = "journeys"
+class Quest(db.Model):
+    __tablename__ = "quests"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    start_date = db.Column(db.Date, nullable=True)
-    end_date = db.Column(db.Date, nullable=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False)
+    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=True)
+
+    # Theme configuration
+    theme_name = db.Column(db.String(100), nullable=False, default="Adventurer")
+    theme_graphic_url = db.Column(db.String(500), nullable=True)
+    color_primary = db.Column(db.String(7), nullable=False, default="#4F46E5")
+    color_secondary = db.Column(db.String(7), nullable=False, default="#818CF8")
+
+    # Label overrides (null = use defaults)
+    currency_label = db.Column(db.String(50), nullable=True)
+    progress_label = db.Column(db.String(50), nullable=True)
+    party_goal_label = db.Column(db.String(50), nullable=True)
+
     status = db.Column(db.String(20), nullable=False, default="active")
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    quests = db.relationship("Quest", back_populates="journey", lazy="dynamic")
-    party_goals = db.relationship("PartyGoal", back_populates="journey", lazy="dynamic")
-    quest_levels = db.relationship("QuestLevel", back_populates="journey", lazy="dynamic")
-    shop_items = db.relationship("ShopItem", back_populates="journey", lazy="dynamic")
-    side_quests = db.relationship("SideQuest", back_populates="journey", lazy="dynamic")
+    member = db.relationship("Member", back_populates="quests")
+    journey = db.relationship("Journey", back_populates="quests")
+    activity_types = db.relationship("ActivityType", back_populates="quest", lazy="dynamic")
+    transactions = db.relationship("Transaction", back_populates="quest", lazy="dynamic")
+    activity_logs = db.relationship("ActivityLog", back_populates="quest", lazy="dynamic")
+    quest_levels = db.relationship("QuestLevel", back_populates="quest", lazy="dynamic")
+    side_quests = db.relationship("SideQuest", back_populates="quest", lazy="dynamic")
+    shop_items = db.relationship("ShopItem", back_populates="quest", lazy="dynamic")
+    side_quest_completions = db.relationship("SideQuestCompletion", back_populates="quest", lazy="dynamic")
+    shop_purchases = db.relationship("ShopPurchase", back_populates="quest", lazy="dynamic")
 
+    @property
+    def display_currency(self):
+        return self.currency_label or "Gold"
 
-class PartyGoal(db.Model):
-    __tablename__ = "party_goals"
+    @property
+    def display_progress(self):
+        return self.progress_label or "XP"
 
-    id = db.Column(db.Integer, primary_key=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    target_amount = db.Column(db.Integer, nullable=False)
-    min_individual_contribution = db.Column(db.Integer, nullable=False, default=0)
-    reward_description = db.Column(db.Text, nullable=True)
-    sort_order = db.Column(db.Integer, nullable=False, default=0)
-    unlocked_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    journey = db.relationship("Journey", back_populates="party_goals")
+    @property
+    def display_party_goal(self):
+        return self.party_goal_label or "Party Goal"
 
 
 class QuestLevel(db.Model):
     __tablename__ = "quest_levels"
 
     id = db.Column(db.Integer, primary_key=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     threshold = db.Column(db.Integer, nullable=False)
     reward_description = db.Column(db.Text, nullable=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    journey = db.relationship("Journey", back_populates="quest_levels")
-
-
-class ShopItem(db.Model):
-    __tablename__ = "shop_items"
-
-    id = db.Column(db.Integer, primary_key=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    cost = db.Column(db.Integer, nullable=False)
-    image_url = db.Column(db.String(500), nullable=True)
-    is_available = db.Column(db.Boolean, nullable=False, default=True)
-    sort_order = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    journey = db.relationship("Journey", back_populates="shop_items")
-    purchases = db.relationship("ShopPurchase", back_populates="shop_item", lazy="dynamic")
+    quest = db.relationship("Quest", back_populates="quest_levels")
 
 
 class SideQuest(db.Model):
     __tablename__ = "side_quests"
 
     id = db.Column(db.Integer, primary_key=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     currency_reward = db.Column(db.Integer, nullable=False)
@@ -130,7 +124,7 @@ class SideQuest(db.Model):
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    journey = db.relationship("Journey", back_populates="side_quests")
+    quest = db.relationship("Quest", back_populates="side_quests")
     completions = db.relationship("SideQuestCompletion", back_populates="side_quest", lazy="dynamic")
 
     @property
@@ -150,53 +144,30 @@ class SideQuestCompletion(db.Model):
     quest = db.relationship("Quest", back_populates="side_quest_completions")
 
 
-# ---------------------------------------------------------------------------
-# Quest-level (individual within a journey)
-# ---------------------------------------------------------------------------
-
-class Quest(db.Model):
-    __tablename__ = "quests"
+class ShopItem(db.Model):
+    """Shop item can belong to a Quest (personal) or Journey (shared). One must be set."""
+    __tablename__ = "shop_items"
 
     id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
-
-    # Theme configuration
-    theme_name = db.Column(db.String(100), nullable=False, default="Adventurer")
-    theme_graphic_url = db.Column(db.String(500), nullable=True)
-    color_primary = db.Column(db.String(7), nullable=False, default="#4F46E5")
-    color_secondary = db.Column(db.String(7), nullable=False, default="#818CF8")
-
-    # Label overrides (null = use defaults)
-    currency_label = db.Column(db.String(50), nullable=True)
-    progress_label = db.Column(db.String(50), nullable=True)
-    party_goal_label = db.Column(db.String(50), nullable=True)
-
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=True)
+    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=True)
+    name = db.Column(db.String(200), nullable=False)
+    cost = db.Column(db.Integer, nullable=False)
+    image_url = db.Column(db.String(500), nullable=True)
+    is_available = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    member = db.relationship("Member", back_populates="quests")
-    journey = db.relationship("Journey", back_populates="quests")
-    activity_types = db.relationship("ActivityType", back_populates="quest", lazy="dynamic")
-    transactions = db.relationship("Transaction", back_populates="quest", lazy="dynamic")
-    activity_logs = db.relationship("ActivityLog", back_populates="quest", lazy="dynamic")
-    side_quest_completions = db.relationship("SideQuestCompletion", back_populates="quest", lazy="dynamic")
-    shop_purchases = db.relationship("ShopPurchase", back_populates="quest", lazy="dynamic")
+    quest = db.relationship("Quest", back_populates="shop_items")
+    journey = db.relationship("Journey", back_populates="shop_items")
+    purchases = db.relationship("ShopPurchase", back_populates="shop_item", lazy="dynamic")
 
     __table_args__ = (
-        db.UniqueConstraint("member_id", "journey_id", name="uq_member_journey"),
+        db.CheckConstraint(
+            "(quest_id IS NOT NULL AND journey_id IS NULL) OR (quest_id IS NULL AND journey_id IS NOT NULL)",
+            name="ck_shop_item_owner",
+        ),
     )
-
-    @property
-    def display_currency(self):
-        return self.currency_label or "Gold"
-
-    @property
-    def display_progress(self):
-        return self.progress_label or "XP"
-
-    @property
-    def display_party_goal(self):
-        return self.party_goal_label or "Party Goal"
 
 
 class ActivityType(db.Model):
@@ -276,3 +247,40 @@ class ShopPurchase(db.Model):
 
     shop_item = db.relationship("ShopItem", back_populates="purchases")
     quest = db.relationship("Quest", back_populates="shop_purchases")
+
+
+# ---------------------------------------------------------------------------
+# Journey (optional grouping layer)
+# ---------------------------------------------------------------------------
+
+class Journey(db.Model):
+    __tablename__ = "journeys"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="active")
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    quests = db.relationship("Quest", back_populates="journey", lazy="dynamic")
+    party_goals = db.relationship("PartyGoal", back_populates="journey", lazy="dynamic")
+    shop_items = db.relationship("ShopItem", back_populates="journey", lazy="dynamic")
+
+
+class PartyGoal(db.Model):
+    __tablename__ = "party_goals"
+
+    id = db.Column(db.Integer, primary_key=True)
+    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    target_amount = db.Column(db.Integer, nullable=False)
+    min_individual_contribution = db.Column(db.Integer, nullable=False, default=0)
+    reward_description = db.Column(db.Text, nullable=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    unlocked_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    journey = db.relationship("Journey", back_populates="party_goals")

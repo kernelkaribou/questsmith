@@ -49,9 +49,10 @@ def logout():
 @bp.route("/")
 @admin_required
 def index():
+    quests = Quest.query.filter_by(status="active").all()
     journeys = Journey.query.filter_by(status="active").all()
     members = Member.query.all()
-    return render_template("admin/index.html", journeys=journeys, members=members)
+    return render_template("admin/index.html", quests=quests, journeys=journeys, members=members)
 
 
 # --- Members ---
@@ -99,76 +100,20 @@ def member_edit(member_id):
     return render_template("admin/member_form.html", member=member)
 
 
-# --- Journeys ---
+# --- Quests (the core unit) ---
 
-@bp.route("/journeys")
+@bp.route("/quests/new", methods=["GET", "POST"])
 @admin_required
-def journeys():
-    return render_template("admin/journeys.html", journeys=Journey.query.all())
-
-
-@bp.route("/journeys/new", methods=["GET", "POST"])
-@admin_required
-def journey_create():
-    if request.method == "POST":
-        journey = Journey(
-            name=request.form["name"],
-            description=request.form.get("description") or None,
-            start_date=_parse_date(request.form.get("start_date")),
-            end_date=_parse_date(request.form.get("end_date")),
-            status=request.form.get("status", "active"),
-        )
-        db.session.add(journey)
-        db.session.commit()
-        flash(f"Journey '{journey.name}' created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey.id))
-    return render_template("admin/journey_form.html", journey=None)
-
-
-@bp.route("/journeys/<int:journey_id>")
-@admin_required
-def journey_detail(journey_id):
-    journey = db.session.get(Journey, journey_id)
-    quests = Quest.query.filter_by(journey_id=journey_id).all()
-    balances = {q.id: ledger.get_balance(q.id) for q in quests}
-    return render_template(
-        "admin/journey_detail.html",
-        journey=journey,
-        quests=quests,
-        balances=balances,
-        party_goals=PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all(),
-        shop_items=ShopItem.query.filter_by(journey_id=journey_id).order_by(ShopItem.sort_order).all(),
-        quest_levels=QuestLevel.query.filter_by(journey_id=journey_id).order_by(QuestLevel.sort_order).all(),
-        side_quests=SideQuest.query.filter_by(journey_id=journey_id).order_by(SideQuest.sort_order).all(),
-    )
-
-
-@bp.route("/journeys/<int:journey_id>/edit", methods=["GET", "POST"])
-@admin_required
-def journey_edit(journey_id):
-    journey = db.session.get(Journey, journey_id)
-    if request.method == "POST":
-        journey.name = request.form["name"]
-        journey.description = request.form.get("description") or None
-        journey.start_date = _parse_date(request.form.get("start_date"))
-        journey.end_date = _parse_date(request.form.get("end_date"))
-        journey.status = request.form.get("status", "active")
-        db.session.commit()
-        flash("Journey updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/journey_form.html", journey=journey)
-
-
-# --- Quests ---
-
-@bp.route("/journeys/<int:journey_id>/quests/new", methods=["GET", "POST"])
-@admin_required
-def quest_create(journey_id):
+def quest_create():
     if request.method == "POST":
         graphic_url = request.form.get("theme_graphic_url") or None
         uploaded = request.files.get("theme_graphic_file")
         if uploaded and uploaded.filename:
             graphic_url = save_uploaded_image(uploaded)
+
+        journey_id = request.form.get("journey_id") or None
+        if journey_id:
+            journey_id = int(journey_id)
 
         quest = Quest(
             member_id=int(request.form["member_id"]),
@@ -184,9 +129,35 @@ def quest_create(journey_id):
         db.session.add(quest)
         db.session.commit()
         flash(f"Quest '{quest.theme_name}' created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
+        return redirect(url_for("admin.quest_detail", quest_id=quest.id))
     members = Member.query.all()
-    return render_template("admin/quest_form.html", quest=None, members=members, journey_id=journey_id)
+    journeys = Journey.query.filter_by(status="active").all()
+    return render_template("admin/quest_form.html", quest=None, members=members, journeys=journeys)
+
+
+@bp.route("/quests/<int:quest_id>")
+@admin_required
+def quest_detail(quest_id):
+    quest = db.session.get(Quest, quest_id)
+    balance = ledger.get_balance(quest_id)
+    lifetime_earned = ledger.get_lifetime_earned(quest_id)
+
+    # Combined shop: quest-owned + journey-owned (if linked)
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
+    if quest.journey_id:
+        journey_shop = ShopItem.query.filter_by(journey_id=quest.journey_id).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + journey_shop
+
+    return render_template(
+        "admin/quest_detail.html",
+        quest=quest,
+        balance=balance,
+        lifetime_earned=lifetime_earned,
+        levels=QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.sort_order).all(),
+        side_quests=SideQuest.query.filter_by(quest_id=quest_id).order_by(SideQuest.sort_order).all(),
+        shop_items=shop_items,
+        recent_logs=quest.activity_logs.order_by(db.text("logged_at DESC")).limit(10).all(),
+    )
 
 
 @bp.route("/quests/<int:quest_id>/edit", methods=["GET", "POST"])
@@ -200,6 +171,9 @@ def quest_edit(quest_id):
         quest.currency_label = request.form.get("currency_label") or None
         quest.progress_label = request.form.get("progress_label") or None
         quest.party_goal_label = request.form.get("party_goal_label") or None
+
+        journey_id = request.form.get("journey_id") or None
+        quest.journey_id = int(journey_id) if journey_id else None
 
         # Handle graphic upload or URL
         uploaded = request.files.get("theme_graphic_file")
@@ -239,8 +213,10 @@ def quest_edit(quest_id):
 
         db.session.commit()
         flash("Quest updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
-    return render_template("admin/quest_form.html", quest=quest, members=None, journey_id=quest.journey_id)
+        return redirect(url_for("admin.quest_detail", quest_id=quest.id))
+    members = Member.query.all()
+    journeys = Journey.query.filter_by(status="active").all()
+    return render_template("admin/quest_form.html", quest=quest, members=members, journeys=journeys)
 
 
 # --- Activity Logging ---
@@ -269,7 +245,7 @@ def log_activity():
         next_url = request.form.get("next") or url_for("admin.log_activity")
         return redirect(next_url)
 
-    quests = Quest.query.join(Journey).filter(Journey.status == "active").all()
+    quests = Quest.query.filter_by(status="active").all()
     for q in quests:
         q.activity_types_json = json.dumps([
             {"id": at.id, "name": at.name, "unit": at.unit_label}
@@ -297,7 +273,9 @@ def redeem(quest_id):
         flash(f"{quest.member.name} redeemed '{item.name}'", "success")
     else:
         flash(f"Insufficient balance for '{item.name}'", "error")
-    return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
+
+    next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
+    return redirect(next_url)
 
 
 # --- Side Quest Award ---
@@ -312,11 +290,160 @@ def side_quest_award(quest_id, side_quest_id):
         flash(f"Side quest '{sq.name}' awarded!", "success")
     else:
         flash("Side quest not available (already completed or on cooldown)", "error")
-    quest = db.session.get(Quest, quest_id)
-    return redirect(url_for("admin.journey_detail", journey_id=quest.journey_id))
+    return redirect(url_for("admin.quest_detail", quest_id=quest_id))
 
 
-# --- Party Goals ---
+# --- Quest Levels (belong to quest) ---
+
+@bp.route("/quests/<int:quest_id>/levels/new", methods=["GET", "POST"])
+@admin_required
+def level_create(quest_id):
+    if request.method == "POST":
+        level = QuestLevel(
+            quest_id=quest_id,
+            name=request.form["name"],
+            threshold=int(request.form["threshold"]),
+            reward_description=request.form.get("reward_description") or None,
+        )
+        db.session.add(level)
+        db.session.commit()
+        flash("Quest Level created", "success")
+        return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+    return render_template("admin/generic_form.html", type_name="Quest Level", item=None, quest_id=quest_id)
+
+
+@bp.route("/levels/<int:level_id>/edit", methods=["GET", "POST"])
+@admin_required
+def level_edit(level_id):
+    level = db.session.get(QuestLevel, level_id)
+    if request.method == "POST":
+        level.name = request.form["name"]
+        level.threshold = int(request.form["threshold"])
+        level.reward_description = request.form.get("reward_description") or None
+        db.session.commit()
+        flash("Quest Level updated", "success")
+        return redirect(url_for("admin.quest_detail", quest_id=level.quest_id))
+    return render_template("admin/generic_form.html", type_name="Quest Level", item=level, quest_id=level.quest_id)
+
+
+# --- Side Quests (belong to quest) ---
+
+@bp.route("/quests/<int:quest_id>/side-quests/new", methods=["GET", "POST"])
+@admin_required
+def side_quest_create(quest_id):
+    if request.method == "POST":
+        sq = SideQuest(
+            quest_id=quest_id,
+            name=request.form["name"],
+            description=request.form.get("description") or None,
+            currency_reward=int(request.form["currency_reward"]),
+            repeat_type=request.form.get("repeat_type", "one_time"),
+        )
+        db.session.add(sq)
+        db.session.commit()
+        flash("Side Quest created", "success")
+        return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+    return render_template("admin/generic_form.html", type_name="Side Quest", item=None, quest_id=quest_id)
+
+
+@bp.route("/side-quests/<int:side_quest_id>/edit", methods=["GET", "POST"])
+@admin_required
+def side_quest_edit(side_quest_id):
+    sq = db.session.get(SideQuest, side_quest_id)
+    if request.method == "POST":
+        sq.name = request.form["name"]
+        sq.description = request.form.get("description") or None
+        sq.currency_reward = int(request.form["currency_reward"])
+        sq.repeat_type = request.form.get("repeat_type", "one_time")
+        db.session.commit()
+        flash("Side Quest updated", "success")
+        return redirect(url_for("admin.quest_detail", quest_id=sq.quest_id))
+    return render_template("admin/generic_form.html", type_name="Side Quest", item=sq, quest_id=sq.quest_id)
+
+
+# --- Quest Shop Items (belong to quest) ---
+
+@bp.route("/quests/<int:quest_id>/shop/new", methods=["GET", "POST"])
+@admin_required
+def quest_shop_item_create(quest_id):
+    if request.method == "POST":
+        image_url = request.form.get("image_url") or None
+        uploaded = request.files.get("image_file")
+        if uploaded and uploaded.filename:
+            image_url = save_uploaded_image(uploaded)
+
+        item = ShopItem(
+            quest_id=quest_id,
+            name=request.form["name"],
+            cost=int(request.form["cost"]),
+            image_url=image_url,
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash("Shop item created", "success")
+        return redirect(url_for("admin.quest_detail", quest_id=quest_id))
+    return render_template("admin/generic_form.html", type_name="Shop Item", item=None, quest_id=quest_id)
+
+
+# --- Journeys (optional grouping) ---
+
+@bp.route("/journeys")
+@admin_required
+def journeys():
+    return render_template("admin/journeys.html", journeys=Journey.query.all())
+
+
+@bp.route("/journeys/new", methods=["GET", "POST"])
+@admin_required
+def journey_create():
+    if request.method == "POST":
+        journey = Journey(
+            name=request.form["name"],
+            description=request.form.get("description") or None,
+            start_date=_parse_date(request.form.get("start_date")),
+            end_date=_parse_date(request.form.get("end_date")),
+            status=request.form.get("status", "active"),
+        )
+        db.session.add(journey)
+        db.session.commit()
+        flash(f"Journey '{journey.name}' created", "success")
+        return redirect(url_for("admin.journey_detail", journey_id=journey.id))
+    return render_template("admin/journey_form.html", journey=None)
+
+
+@bp.route("/journeys/<int:journey_id>")
+@admin_required
+def journey_detail(journey_id):
+    journey = db.session.get(Journey, journey_id)
+    quests = Quest.query.filter_by(journey_id=journey_id).all()
+    balances = {q.id: ledger.get_balance(q.id) for q in quests}
+    return render_template(
+        "admin/journey_detail.html",
+        journey=journey,
+        quests=quests,
+        balances=balances,
+        party_goals=PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all(),
+        shop_items=ShopItem.query.filter_by(journey_id=journey_id).order_by(ShopItem.sort_order).all(),
+    )
+
+
+@bp.route("/journeys/<int:journey_id>/edit", methods=["GET", "POST"])
+@admin_required
+def journey_edit(journey_id):
+    journey = db.session.get(Journey, journey_id)
+    if request.method == "POST":
+        journey.name = request.form["name"]
+        journey.description = request.form.get("description") or None
+        journey.start_date = _parse_date(request.form.get("start_date"))
+        journey.end_date = _parse_date(request.form.get("end_date"))
+        journey.status = request.form.get("status", "active")
+        db.session.commit()
+        flash("Journey updated", "success")
+        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
+    return render_template("admin/journey_form.html", journey=journey)
+
+
+# --- Party Goals (belong to journey) ---
 
 @bp.route("/journeys/<int:journey_id>/party-goals/new", methods=["GET", "POST"])
 @admin_required
@@ -353,11 +480,11 @@ def party_goal_edit(goal_id):
     return render_template("admin/generic_form.html", type_name="Party Goal", item=goal, journey_id=goal.journey_id)
 
 
-# --- Quest Shop ---
+# --- Journey Shared Shop Items ---
 
 @bp.route("/journeys/<int:journey_id>/shop/new", methods=["GET", "POST"])
 @admin_required
-def shop_item_create(journey_id):
+def journey_shop_item_create(journey_id):
     if request.method == "POST":
         image_url = request.form.get("image_url") or None
         uploaded = request.files.get("image_file")
@@ -372,7 +499,7 @@ def shop_item_create(journey_id):
         )
         db.session.add(item)
         db.session.commit()
-        flash("Shop item created", "success")
+        flash("Shared shop item created", "success")
         return redirect(url_for("admin.journey_detail", journey_id=journey_id))
     return render_template("admin/generic_form.html", type_name="Shop Item", item=None, journey_id=journey_id)
 
@@ -391,76 +518,13 @@ def shop_item_edit(item_id):
             item.image_url = request.form["image_url"]
         db.session.commit()
         flash("Shop item updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=item.journey_id))
-    return render_template("admin/generic_form.html", type_name="Shop Item", item=item, journey_id=item.journey_id)
-
-
-# --- Quest Levels ---
-
-@bp.route("/journeys/<int:journey_id>/levels/new", methods=["GET", "POST"])
-@admin_required
-def level_create(journey_id):
-    if request.method == "POST":
-        level = QuestLevel(
-            journey_id=journey_id,
-            name=request.form["name"],
-            threshold=int(request.form["threshold"]),
-            reward_description=request.form.get("reward_description") or None,
-        )
-        db.session.add(level)
-        db.session.commit()
-        flash("Quest Level created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Quest Level", item=None, journey_id=journey_id)
-
-
-@bp.route("/levels/<int:level_id>/edit", methods=["GET", "POST"])
-@admin_required
-def level_edit(level_id):
-    level = db.session.get(QuestLevel, level_id)
-    if request.method == "POST":
-        level.name = request.form["name"]
-        level.threshold = int(request.form["threshold"])
-        level.reward_description = request.form.get("reward_description") or None
-        db.session.commit()
-        flash("Quest Level updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=level.journey_id))
-    return render_template("admin/generic_form.html", type_name="Quest Level", item=level, journey_id=level.journey_id)
-
-
-# --- Side Quests ---
-
-@bp.route("/journeys/<int:journey_id>/side-quests/new", methods=["GET", "POST"])
-@admin_required
-def side_quest_create(journey_id):
-    if request.method == "POST":
-        sq = SideQuest(
-            journey_id=journey_id,
-            name=request.form["name"],
-            description=request.form.get("description") or None,
-            currency_reward=int(request.form["currency_reward"]),
-            repeat_type=request.form.get("repeat_type", "one_time"),
-        )
-        db.session.add(sq)
-        db.session.commit()
-        flash("Side Quest created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Side Quest", item=None, journey_id=journey_id)
-
-
-@bp.route("/side-quests/<int:side_quest_id>/edit", methods=["GET", "POST"])
-@admin_required
-def side_quest_edit(side_quest_id):
-    sq = db.session.get(SideQuest, side_quest_id)
-    if request.method == "POST":
-        sq.name = request.form["name"]
-        sq.description = request.form.get("description") or None
-        sq.currency_reward = int(request.form["currency_reward"])
-        sq.repeat_type = request.form.get("repeat_type", "one_time")
-        db.session.commit()
-        flash("Side Quest updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=sq.journey_id))
-    return render_template("admin/generic_form.html", type_name="Side Quest", item=sq, journey_id=sq.journey_id)
+        # Redirect based on owner
+        if item.journey_id:
+            return redirect(url_for("admin.journey_detail", journey_id=item.journey_id))
+        return redirect(url_for("admin.quest_detail", quest_id=item.quest_id))
+    owner_id = item.journey_id if item.journey_id else None
+    return render_template("admin/generic_form.html", type_name="Shop Item", item=item,
+                           journey_id=item.journey_id, quest_id=item.quest_id)
 
 
 # --- Achievements ---
