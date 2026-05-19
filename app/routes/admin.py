@@ -117,6 +117,11 @@ def quest_create():
         if journey_id:
             journey_id = int(journey_id)
 
+        completion_target = request.form.get("completion_target") or None
+        if completion_target:
+            completion_target = int(completion_target)
+        completion_bonus = int(request.form.get("completion_bonus") or 0)
+
         quest = Quest(
             member_id=int(request.form["member_id"]),
             journey_id=journey_id,
@@ -127,14 +132,44 @@ def quest_create():
             currency_label=request.form.get("currency_label") or None,
             progress_label=request.form.get("progress_label") or None,
             party_goal_label=request.form.get("party_goal_label") or None,
+            completion_target=completion_target,
+            completion_bonus=completion_bonus,
         )
         db.session.add(quest)
+        db.session.flush()
+
+        # Create initial activity type + earning rule if provided
+        activity_name = request.form.get("new_activity_name")
+        if activity_name:
+            from app.models import ActivityType, EarningRule
+            unit_label = request.form.get("new_activity_unit") or "units"
+            is_milestone = bool(request.form.get("new_activity_milestone"))
+            at = ActivityType(
+                quest_id=quest.id,
+                name=activity_name,
+                unit_label=unit_label,
+                is_milestone=is_milestone,
+            )
+            db.session.add(at)
+            db.session.flush()
+
+            rule_qty = request.form.get("new_rule_qty")
+            rule_reward = request.form.get("new_rule_reward")
+            if rule_qty and rule_reward:
+                rule = EarningRule(
+                    activity_type_id=at.id,
+                    quantity_required=int(rule_qty),
+                    currency_reward=int(rule_reward),
+                )
+                db.session.add(rule)
+
         db.session.commit()
         flash(f"Quest '{quest.theme_name}' created", "success")
-        return redirect(url_for("admin.quest_detail", quest_id=quest.id))
+        return redirect(url_for("admin.quest_edit", quest_id=quest.id))
     members = Member.query.all()
     journeys = Journey.query.filter_by(status="active").all()
-    return render_template("admin/quest_form.html", quest=None, members=members, journeys=journeys)
+    preselect_journey = request.args.get("journey_id")
+    return render_template("admin/quest_form.html", quest=None, members=members, journeys=journeys, preselect_journey=preselect_journey)
 
 
 @bp.route("/quests/<int:quest_id>")

@@ -29,8 +29,9 @@
         {% endfor %}
     </div>
     {% else %}
-    <p class="text-gray-400 text-sm">No quests linked to this journey yet. Link quests via their edit page.</p>
+    <p class="text-gray-400 text-sm">No quests linked to this journey yet.</p>
     {% endif %}
+    <a href="{{ url_for('admin.quest_create', journey_id=journey.id) }}" class="mt-3 inline-block text-sm text-indigo-600 hover:underline">+ Create Quest for this Journey</a>
 </section>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

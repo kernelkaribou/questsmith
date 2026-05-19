@@ -19,7 +19,7 @@
         <select name="journey_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">-- None (standalone quest) --</option>
             {% for j in journeys %}
-            <option value="{{ j.id }}" {{ 'selected' if quest and quest.journey_id == j.id }}>{{ j.name }}</option>
+            <option value="{{ j.id }}" {{ 'selected' if (quest and quest.journey_id == j.id) or (not quest and preselect_journey and preselect_journey|string == j.id|string) }}>{{ j.name }}</option>
             {% endfor %}
         </select>
     </div>
@@ -112,18 +112,44 @@
         </div>
         {% endfor %}
     </div>
+    {% endif %}
+
+    <!-- Add Activity Type (available on both create and edit) -->
+    <hr class="my-6">
+    <h3 class="font-semibold mb-3">{{ 'Add Activity Type' if quest else 'First Activity Type' }}</h3>
+    <p class="text-xs text-gray-500 mb-3">{{ 'Define how the adventurer earns currency.' if not quest else '' }}</p>
     <div class="p-3 bg-blue-50 rounded mb-4">
-        <p class="text-xs text-blue-700 mb-2">Add Activity Type:</p>
-        <div class="grid grid-cols-4 gap-2">
-            <input type="text" name="new_activity_name" placeholder="Name" class="px-2 py-1 border rounded text-sm">
-            <input type="text" name="new_activity_unit" placeholder="Unit (pages)" class="px-2 py-1 border rounded text-sm">
-            <input type="number" name="new_rule_qty" placeholder="Qty (50)" class="px-2 py-1 border rounded text-sm">
-            <input type="number" name="new_rule_reward" placeholder="Reward (10)" class="px-2 py-1 border rounded text-sm">
+        <div class="grid grid-cols-2 gap-2 mb-2">
+            <input type="text" name="new_activity_name" placeholder="Name (e.g., Reading)" class="px-2 py-1 border rounded text-sm">
+            <input type="text" name="new_activity_unit" placeholder="Unit (e.g., pages)" class="px-2 py-1 border rounded text-sm">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <input type="number" name="new_rule_qty" placeholder="Qty per reward (e.g., 50)" class="px-2 py-1 border rounded text-sm">
+            <input type="number" name="new_rule_reward" placeholder="Currency reward (e.g., 1)" class="px-2 py-1 border rounded text-sm">
         </div>
         <label class="flex items-center gap-2 mt-2 text-xs text-gray-600">
             <input type="checkbox" name="new_activity_milestone" class="rounded border-gray-300 text-amber-600">
-            This is a milestone (e.g., "Books Finished") — logged via checkbox, not quantity
+            This is a milestone (e.g., "Books Finished") -- logged via checkbox, not quantity
         </label>
+    </div>
+
+    {% if not quest %}
+    <!-- Completion target on creation -->
+    <hr class="my-6">
+    <h3 class="font-semibold mb-3">Quest Completion (optional)</h3>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Target</label>
+            <input type="number" name="completion_target" min="1" placeholder="e.g., 100"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-xs text-gray-500 mt-1">Total earned to complete quest (leave empty for no end)</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Bonus</label>
+            <input type="number" name="completion_bonus" min="0" value="0" placeholder="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-xs text-gray-500 mt-1">Bonus currency on quest complete</p>
+        </div>
     </div>
     {% endif %}
 
