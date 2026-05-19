@@ -36,11 +36,18 @@ def quest_view(quest_id):
         party_goals = PartyGoal.query.filter_by(journey_id=journey.id).order_by(PartyGoal.sort_order).all()
         journey_totals = ledger.get_journey_totals(journey.id)
         combined_total = sum(journey_totals.values())
+        my_contribution = journey_totals.get(member.id, 0)
+        num_members = max(1, len(journey_totals))
         for goal in party_goals:
+            target = goal.target_amount or 1
             goal_progress.append({
                 "goal": goal,
                 "current": combined_total,
-                "percent": min(100, int(combined_total / goal.target_amount * 100)) if goal.target_amount else 0,
+                "my_contribution": my_contribution,
+                "my_percent": min(100, int(my_contribution / target * 100)),
+                "percent": min(100, int(combined_total / target * 100)),
+                "my_remaining": max(0, (target // num_members) - my_contribution),
+                "fair_share": target // num_members,
             })
 
     # Quest Levels (belong to quest now)
@@ -59,9 +66,10 @@ def quest_view(quest_id):
         journey_shop = ShopItem.query.filter_by(journey_id=journey.id).order_by(ShopItem.sort_order).all()
         shop_items = shop_items + journey_shop
 
-    # Side quests (belong to quest now)
+    # Side quests (belong to quest now) - split into available and completed
     sq_data = side_quest_engine.get_available_side_quests(quest_id)
-    sq_status = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data]
+    sq_available = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data if item["can_complete"]]
+    sq_completed = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data if not item["can_complete"]]
 
     # Quest chains
     chain_data = side_quest_engine.get_available_chains(quest_id)
@@ -90,7 +98,8 @@ def quest_view(quest_id):
         levels=levels,
         unlocked_levels=unlocked_levels,
         shop_items=shop_items,
-        sq_status=sq_status,
+        sq_available=sq_available,
+        sq_completed=sq_completed,
         chain_data=chain_data,
         earning_progress=earning_progress,
         achievements=achievements,
