@@ -458,39 +458,13 @@
             {% set pg = (quest.color_primary[3:5])|int(0, 16) if quest.color_primary|length >= 7 else 70 %}
             {% set pb = (quest.color_primary[5:7])|int(0, 16) if quest.color_primary|length >= 7 else 229 %}
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-5 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40"
+               class="block quest-card rounded-2xl p-6 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40"
                style="--glow-color: {{ pr }}, {{ pg }}, {{ pb }}"
                onmouseenter="this.style.boxShadow='0 0 24px rgba('+this.style.getPropertyValue('--glow-color')+',0.35)'"
                onmouseleave="this.style.boxShadow='none'">
-                <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-4">💎 Treasure Shop</h2>
-                <div class="flex items-center justify-center gap-3">
-                    {% for item in shop_items[:2] %}
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} group-hover:scale-110 transition-transform duration-300">
-                        {% if item.image_url %}
-                        <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}" alt="" class="w-7 h-7 object-contain">
-                        {% else %}
-                        <span class="text-base">🎁</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    {% set affordable = shop_items|selectattr('cost', 'le', balance)|list|length %}
-                    <p class="text-sm font-medium px-3 {{ 'text-white/70' if bg_dark else 'text-gray-600' }} group-hover:scale-105 transition-transform duration-300">
-                        {% if affordable > 0 %}
-                        ✨ Your loot awaits ✨
-                        {% else %}
-                        ✨ Peek inside... ✨
-                        {% endif %}
-                    </p>
-                    {% for item in shop_items[2:4] %}
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} group-hover:scale-110 transition-transform duration-300">
-                        {% if item.image_url %}
-                        <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}" alt="" class="w-7 h-7 object-contain">
-                        {% else %}
-                        <span class="text-base">🎁</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
+                <p class="text-center text-lg font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
+                    💎 Treasure Shop
+                </p>
             </a>
             {% endif %}
 
