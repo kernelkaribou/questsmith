@@ -15,7 +15,7 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4 mt-6">
-        {% if logs %}
+        {% if logs or journal_completions %}
         <div class="space-y-3">
             {% for log in logs %}
             <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4" style="border-left: 4px solid {{ quest.color_primary }}">
@@ -28,6 +28,20 @@
                 </div>
                 {% if log.description %}
                 <p class="text-sm text-white/50 mt-1">{{ log.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% for jc in journal_completions %}
+            <div class="bg-green-500/5 backdrop-blur-sm border border-green-500/20 rounded-lg p-4" style="border-left: 4px solid #22c55e">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-medium text-green-300">{{ jc.name }}</span>
+                        {% if jc.type == 'chain' %}<span class="text-xs text-green-400/60 ml-1">(chain)</span>{% endif %}
+                    </div>
+                    <span class="text-xs text-white/30">{{ jc.date.strftime('%b %d, %Y %I:%M %p') }}</span>
+                </div>
+                {% if jc.reward > 0 %}
+                <p class="text-sm text-green-400/60 mt-1">+{{ jc.reward }} {{ ctx.currency_label }}</p>
                 {% endif %}
             </div>
             {% endfor %}

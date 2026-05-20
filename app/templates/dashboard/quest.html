@@ -521,7 +521,7 @@
             <!-- Adventure Journal -->
             <div class="quest-card rounded-2xl p-4 border-l-4 border-indigo-300">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">📖 Adventure Journal</h2>
-                {% if recent_logs or purchases %}
+                {% if recent_logs or purchases or journal_completions %}
                 <div class="space-y-2" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
                     <div @click="openLog = openLog === {{ log.id }} ? null : {{ log.id }}"
@@ -536,6 +536,19 @@
                             {% set earned = log.transactions|list %}
                             {% if earned %}<p><strong>Earned:</strong> {{ earned|map(attribute='amount')|sum }} {{ ctx.currency_label }}</p>{% endif %}
                         </div>
+                    </div>
+                    {% endfor %}
+                    {% for jc in journal_completions[:5] %}
+                    <div class="p-2.5 rounded-lg border border-green-100 bg-green-50/30 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium text-green-700">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
+                            {% if jc.reward > 0 %}
+                            <span class="text-green-600 font-medium">+{{ jc.reward }} {{ ctx.currency_label }}</span>
+                            {% else %}
+                            <span class="text-green-500 text-[10px]">completed</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-green-400 text-[10px] mt-0.5">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                     {% for p in purchases[:5] %}

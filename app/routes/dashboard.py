@@ -6,6 +6,7 @@ from app import db
 from app.models import (
     Member, MemberAvatar, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
     ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType,
+    SideQuestCompletion, SideQuestChain,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
 from app.engines import party_goals as party_goals_engine, shop as shop_engine
@@ -79,6 +80,27 @@ def quest_view(quest_id):
     # Activity timeline (recent 5; full log accessible via View Full History)
     recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(5).all()
 
+    # Side quest / chain completions for the journal
+    # Standalone completions (not chain steps) + chain completions (as single entries)
+    standalone_completions = SideQuestCompletion.query.filter_by(quest_id=quest_id).join(
+        SideQuestCompletion.side_quest
+    ).filter(
+        SideQuestCompletion.reversed_at.is_(None),
+        db.text("side_quests.chain_id IS NULL"),
+    ).order_by(SideQuestCompletion.completed_at.desc()).limit(10).all()
+
+    completed_chain_entries = SideQuestChain.query.filter_by(quest_id=quest_id).filter(
+        SideQuestChain.completed_at.isnot(None)
+    ).order_by(SideQuestChain.completed_at.desc()).limit(10).all()
+
+    # Merge into a unified list sorted by date
+    journal_completions = []
+    for c in standalone_completions:
+        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "date": c.completed_at})
+    for chain in completed_chain_entries:
+        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "date": chain.completed_at})
+    journal_completions.sort(key=lambda x: x["date"], reverse=True)
+
     # Shop purchase history
     purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
 
@@ -109,6 +131,7 @@ def quest_view(quest_id):
         earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,
+        journal_completions=journal_completions,
         purchases=purchases,
         activity_types=activity_types,
         ctx=ctx,
@@ -233,10 +256,31 @@ def quest_history(quest_id):
     quest = db.session.get(Quest, quest_id)
     logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).all()
     ctx = quest_engine.get_quest_context(quest_id)
+
+    # Side quest completions for history
+    standalone_completions = SideQuestCompletion.query.filter_by(quest_id=quest_id).join(
+        SideQuestCompletion.side_quest
+    ).filter(
+        SideQuestCompletion.reversed_at.is_(None),
+        db.text("side_quests.chain_id IS NULL"),
+    ).order_by(SideQuestCompletion.completed_at.desc()).all()
+
+    completed_chains = SideQuestChain.query.filter_by(quest_id=quest_id).filter(
+        SideQuestChain.completed_at.isnot(None)
+    ).order_by(SideQuestChain.completed_at.desc()).all()
+
+    journal_completions = []
+    for c in standalone_completions:
+        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "date": c.completed_at})
+    for chain in completed_chains:
+        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "date": chain.completed_at})
+    journal_completions.sort(key=lambda x: x["date"], reverse=True)
+
     return render_template(
         "dashboard/history.html",
         quest=quest,
         logs=logs,
+        journal_completions=journal_completions,
         ctx=ctx,
     )
 
