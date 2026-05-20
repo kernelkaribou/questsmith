@@ -1,28 +1,23 @@
-# Stage 1: Build Tailwind CSS
-FROM node:20-slim AS css-builder
+# Stage 1: Build Tailwind CSS (native platform - output is arch-independent)
+FROM --platform=$BUILDPLATFORM node:20-alpine AS css-builder
 
 WORKDIR /build
 
-COPY tailwind.config.js .
+COPY tailwind.config.js package.json package-lock.json ./
+RUN npm ci
+
 COPY app/static/css/input.css ./app/static/css/input.css
 COPY app/templates ./app/templates
 
-RUN npx --yes tailwindcss@3.4.17 -i ./app/static/css/input.css -o ./app/static/css/style.css --minify
+RUN npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --minify
 
 # Stage 2: Build Python dependencies
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libc6-dev \
-    libjpeg62-turbo-dev \
-    zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --only-binary=:all: --prefix=/install -r requirements.txt
 
 # Stage 3: Runtime
 FROM python:3.12-slim

@@ -1,0 +1,14 @@
+.git
+.github
+tests
+tmp
+data
+uploads
+__pycache__
+*.pyc
+.pytest_cache
+node_modules
+.env
+*.db
+Dockerfile*
+docker-compose*.yml
