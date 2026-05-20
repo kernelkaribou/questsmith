@@ -60,81 +60,88 @@
         .badge-pop { animation: none; }
     }
 </style>
-<div class="quest-page min-h-screen" x-data="{
-    confirmItem: null,
-    balance: {{ balance }},
-    displayBalance: {{ balance }},
-    balanceAnimating: false,
-    purchasing: false,
-    purchaseState: 'confirm',
-    successItem: null,
-    celebrating: false,
-    chestGlowing: false,
-    purchases: {{ purchases|map(attribute='shop_item')|map(attribute='name')|list|tojson }},
+<script>
+function shopComponent() {
+    return {
+        confirmItem: null,
+        balance: {{ balance }},
+        displayBalance: {{ balance }},
+        balanceAnimating: false,
+        purchasing: false,
+        purchaseState: 'confirm',
+        successItem: null,
+        celebrating: false,
+        chestGlowing: false,
+        purchases: {{ purchases|map(attribute='shop_item')|map(attribute='name')|list|tojson }},
+        redeemUrl: {{ url_for('dashboard.redeem', quest_id=quest.id)|tojson }},
+        csrfToken: {{ csrf_token|tojson }},
 
-    animateBalance(from, to) {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            this.displayBalance = to;
-            this.balance = to;
-            return;
-        }
-        const duration = 600;
-        const start = performance.now();
-        this.balanceAnimating = true;
-        const tick = (now) => {
-            const progress = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            this.displayBalance = Math.round(from + (to - from) * eased);
-            if (progress < 1) {
-                requestAnimationFrame(tick);
-            } else {
+        animateBalance(from, to) {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 this.displayBalance = to;
                 this.balance = to;
-                setTimeout(() => this.balanceAnimating = false, 400);
+                return;
             }
-        };
-        requestAnimationFrame(tick);
-    },
+            const duration = 600;
+            const start = performance.now();
+            this.balanceAnimating = true;
+            const tick = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                this.displayBalance = Math.round(from + (to - from) * eased);
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    this.displayBalance = to;
+                    this.balance = to;
+                    setTimeout(() => this.balanceAnimating = false, 400);
+                }
+            };
+            requestAnimationFrame(tick);
+        },
 
-    async claim() {
-        if (!this.confirmItem || this.purchasing) return;
-        this.purchasing = true;
-        try {
-            const res = await fetch('{{ url_for('dashboard.redeem', quest_id=quest.id) }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                body: 'item_id=' + this.confirmItem.id + '&csrf_token={{ csrf_token }}'
-            });
-            const data = await res.json();
-            if (data.success) {
-                const oldBalance = this.balance;
-                const newBalance = oldBalance - this.confirmItem.cost;
+        async claim() {
+            if (!this.confirmItem || this.purchasing) return;
+            this.purchasing = true;
+            try {
+                const res = await fetch(this.redeemUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: 'item_id=' + this.confirmItem.id + '&csrf_token=' + this.csrfToken
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const oldBalance = this.balance;
+                    const newBalance = oldBalance - this.confirmItem.cost;
 
-                this.successItem = this.confirmItem.name;
-                this.purchaseState = 'success';
-                this.purchases.unshift(this.confirmItem.name);
+                    this.successItem = this.confirmItem.name;
+                    this.purchaseState = 'success';
+                    this.purchases.unshift(this.confirmItem.name);
 
-                this.celebrating = true;
-                setTimeout(() => this.celebrating = false, 900);
+                    this.celebrating = true;
+                    setTimeout(() => this.celebrating = false, 900);
 
-                this.chestGlowing = true;
-                setTimeout(() => this.chestGlowing = false, 1200);
+                    this.chestGlowing = true;
+                    setTimeout(() => this.chestGlowing = false, 1200);
 
-                setTimeout(() => this.animateBalance(oldBalance, newBalance), 200);
+                    setTimeout(() => this.animateBalance(oldBalance, newBalance), 200);
 
-                setTimeout(() => {
+                    setTimeout(() => {
+                        this.confirmItem = null;
+                        this.purchaseState = 'confirm';
+                        this.successItem = null;
+                    }, 1200);
+                } else {
+                    alert(data.message);
                     this.confirmItem = null;
-                    this.purchaseState = 'confirm';
-                    this.successItem = null;
-                }, 1200);
-            } else {
-                alert(data.message);
-                this.confirmItem = null;
-            }
-        } catch(e) { alert('Something went wrong'); }
-        this.purchasing = false;
-    }
-}">
+                }
+            } catch(e) { alert('Something went wrong'); }
+            this.purchasing = false;
+        }
+    };
+}
+</script>
+<div class="quest-page min-h-screen" x-data="shopComponent()">
     <!-- Sparkle Particles -->
     <div x-show="celebrating" x-cloak class="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
         <template x-for="i in 12" :key="i">
@@ -202,7 +209,7 @@
                     </div>
 
                     <template x-if="balance >= {{ item.cost }}">
-                        <button @click='confirmItem = {{ {"id": item.id, "name": item.name, "cost": item.cost}|tojson }}'
+                        <button @click="confirmItem = { id: {{ item.id }}, name: '{{ item.name|replace("'", "\\'") }}', cost: {{ item.cost }} }"
                                 class="mt-3 w-full text-white text-xs px-4 py-2.5 rounded-lg font-bold hover:opacity-90 transition shadow-md"
                                 style="background-color: var(--color-primary)">
                             Claim Reward
