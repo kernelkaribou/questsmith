@@ -462,34 +462,34 @@
                style="--glow-color: {{ pr }}, {{ pg }}, {{ pb }}"
                onmouseenter="this.style.boxShadow='0 0 24px rgba('+this.style.getPropertyValue('--glow-color')+',0.35)'"
                onmouseleave="this.style.boxShadow='none'">
-                <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-3">💎 Treasure Shop</h2>
-                <div class="flex items-center gap-4">
-                    <div class="flex gap-2">
-                        {% for item in shop_items[:4] %}
+                <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-4">💎 Treasure Shop</h2>
+                <div class="flex items-center justify-center gap-3">
+                    {% for item in shop_items[:2] %}
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} group-hover:scale-110 transition-transform duration-300">
                         {% if item.image_url %}
-                        <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}"
-                             alt="{{ item.name }}" class="w-10 h-10 rounded-lg object-contain {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} p-1 group-hover:scale-110 transition-transform duration-300">
+                        <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}" alt="" class="w-7 h-7 object-contain">
                         {% else %}
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} group-hover:scale-110 transition-transform duration-300">
-                            <span class="text-lg">🎁</span>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                        {% if shop_items|length > 4 %}
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-gray-100' }}">
-                            <span class="text-[10px] font-bold {{ 'text-white/60' if bg_dark else 'text-gray-500' }}">+{{ shop_items|length - 4 }}</span>
-                        </div>
+                        <span class="text-base">🎁</span>
                         {% endif %}
                     </div>
-                    <div class="flex-1">
-                        {% set affordable = shop_items|selectattr('cost', 'le', balance)|list|length %}
+                    {% endfor %}
+                    {% set affordable = shop_items|selectattr('cost', 'le', balance)|list|length %}
+                    <p class="text-sm font-medium px-3 {{ 'text-white/70' if bg_dark else 'text-gray-600' }} group-hover:scale-105 transition-transform duration-300">
                         {% if affordable > 0 %}
-                        <p class="text-sm font-medium" style="color: var(--color-primary)">{{ affordable }} reward{{ 's' if affordable != 1 else '' }} available!</p>
+                        ✨ Your loot awaits ✨
                         {% else %}
-                        <p class="text-xs {{ 'text-white/50' if bg_dark else 'text-gray-500' }}">Browse treasures waiting for you</p>
+                        ✨ Peek inside... ✨
                         {% endif %}
-                        <p class="text-xs {{ 'text-white/40' if bg_dark else 'text-gray-400' }}">{{ shop_items|length }} item{{ 's' if shop_items|length != 1 else '' }} in shop</p>
+                    </p>
+                    {% for item in shop_items[2:4] %}
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} group-hover:scale-110 transition-transform duration-300">
+                        {% if item.image_url %}
+                        <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}" alt="" class="w-7 h-7 object-contain">
+                        {% else %}
+                        <span class="text-base">🎁</span>
+                        {% endif %}
                     </div>
+                    {% endfor %}
                 </div>
             </a>
             {% endif %}
