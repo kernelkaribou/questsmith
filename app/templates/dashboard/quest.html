@@ -339,7 +339,7 @@
                                 <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.quest.id) }}" class="inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Claim</button>
+                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background-color: var(--color-primary)">Claim</button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -399,7 +399,7 @@
                                 <form method="POST" action="{{ url_for('admin.chain_step_complete', chain_id=cd.chain.id, step_id=item.step.id) }}" class="inline shrink-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                                    <button type="submit" class="text-white px-2 py-0.5 rounded text-[10px] font-bold hover:opacity-90" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Complete</button>
+                                    <button type="submit" class="text-white px-2 py-0.5 rounded text-[10px] font-bold hover:opacity-90" style="background-color: var(--color-primary)">Complete</button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -507,7 +507,7 @@
                             <form method="POST" action="{{ url_for('dashboard.redeem', quest_id=quest.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <input type="hidden" name="item_id" :value="confirmItem?.id">
-                                <button type="submit" class="px-4 py-2 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition">Claim!</button>
+                                <button type="submit" class="px-4 py-2 text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background-color: var(--color-primary)">Claim!</button>
                             </form>
                         </div>
                     </div>
@@ -536,7 +536,7 @@
                         <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                         <input type="text" name="notes" placeholder="Notes" class="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     </div>
-                    <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Add</button>
+                    <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background-color: var(--color-primary)">Add</button>
                 </form>
             </div>
             {% endif %}
