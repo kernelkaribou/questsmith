@@ -19,8 +19,8 @@
                 <img src="{{ url_for('admin.serve_upload', filepath=q.theme_graphic_url[8:]) if q.theme_graphic_url.startswith('uploads/') else q.theme_graphic_url }}" alt="{{ q.theme_name }}" class="w-16 h-16 mx-auto mb-3 object-contain group-hover:scale-110 transition-transform">
                 {% endif %}
                 <h2 class="text-xl font-bold" style="color: {{ q.color_primary }}">{{ q.theme_name }}</h2>
-                {% if q.journey %}
-                <p class="text-xs text-gray-500 mt-1">{{ q.journey.name }}</p>
+                {% if q.campaign %}
+                <p class="text-xs text-gray-500 mt-1">{{ q.campaign.name }}</p>
                 {% endif %}
             </div>
             <div class="h-1.5 w-full" style="background: linear-gradient(90deg, {{ q.color_primary }}, {{ q.color_secondary }})"></div>

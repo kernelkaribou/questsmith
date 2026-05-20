@@ -11,7 +11,7 @@
             <option value="">Select a quest...</option>
             {% for q in quests %}
             <option value="{{ q.id }}" data-types='{{ q.activity_types_json }}'>
-                {{ q.member.name }} - {{ q.theme_name }}{% if q.journey %} ({{ q.journey.name }}){% endif %}
+                {{ q.member.name }} - {{ q.theme_name }}{% if q.campaign %} ({{ q.campaign.name }}){% endif %}
             </option>
             {% endfor %}
         </select>

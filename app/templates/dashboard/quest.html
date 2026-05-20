@@ -28,8 +28,8 @@
                 <div class="flex-1 min-w-0">
                     <h1 class="text-3xl font-bold truncate">{{ quest.theme_name }}</h1>
                     <p class="text-base font-medium opacity-95 mt-0.5">{{ member.name }}</p>
-                    {% if journey %}
-                    <a href="{{ url_for('dashboard.journey_view', journey_id=journey.id) }}" class="text-sm opacity-75 hover:opacity-100 underline underline-offset-2 transition">{{ journey.name }}</a>
+                    {% if campaign %}
+                    <a href="{{ url_for('dashboard.campaign_view', campaign_id=campaign.id) }}" class="text-sm opacity-75 hover:opacity-100 underline underline-offset-2 transition">{{ campaign.name }}</a>
                     {% endif %}
                 </div>
                 {% if quest.completion_target %}

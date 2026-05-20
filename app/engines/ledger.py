@@ -38,14 +38,14 @@ def get_lifetime_earned(quest_id):
     return max(0, earned - reversed)
 
 
-def get_journey_totals(journey_id):
-    """Get earned totals per quest for a journey (for Co-Op goal checking)."""
+def get_campaign_totals(campaign_id):
+    """Get earned totals per quest for a campaign (for Co-Op goal checking)."""
     earned_results = db.session.query(
         Quest.id,
         Quest.member_id,
         db.func.coalesce(db.func.sum(Transaction.amount), 0).label("total_earned"),
     ).join(Transaction, Transaction.quest_id == Quest.id).filter(
-        Quest.journey_id == journey_id,
+        Quest.campaign_id == campaign_id,
         Transaction.type.in_(["earn", "side_quest_reward"]),
     ).group_by(Quest.id, Quest.member_id).all()
 
@@ -54,7 +54,7 @@ def get_journey_totals(journey_id):
         Quest.member_id,
         db.func.coalesce(db.func.sum(Transaction.amount), 0).label("total_reversed"),
     ).join(Transaction, Transaction.quest_id == Quest.id).filter(
-        Quest.journey_id == journey_id,
+        Quest.campaign_id == campaign_id,
         Transaction.type == "reversal",
     ).group_by(Quest.id, Quest.member_id).all()
 

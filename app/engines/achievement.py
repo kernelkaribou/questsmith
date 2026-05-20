@@ -84,8 +84,8 @@ def _evaluate_condition(condition, stats):
     elif metric == "total_currency_earned":
         return stats["total_currency_earned"] >= threshold
 
-    elif metric == "journeys_completed":
-        return stats["journeys_completed"] >= threshold
+    elif metric == "campaigns_completed":
+        return stats["campaigns_completed"] >= threshold
 
     elif metric == "side_quests_completed":
         return stats["side_quests_completed"] >= threshold

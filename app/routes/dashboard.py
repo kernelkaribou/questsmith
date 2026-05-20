@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 
 from app import db
 from app.models import (
-    Member, Journey, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
+    Member, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
     ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
@@ -14,40 +14,40 @@ bp = Blueprint("dashboard", __name__, url_prefix="/")
 
 @bp.route("/")
 def index():
-    """Landing page — show active journeys (campaigns)."""
+    """Landing page — show active campaigns (campaigns)."""
     session.pop("active_member_id", None)
     session.pop("active_member_name", None)
-    journeys = Journey.query.filter_by(status="active").all()
-    # Also find solo quests (not in any journey)
-    solo_quests = Quest.query.filter_by(journey_id=None, status="active").filter(Quest.completed_at.is_(None)).all()
-    return render_template("dashboard/index.html", journeys=journeys, solo_quests=solo_quests)
+    campaigns = Campaign.query.filter_by(status="active").all()
+    # Also find solo quests (not in any campaign)
+    solo_quests = Quest.query.filter_by(campaign_id=None, status="active").filter(Quest.completed_at.is_(None)).all()
+    return render_template("dashboard/index.html", campaigns=campaigns, solo_quests=solo_quests)
 
 
 @bp.route("/quest/<int:quest_id>")
 def quest_view(quest_id):
     """Main quest dashboard."""
     quest = db.session.get(Quest, quest_id)
-    journey = quest.journey
+    campaign = quest.campaign
     member = quest.member
     is_admin = session.get("admin", False)
 
     balance = ledger.get_balance(quest_id)
     total_earned = ledger.get_lifetime_earned(quest_id)
 
-    # Party Goals progress (only if quest is in a journey)
+    # Party Goals progress (only if quest is in a campaign)
     goal_progress = []
-    if journey:
-        party_goals = PartyGoal.query.filter_by(journey_id=journey.id).order_by(PartyGoal.sort_order).all()
-        journey_totals = ledger.get_journey_totals(journey.id)
-        combined_total = sum(journey_totals.values())
-        my_contribution = journey_totals.get(member.id, 0)
-        num_members = db.session.query(Quest.member_id).filter_by(journey_id=journey.id).distinct().count()
+    if campaign:
+        party_goals = PartyGoal.query.filter_by(campaign_id=campaign.id).order_by(PartyGoal.sort_order).all()
+        campaign_totals = ledger.get_campaign_totals(campaign.id)
+        combined_total = sum(campaign_totals.values())
+        my_contribution = campaign_totals.get(member.id, 0)
+        num_members = db.session.query(Quest.member_id).filter_by(campaign_id=campaign.id).distinct().count()
         for goal in party_goals:
             target = goal.target_amount or 1
             min_req = math.ceil(target / num_members) if num_members > 0 else target
             all_met_min = all(
-                journey_totals.get(mid, 0) >= min_req
-                for mid, in db.session.query(Quest.member_id).filter_by(journey_id=journey.id).distinct()
+                campaign_totals.get(mid, 0) >= min_req
+                for mid, in db.session.query(Quest.member_id).filter_by(campaign_id=campaign.id).distinct()
             )
             goal_progress.append({
                 "goal": goal,
@@ -71,11 +71,11 @@ def quest_view(quest_id):
     if new_level_unlocks:
         db.session.commit()
 
-    # Combined Shop: quest-owned + journey-owned
+    # Combined Shop: quest-owned + campaign-owned
     shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
-    if journey:
-        journey_shop = ShopItem.query.filter_by(journey_id=journey.id).order_by(ShopItem.sort_order).all()
-        shop_items = shop_items + journey_shop
+    if campaign:
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + campaign_shop
 
     # Side quests (belong to quest now) - split into available and completed
     sq_data = side_quest_engine.get_available_side_quests(quest_id)
@@ -107,7 +107,7 @@ def quest_view(quest_id):
     return render_template(
         "dashboard/quest.html",
         quest=quest,
-        journey=journey,
+        campaign=campaign,
         member=member,
         balance=balance,
         total_earned=total_earned,
@@ -178,19 +178,19 @@ def quest_history(quest_id):
     )
 
 
-@bp.route("/journey/<int:journey_id>")
-def journey_view(journey_id):
-    """Journey overview scorecard — game-show style party display."""
-    journey = db.session.get(Journey, journey_id)
-    quests = Quest.query.filter_by(journey_id=journey_id, status="active").all()
-    journey_totals = ledger.get_journey_totals(journey_id)
-    combined_total = sum(journey_totals.values())
+@bp.route("/campaign/<int:campaign_id>")
+def campaign_view(campaign_id):
+    """Campaign overview scorecard — game-show style party display."""
+    campaign = db.session.get(Campaign, campaign_id)
+    quests = Quest.query.filter_by(campaign_id=campaign_id, status="active").all()
+    campaign_totals = ledger.get_campaign_totals(campaign_id)
+    combined_total = sum(campaign_totals.values())
 
     # Build adventurer data
     adventurers = []
     for q in quests:
         member = q.member
-        contribution = journey_totals.get(member.id, 0)
+        contribution = campaign_totals.get(member.id, 0)
         levels = QuestLevel.query.filter_by(quest_id=q.id).order_by(QuestLevel.threshold).all()
         current_level = "Level 0"
         for lv in levels:
@@ -204,39 +204,55 @@ def journey_view(journey_id):
             "current_level": current_level,
         })
 
-    # Party goals
-    party_goals = PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all()
+    # Party goals (sorted by target value ascending)
+    party_goals = PartyGoal.query.filter_by(campaign_id=campaign_id).order_by(PartyGoal.target_amount.asc()).all()
     num_members = len(quests) if quests else 1
     goals_data = []
     for goal in party_goals:
         target = goal.target_amount or 1
         min_req = math.ceil(target / num_members) if num_members > 0 else target
-        pct = min(100, int(combined_total / target * 100))
         all_met_min = all(
-            journey_totals.get(q.member_id, 0) >= min_req for q in quests
+            campaign_totals.get(q.member_id, 0) >= min_req for q in quests
         )
         # Per-member contribution toward their minimum
         member_progress = []
+        capped_total = 0
         for q in quests:
-            contrib = journey_totals.get(q.member_id, 0)
+            contrib = campaign_totals.get(q.member_id, 0)
+            capped = min(contrib, min_req)
+            capped_total += capped
             member_progress.append({
                 "member": q.member,
                 "contribution": contrib,
                 "percent": min(100, int(contrib / min_req * 100)) if min_req > 0 else 100,
                 "met_min": contrib >= min_req,
             })
+        pct = min(100, int(capped_total / target * 100))
+        is_complete = capped_total >= target and all_met_min
         goals_data.append({
             "goal": goal,
-            "current": combined_total,
+            "current": capped_total,
             "percent": pct,
-            "complete": combined_total >= target and all_met_min,
+            "complete": is_complete,
             "min_required": min_req,
             "member_progress": member_progress,
         })
 
+    # Mark the first incomplete goal as "active"; hide progress on future goals
+    active_found = False
+    for g in goals_data:
+        if g["complete"]:
+            g["show_progress"] = True
+        elif not active_found:
+            g["show_progress"] = True
+            g["active"] = True
+            active_found = True
+        else:
+            g["show_progress"] = False
+
     return render_template(
-        "dashboard/journey.html",
-        journey=journey,
+        "dashboard/campaign.html",
+        campaign=campaign,
         adventurers=adventurers,
         goals=goals_data,
         combined_total=combined_total,
@@ -258,8 +274,8 @@ def redeem(quest_id):
         flash(msg, "error")
         return redirect(url_for("dashboard.index"))
 
-    # Validate item belongs to this quest or its journey
-    if item.quest_id != quest_id and not (quest.journey_id and item.journey_id == quest.journey_id):
+    # Validate item belongs to this quest or its campaign
+    if item.quest_id != quest_id and not (quest.campaign_id and item.campaign_id == quest.campaign_id):
         msg = "Item not available for this quest"
         if is_ajax:
             return jsonify(success=False, message=msg), 403

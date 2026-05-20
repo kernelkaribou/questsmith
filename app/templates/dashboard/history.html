@@ -8,7 +8,7 @@
         <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-bold">{{ quest.theme_name }} - History</h1>
-                <p class="text-xs opacity-80">{{ quest.member.name }} - {{ quest.journey.name }}</p>
+                <p class="text-xs opacity-80">{{ quest.member.name }} - {{ quest.campaign.name }}</p>
             </div>
             <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="text-sm opacity-80 hover:opacity-100">Back to Quest</a>
         </div>

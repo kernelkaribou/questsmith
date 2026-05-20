@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 
 from app import db
 from app.models import (
-    Member, Journey, Quest, ActivityType, EarningRule,
+    Member, Campaign, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
     ShopPurchase, Transaction,
 )
@@ -77,9 +77,9 @@ def logout():
 @admin_required
 def index():
     quests = Quest.query.filter_by(status="active").all()
-    journeys = Journey.query.filter_by(status="active").all()
+    campaigns = Campaign.query.filter_by(status="active").all()
     members = Member.query.all()
-    return render_template("admin/index.html", quests=quests, journeys=journeys, members=members)
+    return render_template("admin/index.html", quests=quests, campaigns=campaigns, members=members)
 
 
 # --- Members ---
@@ -138,9 +138,9 @@ def quest_create():
         if uploaded and uploaded.filename:
             graphic_url = save_uploaded_image(uploaded)
 
-        journey_id = request.form.get("journey_id") or None
-        if journey_id:
-            journey_id = int(journey_id)
+        campaign_id = request.form.get("campaign_id") or None
+        if campaign_id:
+            campaign_id = int(campaign_id)
 
         completion_target = request.form.get("completion_target") or None
         if completion_target:
@@ -149,7 +149,7 @@ def quest_create():
 
         quest = Quest(
             member_id=int(request.form["member_id"]),
-            journey_id=journey_id,
+            campaign_id=campaign_id,
             theme_name=request.form["theme_name"],
             theme_graphic_url=graphic_url,
             color_primary=request.form.get("color_primary", "#4F46E5"),
@@ -192,9 +192,9 @@ def quest_create():
         flash(f"Quest '{quest.theme_name}' created", "success")
         return redirect(url_for("admin.quest_edit", quest_id=quest.id))
     members = Member.query.all()
-    journeys = Journey.query.filter_by(status="active").all()
-    preselect_journey = request.args.get("journey_id")
-    return render_template("admin/quest_form.html", quest=None, members=members, journeys=journeys, preselect_journey=preselect_journey)
+    campaigns = Campaign.query.filter_by(status="active").all()
+    preselect_campaign = request.args.get("campaign_id")
+    return render_template("admin/quest_form.html", quest=None, members=members, campaigns=campaigns, preselect_campaign=preselect_campaign)
 
 
 @bp.route("/quests/<int:quest_id>")
@@ -204,11 +204,11 @@ def quest_detail(quest_id):
     balance = ledger.get_balance(quest_id)
     lifetime_earned = ledger.get_lifetime_earned(quest_id)
 
-    # Combined shop: quest-owned + journey-owned (if linked)
+    # Combined shop: quest-owned + campaign-owned (if linked)
     shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
-    if quest.journey_id:
-        journey_shop = ShopItem.query.filter_by(journey_id=quest.journey_id).order_by(ShopItem.sort_order).all()
-        shop_items = shop_items + journey_shop
+    if quest.campaign_id:
+        campaign_shop = ShopItem.query.filter_by(campaign_id=quest.campaign_id).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + campaign_shop
 
     return render_template(
         "admin/quest_detail.html",
@@ -242,8 +242,8 @@ def quest_edit(quest_id):
         completion_bonus = request.form.get("completion_bonus")
         quest.completion_bonus = int(completion_bonus) if completion_bonus else 0
 
-        journey_id = request.form.get("journey_id") or None
-        quest.journey_id = int(journey_id) if journey_id else None
+        campaign_id = request.form.get("campaign_id") or None
+        quest.campaign_id = int(campaign_id) if campaign_id else None
 
         # Handle graphic upload or URL
         uploaded = request.files.get("theme_graphic_file")
@@ -286,8 +286,8 @@ def quest_edit(quest_id):
         flash("Quest updated", "success")
         return redirect(url_for("admin.quest_detail", quest_id=quest.id))
     members = Member.query.all()
-    journeys = Journey.query.filter_by(status="active").all()
-    return render_template("admin/quest_form.html", quest=quest, members=members, journeys=journeys)
+    campaigns = Campaign.query.filter_by(status="active").all()
+    return render_template("admin/quest_form.html", quest=quest, members=members, campaigns=campaigns)
 
 
 # --- Activity Type Management ---
@@ -393,7 +393,7 @@ def shop_item_delete(item_id):
     if not item:
         return admin_error("Shop item not found", url_for("admin.index"))
 
-    redirect_url = url_for("admin.quest_detail", quest_id=item.quest_id) if item.quest_id else url_for("admin.journey_detail", journey_id=item.journey_id)
+    redirect_url = url_for("admin.quest_detail", quest_id=item.quest_id) if item.quest_id else url_for("admin.campaign_detail", campaign_id=item.campaign_id)
 
     purchases = ShopPurchase.query.filter_by(shop_item_id=item_id).count()
     if purchases > 0:
@@ -432,10 +432,10 @@ def party_goal_delete(goal_id):
     if not goal:
         return admin_error("Party goal not found", url_for("admin.index"))
 
-    journey_id = goal.journey_id
+    campaign_id = goal.campaign_id
     db.session.delete(goal)
     db.session.commit()
-    return admin_success(f"Removed party goal: {goal.name}", url_for("admin.journey_detail", journey_id=journey_id))
+    return admin_success(f"Removed party goal: {goal.name}", url_for("admin.campaign_detail", campaign_id=campaign_id))
 
 
 # --- Delete/Archive for Top-Level Entities ---
@@ -504,28 +504,28 @@ def quest_archive(quest_id):
     return admin_success(f"Archived quest: {quest.theme_name}", redirect_url)
 
 
-@bp.route("/journey/<int:journey_id>/archive", methods=["POST"])
+@bp.route("/campaign/<int:campaign_id>/archive", methods=["POST"])
 @admin_required
-def journey_archive(journey_id):
-    """Archive a journey (soft-delete). Hard delete only if no quests."""
-    journey = db.session.get(Journey, journey_id)
-    if not journey:
-        return admin_error("Journey not found", url_for("admin.index"))
+def campaign_archive(campaign_id):
+    """Archive a campaign (soft-delete). Hard delete only if no quests."""
+    campaign = db.session.get(Campaign, campaign_id)
+    if not campaign:
+        return admin_error("Campaign not found", url_for("admin.index"))
 
     redirect_url = url_for("admin.index")
-    quest_count = Quest.query.filter_by(journey_id=journey_id).count()
+    quest_count = Quest.query.filter_by(campaign_id=campaign_id).count()
 
     if quest_count == 0 and request.form.get("hard_delete"):
-        name = journey.name
-        PartyGoal.query.filter_by(journey_id=journey_id).delete()
-        ShopItem.query.filter_by(journey_id=journey_id).delete()
-        db.session.delete(journey)
+        name = campaign.name
+        PartyGoal.query.filter_by(campaign_id=campaign_id).delete()
+        ShopItem.query.filter_by(campaign_id=campaign_id).delete()
+        db.session.delete(campaign)
         db.session.commit()
-        return admin_success(f"Deleted journey: {name}", redirect_url)
+        return admin_success(f"Deleted campaign: {name}", redirect_url)
 
-    journey.status = "archived"
+    campaign.status = "archived"
     db.session.commit()
-    return admin_success(f"Archived journey: {journey.name}", redirect_url)
+    return admin_success(f"Archived campaign: {campaign.name}", redirect_url)
 
 
 # --- Activity Log Undo ---
@@ -961,75 +961,75 @@ def quest_shop_item_create(quest_id):
     return render_template("admin/generic_form.html", type_name="Shop Item", item=None, quest_id=quest_id)
 
 
-# --- Journeys (optional grouping) ---
+# --- Campaigns (optional grouping) ---
 
-@bp.route("/journeys")
+@bp.route("/campaigns")
 @admin_required
-def journeys():
-    return render_template("admin/journeys.html", journeys=Journey.query.all())
+def campaigns():
+    return render_template("admin/campaigns.html", campaigns=Campaign.query.all())
 
 
-@bp.route("/journeys/new", methods=["GET", "POST"])
+@bp.route("/campaigns/new", methods=["GET", "POST"])
 @admin_required
-def journey_create():
+def campaign_create():
     if request.method == "POST":
-        journey = Journey(
+        campaign = Campaign(
             name=request.form["name"],
             description=request.form.get("description") or None,
             start_date=_parse_date(request.form.get("start_date")),
             end_date=_parse_date(request.form.get("end_date")),
             status=request.form.get("status", "active"),
         )
-        db.session.add(journey)
+        db.session.add(campaign)
         db.session.commit()
-        flash(f"Journey '{journey.name}' created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey.id))
-    return render_template("admin/journey_form.html", journey=None)
+        flash(f"Campaign '{campaign.name}' created", "success")
+        return redirect(url_for("admin.campaign_detail", campaign_id=campaign.id))
+    return render_template("admin/campaign_form.html", campaign=None)
 
 
-@bp.route("/journeys/<int:journey_id>")
+@bp.route("/campaigns/<int:campaign_id>")
 @admin_required
-def journey_detail(journey_id):
-    journey = db.session.get(Journey, journey_id)
-    quests = Quest.query.filter_by(journey_id=journey_id).all()
+def campaign_detail(campaign_id):
+    campaign = db.session.get(Campaign, campaign_id)
+    quests = Quest.query.filter_by(campaign_id=campaign_id).all()
     balances = {q.id: ledger.get_balance(q.id) for q in quests}
     return render_template(
-        "admin/journey_detail.html",
-        journey=journey,
+        "admin/campaign_detail.html",
+        campaign=campaign,
         quests=quests,
         balances=balances,
-        party_goals=PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all(),
-        shop_items=ShopItem.query.filter_by(journey_id=journey_id).order_by(ShopItem.sort_order).all(),
+        party_goals=PartyGoal.query.filter_by(campaign_id=campaign_id).order_by(PartyGoal.sort_order).all(),
+        shop_items=ShopItem.query.filter_by(campaign_id=campaign_id).order_by(ShopItem.sort_order).all(),
     )
 
 
-@bp.route("/journeys/<int:journey_id>/edit", methods=["GET", "POST"])
+@bp.route("/campaigns/<int:campaign_id>/edit", methods=["GET", "POST"])
 @admin_required
-def journey_edit(journey_id):
-    journey = db.session.get(Journey, journey_id)
+def campaign_edit(campaign_id):
+    campaign = db.session.get(Campaign, campaign_id)
     if request.method == "POST":
-        journey.name = request.form["name"]
-        journey.description = request.form.get("description") or None
-        journey.start_date = _parse_date(request.form.get("start_date"))
-        journey.end_date = _parse_date(request.form.get("end_date"))
-        journey.status = request.form.get("status", "active")
+        campaign.name = request.form["name"]
+        campaign.description = request.form.get("description") or None
+        campaign.start_date = _parse_date(request.form.get("start_date"))
+        campaign.end_date = _parse_date(request.form.get("end_date"))
+        campaign.status = request.form.get("status", "active")
         db.session.commit()
-        flash("Journey updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/journey_form.html", journey=journey)
+        flash("Campaign updated", "success")
+        return redirect(url_for("admin.campaign_detail", campaign_id=campaign_id))
+    return render_template("admin/campaign_form.html", campaign=campaign)
 
 
-# --- Party Goals (belong to journey) ---
+# --- Party Goals (belong to campaign) ---
 
-@bp.route("/journeys/<int:journey_id>/party-goals/new", methods=["GET", "POST"])
+@bp.route("/campaigns/<int:campaign_id>/party-goals/new", methods=["GET", "POST"])
 @admin_required
-def party_goal_create(journey_id):
+def party_goal_create(campaign_id):
     if request.method == "POST":
         target = int(request.form["target_amount"])
-        num_members = db.session.query(Quest.member_id).filter_by(journey_id=journey_id).distinct().count()
+        num_members = db.session.query(Quest.member_id).filter_by(campaign_id=campaign_id).distinct().count()
         min_contrib = math.ceil(target / num_members) if num_members > 0 else target
         goal = PartyGoal(
-            journey_id=journey_id,
+            campaign_id=campaign_id,
             name=request.form["name"],
             description=request.form.get("description") or None,
             target_amount=target,
@@ -1039,8 +1039,8 @@ def party_goal_create(journey_id):
         db.session.add(goal)
         db.session.commit()
         flash("Party Goal created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Party Goal", item=None, journey_id=journey_id)
+        return redirect(url_for("admin.campaign_detail", campaign_id=campaign_id))
+    return render_template("admin/generic_form.html", type_name="Party Goal", item=None, campaign_id=campaign_id)
 
 
 @bp.route("/party-goals/<int:goal_id>/edit", methods=["GET", "POST"])
@@ -1051,20 +1051,20 @@ def party_goal_edit(goal_id):
         goal.name = request.form["name"]
         goal.description = request.form.get("description") or None
         goal.target_amount = int(request.form["target_amount"])
-        num_members = db.session.query(Quest.member_id).filter_by(journey_id=goal.journey_id).distinct().count()
+        num_members = db.session.query(Quest.member_id).filter_by(campaign_id=goal.campaign_id).distinct().count()
         goal.min_individual_contribution = math.ceil(goal.target_amount / num_members) if num_members > 0 else goal.target_amount
         goal.reward_description = request.form.get("reward_description") or None
         db.session.commit()
         flash("Party Goal updated", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=goal.journey_id))
-    return render_template("admin/generic_form.html", type_name="Party Goal", item=goal, journey_id=goal.journey_id)
+        return redirect(url_for("admin.campaign_detail", campaign_id=goal.campaign_id))
+    return render_template("admin/generic_form.html", type_name="Party Goal", item=goal, campaign_id=goal.campaign_id)
 
 
-# --- Journey Shared Shop Items ---
+# --- Campaign Shared Shop Items ---
 
-@bp.route("/journeys/<int:journey_id>/shop/new", methods=["GET", "POST"])
+@bp.route("/campaigns/<int:campaign_id>/shop/new", methods=["GET", "POST"])
 @admin_required
-def journey_shop_item_create(journey_id):
+def campaign_shop_item_create(campaign_id):
     if request.method == "POST":
         image_url = request.form.get("image_url") or None
         uploaded = request.files.get("image_file")
@@ -1072,7 +1072,7 @@ def journey_shop_item_create(journey_id):
             image_url = save_uploaded_image(uploaded)
 
         item = ShopItem(
-            journey_id=journey_id,
+            campaign_id=campaign_id,
             name=request.form["name"],
             cost=int(request.form["cost"]),
             image_url=image_url,
@@ -1080,8 +1080,8 @@ def journey_shop_item_create(journey_id):
         db.session.add(item)
         db.session.commit()
         flash("Shared shop item created", "success")
-        return redirect(url_for("admin.journey_detail", journey_id=journey_id))
-    return render_template("admin/generic_form.html", type_name="Shop Item", item=None, journey_id=journey_id)
+        return redirect(url_for("admin.campaign_detail", campaign_id=campaign_id))
+    return render_template("admin/generic_form.html", type_name="Shop Item", item=None, campaign_id=campaign_id)
 
 
 @bp.route("/shop/<int:item_id>/edit", methods=["GET", "POST"])
@@ -1099,12 +1099,12 @@ def shop_item_edit(item_id):
         db.session.commit()
         flash("Shop item updated", "success")
         # Redirect based on owner
-        if item.journey_id:
-            return redirect(url_for("admin.journey_detail", journey_id=item.journey_id))
+        if item.campaign_id:
+            return redirect(url_for("admin.campaign_detail", campaign_id=item.campaign_id))
         return redirect(url_for("admin.quest_detail", quest_id=item.quest_id))
-    owner_id = item.journey_id if item.journey_id else None
+    owner_id = item.campaign_id if item.campaign_id else None
     return render_template("admin/generic_form.html", type_name="Shop Item", item=item,
-                           journey_id=item.journey_id, quest_id=item.quest_id)
+                           campaign_id=item.campaign_id, quest_id=item.quest_id)
 
 
 # --- Achievements ---

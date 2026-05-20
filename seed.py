@@ -1,7 +1,7 @@
-"""Seed script: creates example data for a reading journey with two themed quests."""
+"""Seed script: creates example data for a reading campaign with two themed quests."""
 from app import create_app, db
 from app.models import (
-    Member, Journey, Quest, ActivityType, EarningRule,
+    Member, Campaign, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
 
@@ -19,19 +19,19 @@ def seed():
         db.session.add_all([kid_a, kid_b])
         db.session.flush()
 
-        # Journey (optional grouping for shared goals)
-        journey = Journey(
+        # Campaign (optional grouping for shared goals)
+        campaign = Campaign(
             name="Summer 2026 Reading",
             description="Family summer reading challenge",
             status="active",
         )
-        db.session.add(journey)
+        db.session.add(campaign)
         db.session.flush()
 
-        # Quests (the core units - linked to journey)
+        # Quests (the core units - linked to campaign)
         quest_a = Quest(
             member_id=kid_a.id,
-            journey_id=journey.id,
+            campaign_id=campaign.id,
             theme_name="Pokemon Trainer",
             theme_graphic_url=None,
             color_primary="#EF4444",
@@ -44,7 +44,7 @@ def seed():
         )
         quest_b = Quest(
             member_id=kid_b.id,
-            journey_id=journey.id,
+            campaign_id=campaign.id,
             theme_name="Cheer Camp",
             theme_graphic_url=None,
             color_primary="#EC4899",
@@ -120,10 +120,10 @@ def seed():
             ShopItem(quest_id=quest_b.id, name="Choose Dinner", cost=100, sort_order=2),
         ])
 
-        # Shared Journey Shop Items (available to all quests in the journey)
+        # Shared Campaign Shop Items (available to all quests in the campaign)
         db.session.add_all([
-            ShopItem(journey_id=journey.id, name="Small Toy", cost=200, sort_order=1),
-            ShopItem(journey_id=journey.id, name="Family Game Night Pick", cost=150, sort_order=2),
+            ShopItem(campaign_id=campaign.id, name="Small Toy", cost=200, sort_order=1),
+            ShopItem(campaign_id=campaign.id, name="Family Game Night Pick", cost=150, sort_order=2),
         ])
 
         # Side Quests (per quest)
@@ -170,10 +170,10 @@ def seed():
                       name="Friday: Championship", description="Finish a chapter book"),
         ])
 
-        # Party Goals (journey-level shared goals)
+        # Party Goals (campaign-level shared goals)
         db.session.add_all([
             PartyGoal(
-                journey_id=journey.id,
+                campaign_id=campaign.id,
                 name="Family Movie Night",
                 description="Earn 500 combined currency to unlock a family movie trip",
                 target_amount=500,
@@ -182,7 +182,7 @@ def seed():
                 sort_order=1,
             ),
             PartyGoal(
-                journey_id=journey.id,
+                campaign_id=campaign.id,
                 name="Ice Cream Party",
                 description="Earn 1000 combined currency for an ice cream outing",
                 target_amount=1000,
@@ -203,7 +203,7 @@ def seed():
             ),
             Achievement(
                 name="Bookworm",
-                description="Log 50 activities across all journeys",
+                description="Log 50 activities across all campaigns",
                 icon=None,
                 trigger_type="auto",
                 trigger_condition={"metric": "total_logs", "threshold": 50},
@@ -212,7 +212,7 @@ def seed():
 
         db.session.commit()
         print("Seed data created successfully.")
-        print(f"  Journey: {journey.name}")
+        print(f"  Campaign: {campaign.name}")
         print(f"  Quest A: {quest_a.theme_name} ({kid_a.name})")
         print(f"  Quest B: {quest_b.theme_name} ({kid_b.name})")
 

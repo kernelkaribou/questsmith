@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 from app import create_app, db
 from app.models import (
-    Member, Journey, Quest, ActivityType, EarningRule,
+    Member, Campaign, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
 )
 from tests.conftest import TestConfig
@@ -19,24 +19,24 @@ def app():
 
 @pytest.fixture
 def seeded(app):
-    """Create test data: one journey, two members, two quests."""
+    """Create test data: one campaign, two members, two quests."""
     with app.app_context():
         member_a = Member(name="Alex")
         member_b = Member(name="Jordan")
         db.session.add_all([member_a, member_b])
         db.session.flush()
 
-        journey = Journey(name="Summer Reading", status="active")
-        db.session.add(journey)
+        campaign = Campaign(name="Summer Reading", status="active")
+        db.session.add(campaign)
         db.session.flush()
 
         quest_a = Quest(
-            member_id=member_a.id, journey_id=journey.id,
+            member_id=member_a.id, campaign_id=campaign.id,
             theme_name="Pokemon", currency_label="Pokeballs",
             color_primary="#FF0000", color_secondary="#FF9999",
         )
         quest_b = Quest(
-            member_id=member_b.id, journey_id=journey.id,
+            member_id=member_b.id, campaign_id=campaign.id,
             theme_name="Cheer", currency_label="Spirit Points",
             color_primary="#FF00FF", color_secondary="#FF99FF",
         )
@@ -56,7 +56,7 @@ def seeded(app):
         # Return IDs so tests can re-query within their own session context
         return {
             "member_a_id": member_a.id, "member_b_id": member_b.id,
-            "journey_id": journey.id,
+            "campaign_id": campaign.id,
             "quest_a_id": quest_a.id, "quest_b_id": quest_b.id,
             "pages_id": pages.id, "minutes_id": minutes.id,
             "rule_a_id": rule_a.id, "rule_b_id": rule_b.id,
@@ -93,13 +93,13 @@ class TestLedgerEngine:
             result = record_spend(seeded["quest_a_id"], 20, "overspend")
             assert result is None
 
-    def test_journey_totals(self, app, seeded):
-        from app.engines.ledger import record_earn, get_journey_totals
+    def test_campaign_totals(self, app, seeded):
+        from app.engines.ledger import record_earn, get_campaign_totals
         with app.app_context():
             record_earn(seeded["quest_a_id"], 100, "earn a")
             record_earn(seeded["quest_b_id"], 75, "earn b")
             db.session.commit()
-            totals = get_journey_totals(seeded["journey_id"])
+            totals = get_campaign_totals(seeded["campaign_id"])
             assert totals[seeded["member_a_id"]] == 100
             assert totals[seeded["member_b_id"]] == 75
 
@@ -168,7 +168,7 @@ class TestValidationEngine:
         from app.engines.validation import check_party_goal
         with app.app_context():
             goal = PartyGoal(
-                journey_id=seeded["journey_id"], name="Movie Night",
+                campaign_id=seeded["campaign_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=30,
             )
             db.session.add(goal)
@@ -183,7 +183,7 @@ class TestValidationEngine:
         from app.engines.ledger import record_earn
         with app.app_context():
             goal = PartyGoal(
-                journey_id=seeded["journey_id"], name="Movie Night",
+                campaign_id=seeded["campaign_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=30,
             )
             db.session.add(goal)
@@ -201,7 +201,7 @@ class TestValidationEngine:
         from app.engines.ledger import record_earn
         with app.app_context():
             goal = PartyGoal(
-                journey_id=seeded["journey_id"], name="Movie Night",
+                campaign_id=seeded["campaign_id"], name="Movie Night",
                 target_amount=100, min_individual_contribution=40,
             )
             db.session.add(goal)
@@ -435,7 +435,7 @@ class TestPartyGoalFairnessFixed:
         from app.engines.ledger import record_earn
         with app.app_context():
             goal = PartyGoal(
-                journey_id=seeded["journey_id"], name="Easy Goal",
+                campaign_id=seeded["campaign_id"], name="Easy Goal",
                 target_amount=50, min_individual_contribution=0,
             )
             db.session.add(goal)

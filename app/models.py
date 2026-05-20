@@ -57,7 +57,7 @@ class Quest(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=True)
 
     # Theme configuration
     theme_name = db.Column(db.String(100), nullable=False, default="Adventurer")
@@ -79,7 +79,7 @@ class Quest(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     member = db.relationship("Member", back_populates="quests")
-    journey = db.relationship("Journey", back_populates="quests")
+    campaign = db.relationship("Campaign", back_populates="quests")
     activity_types = db.relationship("ActivityType", back_populates="quest", lazy="dynamic")
     transactions = db.relationship("Transaction", back_populates="quest", lazy="dynamic")
     activity_logs = db.relationship("ActivityLog", back_populates="quest", lazy="dynamic")
@@ -213,12 +213,12 @@ class SideQuestCompletion(db.Model):
 
 
 class ShopItem(db.Model):
-    """Shop item can belong to a Quest (personal) or Journey (shared). One must be set."""
+    """Shop item can belong to a Quest (personal) or Campaign (shared). One must be set."""
     __tablename__ = "shop_items"
 
     id = db.Column(db.Integer, primary_key=True)
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=True)
     name = db.Column(db.String(200), nullable=False)
     cost = db.Column(db.Integer, nullable=False)
     image_url = db.Column(db.String(500), nullable=True)
@@ -227,12 +227,12 @@ class ShopItem(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     quest = db.relationship("Quest", back_populates="shop_items")
-    journey = db.relationship("Journey", back_populates="shop_items")
+    campaign = db.relationship("Campaign", back_populates="shop_items")
     purchases = db.relationship("ShopPurchase", back_populates="shop_item", lazy="dynamic")
 
     __table_args__ = (
         db.CheckConstraint(
-            "(quest_id IS NOT NULL AND journey_id IS NULL) OR (quest_id IS NULL AND journey_id IS NOT NULL)",
+            "(quest_id IS NOT NULL AND campaign_id IS NULL) OR (quest_id IS NULL AND campaign_id IS NOT NULL)",
             name="ck_shop_item_owner",
         ),
     )
@@ -328,11 +328,11 @@ class ShopPurchase(db.Model):
 
 
 # ---------------------------------------------------------------------------
-# Journey (optional grouping layer)
+# Campaign (optional grouping layer)
 # ---------------------------------------------------------------------------
 
-class Journey(db.Model):
-    __tablename__ = "journeys"
+class Campaign(db.Model):
+    __tablename__ = "campaigns"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -342,16 +342,16 @@ class Journey(db.Model):
     status = db.Column(db.String(20), nullable=False, default="active")
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    quests = db.relationship("Quest", back_populates="journey", lazy="dynamic")
-    party_goals = db.relationship("PartyGoal", back_populates="journey", lazy="dynamic")
-    shop_items = db.relationship("ShopItem", back_populates="journey", lazy="dynamic")
+    quests = db.relationship("Quest", back_populates="campaign", lazy="dynamic")
+    party_goals = db.relationship("PartyGoal", back_populates="campaign", lazy="dynamic")
+    shop_items = db.relationship("ShopItem", back_populates="campaign", lazy="dynamic")
 
 
 class PartyGoal(db.Model):
     __tablename__ = "party_goals"
 
     id = db.Column(db.Integer, primary_key=True)
-    journey_id = db.Column(db.Integer, db.ForeignKey("journeys.id"), nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     target_amount = db.Column(db.Integer, nullable=False)
@@ -361,4 +361,4 @@ class PartyGoal(db.Model):
     unlocked_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    journey = db.relationship("Journey", back_populates="party_goals")
+    campaign = db.relationship("Campaign", back_populates="party_goals")

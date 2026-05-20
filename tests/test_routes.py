@@ -1,6 +1,6 @@
 import pytest
 from app import create_app, db
-from app.models import Member, Journey, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain
+from app.models import Member, Campaign, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain
 from tests.conftest import TestConfig
 
 
@@ -25,13 +25,13 @@ def auth_client(client):
 
 @pytest.fixture
 def seeded(app):
-    """Seed a full journey with member, quest, activity type, earning rule."""
+    """Seed a full campaign with member, quest, activity type, earning rule."""
     m = Member(name="Test Kid")
     db.session.add(m)
-    j = Journey(name="Summer Reading", status="active")
+    j = Campaign(name="Summer Reading", status="active")
     db.session.add(j)
     db.session.flush()
-    q = Quest(member_id=m.id, journey_id=j.id, theme_name="Pokemon", color_primary="#FF0000", color_secondary="#FFAA00")
+    q = Quest(member_id=m.id, campaign_id=j.id, theme_name="Pokemon", color_primary="#FF0000", color_secondary="#FFAA00")
     db.session.add(q)
     db.session.flush()
     at = ActivityType(quest_id=q.id, name="Pages", unit_label="pages")
@@ -39,14 +39,14 @@ def seeded(app):
     db.session.flush()
     rule = EarningRule(activity_type_id=at.id, rule_type="per_batch", quantity_required=50, currency_reward=10)
     db.session.add(rule)
-    goal = PartyGoal(journey_id=j.id, name="Movie Night", target_amount=100, min_individual_contribution=0)
+    goal = PartyGoal(campaign_id=j.id, name="Movie Night", target_amount=100, min_individual_contribution=0)
     db.session.add(goal)
     prize = ShopItem(quest_id=q.id, name="Ice Cream", cost=20)
     db.session.add(prize)
     sq = SideQuest(quest_id=q.id, name="Read Outside", currency_reward=5, repeat_type="daily")
     db.session.add(sq)
     db.session.commit()
-    return {"member_id": m.id, "journey_id": j.id, "quest_id": q.id, "activity_type_id": at.id, "prize_id": prize.id}
+    return {"member_id": m.id, "campaign_id": j.id, "quest_id": q.id, "activity_type_id": at.id, "prize_id": prize.id}
 
 
 # --- Dashboard Tests ---
@@ -110,14 +110,14 @@ def test_admin_create_member(auth_client):
     assert b"New Kid" in r.data
 
 
-def test_admin_create_journey(auth_client):
-    r = auth_client.post("/admin/journeys/new", data={"name": "Fall Quest", "status": "active"}, follow_redirects=True)
+def test_admin_create_campaign(auth_client):
+    r = auth_client.post("/admin/campaigns/new", data={"name": "Fall Quest", "status": "active"}, follow_redirects=True)
     assert r.status_code == 200
     assert b"Fall Quest" in r.data
 
 
-def test_admin_journey_detail(auth_client, seeded):
-    r = auth_client.get(f"/admin/journeys/{seeded['journey_id']}")
+def test_admin_campaign_detail(auth_client, seeded):
+    r = auth_client.get(f"/admin/campaigns/{seeded['campaign_id']}")
     assert r.status_code == 200
     assert b"Summer Reading" in r.data
 
@@ -131,7 +131,7 @@ def test_admin_create_quest(auth_client, seeded, app):
         member_id = m2.id
     r = auth_client.post("/admin/quests/new", data={
         "member_id": member_id,
-        "journey_id": seeded["journey_id"],
+        "campaign_id": seeded["campaign_id"],
         "theme_name": "Cheer Camp",
         "color_primary": "#00FF00",
         "color_secondary": "#88FF88",
@@ -172,7 +172,7 @@ def test_admin_redeem_insufficient_balance(auth_client, seeded):
 
 
 def test_admin_party_goal_crud(auth_client, seeded):
-    r = auth_client.post(f"/admin/journeys/{seeded['journey_id']}/party-goals/new", data={
+    r = auth_client.post(f"/admin/campaigns/{seeded['campaign_id']}/party-goals/new", data={
         "name": "Library Trip",
         "target_amount": "200",
         "min_individual_contribution": "50",

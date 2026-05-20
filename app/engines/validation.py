@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.models import PartyGoal, QuestLevel, QuestLevelUnlock, Quest, Transaction
-from app.engines.ledger import get_journey_totals, get_lifetime_earned
+from app.engines.ledger import get_campaign_totals, get_lifetime_earned
 
 
 def check_party_goal(goal):
@@ -16,7 +16,7 @@ def check_party_goal(goal):
     if goal.unlocked_at:
         return {"unlocked": True, "unlocked_at": goal.unlocked_at}
 
-    member_totals = get_journey_totals(goal.journey_id)
+    member_totals = get_campaign_totals(goal.campaign_id)
     combined_total = sum(member_totals.values())
 
     # Volume check
@@ -38,7 +38,7 @@ def check_party_goal(goal):
         })
 
     # Also check members with zero contributions (no transactions yet)
-    all_quests = Quest.query.filter_by(journey_id=goal.journey_id).all()
+    all_quests = Quest.query.filter_by(campaign_id=goal.campaign_id).all()
     for quest in all_quests:
         if quest.member_id not in member_totals:
             meets_min = goal.min_individual_contribution == 0
@@ -69,9 +69,9 @@ def check_party_goal(goal):
     }
 
 
-def check_all_party_goals(journey_id):
-    """Check all party goals for a journey."""
-    goals = PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all()
+def check_all_party_goals(campaign_id):
+    """Check all party goals for a campaign."""
+    goals = PartyGoal.query.filter_by(campaign_id=campaign_id).order_by(PartyGoal.sort_order).all()
     return [{"goal": goal, **check_party_goal(goal)} for goal in goals]
 
 

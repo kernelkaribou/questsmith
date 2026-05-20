@@ -1,17 +1,17 @@
-"""Lifetime Stats Engine: Aggregates activity data across all journeys for a member."""
+"""Lifetime Stats Engine: Aggregates activity data across all campaigns for a member."""
 from app import db
-from app.models import ActivityLog, Quest, Transaction, Journey, SideQuestCompletion
+from app.models import ActivityLog, Quest, Transaction, Campaign, SideQuestCompletion
 
 
 def get_total_logs(member_id):
-    """Total number of activity log entries across all journeys."""
+    """Total number of activity log entries across all campaigns."""
     return db.session.query(db.func.count(ActivityLog.id)).join(
         Quest, ActivityLog.quest_id == Quest.id
     ).filter(Quest.member_id == member_id).scalar()
 
 
 def get_total_currency_earned(member_id):
-    """Total currency earned across all journeys (lifetime)."""
+    """Total currency earned across all campaigns (lifetime)."""
     return db.session.query(
         db.func.coalesce(db.func.sum(Transaction.amount), 0)
     ).join(Quest, Transaction.quest_id == Quest.id).filter(
@@ -20,18 +20,18 @@ def get_total_currency_earned(member_id):
     ).scalar()
 
 
-def get_journeys_completed(member_id):
-    """Number of journeys the member has been part of that are completed."""
-    return db.session.query(db.func.count(db.distinct(Journey.id))).join(
-        Quest, Quest.journey_id == Journey.id
+def get_campaigns_completed(member_id):
+    """Number of campaigns the member has been part of that are completed."""
+    return db.session.query(db.func.count(db.distinct(Campaign.id))).join(
+        Quest, Quest.campaign_id == Campaign.id
     ).filter(
         Quest.member_id == member_id,
-        Journey.status == "completed",
+        Campaign.status == "completed",
     ).scalar()
 
 
 def get_stats_by_activity_type(member_id):
-    """Get total quantity logged per activity type name across all journeys."""
+    """Get total quantity logged per activity type name across all campaigns."""
     from app.models import ActivityType
 
     results = db.session.query(
@@ -52,7 +52,7 @@ def get_stats_by_activity_type(member_id):
 
 
 def get_side_quests_completed(member_id):
-    """Total side quests completed across all journeys."""
+    """Total side quests completed across all campaigns."""
     return db.session.query(db.func.count(SideQuestCompletion.id)).join(
         Quest, SideQuestCompletion.quest_id == Quest.id
     ).filter(Quest.member_id == member_id).scalar()
@@ -63,7 +63,7 @@ def get_all_stats(member_id):
     return {
         "total_logs": get_total_logs(member_id),
         "total_currency_earned": get_total_currency_earned(member_id),
-        "journeys_completed": get_journeys_completed(member_id),
+        "campaigns_completed": get_campaigns_completed(member_id),
         "side_quests_completed": get_side_quests_completed(member_id),
         "by_activity_type": get_stats_by_activity_type(member_id),
     }

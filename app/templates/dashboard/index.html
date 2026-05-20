@@ -6,10 +6,10 @@
     <h1 class="text-3xl font-bold text-gray-800 mb-1">QuestSmith</h1>
     <p class="text-gray-500 text-sm mb-10">Choose Your Adventure</p>
 
-    {% if journeys %}
+    {% if campaigns %}
     <div class="flex flex-wrap justify-center gap-6 max-w-3xl w-full">
-        {% for j in journeys %}
-        <a href="{{ url_for('dashboard.journey_view', journey_id=j.id) }}"
+        {% for j in campaigns %}
+        <a href="{{ url_for('dashboard.campaign_view', campaign_id=j.id) }}"
            class="group bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition-all hover:-translate-y-1 transform w-56 border border-gray-100">
             <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform shadow-md">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
@@ -43,7 +43,7 @@
     </div>
     {% endif %}
 
-    {% if not journeys and not solo_quests %}
+    {% if not campaigns and not solo_quests %}
     <p class="text-gray-400">No active adventures yet.</p>
     {% endif %}
 </div>

@@ -1,42 +1,42 @@
 {% extends "admin/base.html" %}
-{% block title %}{{ 'Edit' if journey else 'New' }} Journey{% endblock %}
+{% block title %}{{ 'Edit' if campaign else 'New' }} Campaign{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">{{ 'Edit' if journey else 'New' }} Journey</h1>
+<h1 class="text-2xl font-bold mb-6">{{ 'Edit' if campaign else 'New' }} Campaign</h1>
 
 <form method="POST" class="bg-white rounded-lg shadow p-6 max-w-lg">
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input type="text" name="name" value="{{ journey.name if journey else '' }}" required
+        <input type="text" name="name" value="{{ campaign.name if campaign else '' }}" required
                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
     </div>
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
         <textarea name="description" rows="3"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ journey.description or '' }}</textarea>
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ campaign.description or '' }}</textarea>
     </div>
     <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input type="date" name="start_date" value="{{ journey.start_date or '' }}"
+            <input type="date" name="start_date" value="{{ campaign.start_date or '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input type="date" name="end_date" value="{{ journey.end_date or '' }}"
+            <input type="date" name="end_date" value="{{ campaign.end_date or '' }}"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
     </div>
     <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="active" {{ 'selected' if not journey or journey.status == 'active' }}>Active</option>
-            <option value="completed" {{ 'selected' if journey and journey.status == 'completed' }}>Completed</option>
-            <option value="archived" {{ 'selected' if journey and journey.status == 'archived' }}>Archived</option>
+            <option value="active" {{ 'selected' if not campaign or campaign.status == 'active' }}>Active</option>
+            <option value="completed" {{ 'selected' if campaign and campaign.status == 'completed' }}>Completed</option>
+            <option value="archived" {{ 'selected' if campaign and campaign.status == 'archived' }}>Archived</option>
         </select>
     </div>
     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-        {{ 'Save Changes' if journey else 'Create Journey' }}
+        {{ 'Save Changes' if campaign else 'Create Campaign' }}
     </button>
-    <a href="{{ url_for('admin.journeys') }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
+    <a href="{{ url_for('admin.campaigns') }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
 </form>
 {% endblock %}

@@ -62,7 +62,8 @@
 - Generic quest-based reward engine; activity-agnostic by design
 - Quests define activity types, earning rules, theme, and labels
 - Lifetime stats and achievements exist outside of quests (permanent member-level data)
-- Quests are time-bound campaigns with scoped XP, Gold, prizes, and Co-Op goals
+- Campaigns group one or more quests and provide shared party goals, shop items, and campaign-level progress
+- Quests are time-bound with scoped XP, Gold, prizes, and Co-Op goals
 - Activity logs feed both lifetime stats and active quest progression
 - Theme language is configurable per quest and per member enrollment
 - "Member" is the generic data term; themed per quest (reader, trainer, player, etc.)
