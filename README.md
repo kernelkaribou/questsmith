@@ -5,13 +5,13 @@
 <h1 align="center">QuestSmith</h1>
 <p align="center"><em>Forge Your Adventure</em></p>
 
-A quest-based reward engine that tracks individual accomplishments and party goals. Build themed quests for any activity — reading, chores, sports, or anything with trackable progress. Members earn XP and Gold, unlock achievements, redeem prizes, and work together on Co-Op goals.
+A quest-based reward engine that tracks individual accomplishments and party goals. Build themed quests for any activity — reading, chores, sports, or anything with trackable progress. Members earn currency, unlock achievements, redeem prizes, and work together on Co-Op goals.
 
 ## Features
 
 - Activity-agnostic quest engine (reading, chores, sports, anything)
 - Admin-defined activity types per quest with flexible earning rules
-- Themed quests with configurable labels per member (Pokemon trainer, Cheer camp, etc.)
+- Themed quests with configurable labels per member (Dungeon Exploration, Artifacts hunt, etc.)
 - Individual progress tracking with level vials and milestone markers
 - Spendable currency shop for prize redemption
 - Co-Op party goals with fairness validation
@@ -53,9 +53,9 @@ See `.github/copilot-instructions.md` for development practices.
 
 ## Design
 
-- Self-hosted on local network
+- Self-hosted
 - SQLite storage (no external database required)
-- Admin PIN for parent access; kids select their profile directly
+- Admin PIN for management access; Users select their profile directly
 - Lightweight frontend with minimal dependencies
 
 ## Security
