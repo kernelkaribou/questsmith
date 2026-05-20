@@ -165,7 +165,7 @@
             <!-- Next Step: Earning Progress -->
             {% if earning_progress %}
             <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-primary)">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">🎁 Next Reward</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Reward Progress</h2>
                 <div class="space-y-4">
                     {% for ep in earning_progress %}
                     <div>
@@ -500,9 +500,9 @@
             </div>
             {% endif %}
 
-            <!-- Adventure Journal -->
+            <!-- Quest Journal -->
             <div class="quest-card rounded-2xl p-4 border-l-4 border-indigo-300">
-                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">📖 Adventure Journal</h2>
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Quest Journal</h2>
                 {% if recent_logs or purchases or journal_completions %}
                 <div class="space-y-2" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
