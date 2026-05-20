@@ -6,7 +6,7 @@
 {% set bg_g = (bg_hex[3:5])|int(0, 16) if bg_hex|length >= 7 else 41 %}
 {% set bg_b = (bg_hex[5:7])|int(0, 16) if bg_hex|length >= 7 else 59 %}
 {% set bg_dark = ((bg_r * 299 + bg_g * 587 + bg_b * 114) / 1000) < 128 %}
-{% block title %}Treasure Shop - {{ quest.theme_name }}{% endblock %}
+{% block title %}{{ quest.display_shop }} - {{ quest.theme_name }}{% endblock %}
 {% block admin_fab %}{% endblock %}
 {% block head %}
 <style>
@@ -56,7 +56,7 @@
         <!-- Hero -->
         <div class="text-center mb-10">
             <h1 class="text-3xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }}">
-                <span class="text-4xl">💎</span> Treasure Shop <span class="text-4xl">💎</span>
+                {{ quest.display_shop }}
             </h1>
         </div>
 
@@ -161,7 +161,7 @@
         {% if purchases %}
         <aside class="lg:w-1/4 w-full">
             <div class="quest-card rounded-2xl p-4 lg:sticky lg:top-4">
-                <h2 class="text-xs font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-3">🏆 Treasure Chest</h2>
+                <h2 class="text-xs font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-3">{{ quest.display_chest }}</h2>
                 <div class="space-y-2 max-h-[60vh] overflow-y-auto">
                     {% for p in purchases %}
                     <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-500/10 border border-red-500/20' if p.refunded_at else ('bg-white/5 border border-white/10' if bg_dark else 'bg-gray-50 border border-gray-100') }}">

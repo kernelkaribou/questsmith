@@ -218,6 +218,8 @@ def quest_create():
             progress_label=request.form.get("progress_label") or None,
             party_goal_label=request.form.get("party_goal_label") or None,
             level_label=request.form.get("level_label") or None,
+            shop_label=request.form.get("shop_label") or None,
+            chest_label=request.form.get("chest_label") or None,
             completion_target=completion_target,
             completion_bonus=completion_bonus,
         )
@@ -318,6 +320,8 @@ def quest_edit(quest_id):
         quest.progress_label = request.form.get("progress_label") or None
         quest.party_goal_label = request.form.get("party_goal_label") or None
         quest.level_label = request.form.get("level_label") or None
+        quest.shop_label = request.form.get("shop_label") or None
+        quest.chest_label = request.form.get("chest_label") or None
 
         # Completion settings
         completion_target = request.form.get("completion_target")

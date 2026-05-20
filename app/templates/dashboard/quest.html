@@ -467,7 +467,7 @@
                onmouseenter="this.style.boxShadow='0 0 20px rgba('+this.style.getPropertyValue('--glow-color')+',0.35)'"
                onmouseleave="this.style.boxShadow='none'">
                 <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
-                    💎 Treasure Shop 💎
+                    {{ quest.display_shop }}
                 </p>
             </a>
             {% endif %}
