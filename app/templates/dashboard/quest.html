@@ -324,9 +324,6 @@
                                 {% if sq.quest.description %}
                                 <p class="text-xs text-gray-600 mt-0.5">{{ sq.quest.description }}</p>
                                 {% endif %}
-                                {% if sq.quest.prize_description %}
-                                <p class="text-[10px] text-purple-600 mt-0.5">🎁 {{ sq.quest.prize_description }}</p>
-                                {% endif %}
                                 {% if sq.quest.expires_at %}
                                 <p class="text-[10px] text-amber-600 mt-0.5">Expires {{ sq.quest.expires_at.strftime('%b %d, %Y') }}</p>
                                 {% endif %}
@@ -334,6 +331,9 @@
                             <div class="flex items-center gap-2 shrink-0">
                                 {% if sq.quest.currency_reward > 0 %}
                                 <span class="text-sm font-bold px-2 py-0.5 rounded-full shadow-sm bg-white/10">+{{ sq.quest.currency_reward }}</span>
+                                {% endif %}
+                                {% if sq.quest.prize_description %}
+                                <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-purple-300 bg-purple-400/20' if bg_dark else 'text-purple-600 bg-purple-100' }}">🎁 {{ sq.quest.prize_description }}</span>
                                 {% endif %}
                                 {% if is_admin %}
                                 <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.quest.id) }}" class="inline">
@@ -360,14 +360,14 @@
                                 {% if cd.chain.description %}
                                 <p class="text-xs text-gray-500 mt-0.5">{{ cd.chain.description }}</p>
                                 {% endif %}
-                                {% if cd.chain.prize_description %}
-                                <p class="text-[10px] text-purple-600 mt-0.5">🎁 {{ cd.chain.prize_description }}</p>
-                                {% endif %}
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }}</span>
                                 {% if cd.chain.currency_reward > 0 %}
                                 <span class="text-sm font-bold px-2 py-0.5 rounded-full shadow-sm bg-white/10">+{{ cd.chain.currency_reward }}</span>
+                                {% endif %}
+                                {% if cd.chain.prize_description %}
+                                <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-purple-300 bg-purple-400/20' if bg_dark else 'text-purple-600 bg-purple-100' }}">🎁 {{ cd.chain.prize_description }}</span>
                                 {% endif %}
                             </div>
                         </div>
