@@ -252,25 +252,6 @@ def quest_edit(quest_id):
         elif request.form.get("theme_graphic_url"):
             quest.theme_graphic_url = request.form["theme_graphic_url"]
 
-        # Add new activity type if provided
-        new_name = request.form.get("new_activity_name")
-        new_unit = request.form.get("new_activity_unit")
-        if new_name and new_unit:
-            is_milestone = "new_activity_milestone" in request.form
-            at = ActivityType(quest_id=quest.id, name=new_name, unit_label=new_unit, is_milestone=is_milestone)
-            db.session.add(at)
-            db.session.flush()
-            new_qty = request.form.get("new_rule_qty")
-            new_reward = request.form.get("new_rule_reward")
-            if new_qty and new_reward:
-                rule = EarningRule(
-                    activity_type_id=at.id,
-                    rule_type="per_log" if is_milestone else "per_batch",
-                    quantity_required=int(new_qty),
-                    currency_reward=int(new_reward),
-                )
-                db.session.add(rule)
-
         # Edit existing earning rules
         for key, value in request.form.items():
             if key.startswith("rule_qty_") and value:
@@ -282,6 +263,15 @@ def quest_edit(quest_id):
                     if reward_key in request.form and request.form[reward_key]:
                         rule.currency_reward = int(request.form[reward_key])
 
+        # Update milestone toggle for existing activity types
+        for at in quest.activity_types:
+            new_milestone = f"milestone_{at.id}" in request.form
+            if new_milestone != at.is_milestone:
+                at.is_milestone = new_milestone
+                # Update rule type to match
+                for rule in at.earning_rules:
+                    rule.rule_type = "per_log" if new_milestone else "per_batch"
+
         db.session.commit()
         flash("Quest updated", "success")
         return redirect(url_for("admin.quest_detail", quest_id=quest.id))
@@ -291,6 +281,40 @@ def quest_edit(quest_id):
 
 
 # --- Activity Type Management ---
+
+@bp.route("/quests/<int:quest_id>/activity-types/new", methods=["POST"])
+@admin_required
+def activity_type_create(quest_id):
+    """Add a new activity type to a quest."""
+    quest = db.session.get(Quest, quest_id)
+    if not quest:
+        return admin_error("Quest not found", url_for("admin.index"))
+
+    name = request.form.get("new_activity_name")
+    unit = request.form.get("new_activity_unit")
+    if not name or not unit:
+        return admin_error("Name and unit are required", url_for("admin.quest_edit", quest_id=quest_id))
+
+    is_milestone = "new_activity_milestone" in request.form
+    at = ActivityType(quest_id=quest.id, name=name, unit_label=unit, is_milestone=is_milestone)
+    db.session.add(at)
+    db.session.flush()
+
+    new_qty = request.form.get("new_rule_qty")
+    new_reward = request.form.get("new_rule_reward")
+    if new_qty and new_reward:
+        rule = EarningRule(
+            activity_type_id=at.id,
+            rule_type="per_log" if is_milestone else "per_batch",
+            quantity_required=int(new_qty),
+            currency_reward=int(new_reward),
+        )
+        db.session.add(rule)
+
+    db.session.commit()
+    redirect_url = url_for("admin.quest_edit", quest_id=quest_id)
+    return admin_success(f"Added activity type: {name}", redirect_url)
+
 
 @bp.route("/activity-type/<int:at_id>/delete", methods=["POST"])
 @admin_required

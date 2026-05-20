@@ -137,7 +137,7 @@
             <!-- Level Path -->
             {% if levels %}
             <section class="rounded-2xl shadow-lg bg-white p-5 border-l-4" style="border-left-color: var(--color-secondary)">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">🗺️ Level Progress</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Level Progress</h2>
                 <div class="relative">
                     <!-- Vertical path line -->
                     <div class="absolute left-5 top-0 bottom-0 w-0.5" style="background: linear-gradient(to bottom, var(--color-primary), var(--color-secondary))"></div>
@@ -176,7 +176,7 @@
             <!-- Party Goals -->
             {% if goal_progress %}
             <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">⚔️ {{ ctx.party_goal_label }}s</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}s</h2>
                 <div class="space-y-5">
                     {% for cp in goal_progress %}
                     <div class="relative">
@@ -218,7 +218,7 @@
             <!-- Side Quests -->
             {% if sq_available or sq_completed or chain_data %}
             <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">🏹 Side Quests</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Side Quests</h2>
 
                 <!-- Available Missions -->
                 {% if sq_available %}
@@ -382,10 +382,10 @@
 
         <!-- Sidebar -->
         <aside class="lg:w-72 w-full space-y-5">
-            <!-- Quick Log (Admin) -->
+            <!-- Activity Log (Admin) -->
             {% if is_admin %}
             <div class="rounded-2xl shadow-lg bg-white p-4 border-t-4" style="border-top-color: var(--color-primary)">
-                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">⚡ Quick Log</h2>
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Activity Log</h2>
                 <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
@@ -398,7 +398,7 @@
                         <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                         <input type="text" name="notes" placeholder="Notes" class="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     </div>
-                    <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Log Activity</button>
+                    <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Add</button>
                 </form>
             </div>
             {% endif %}
@@ -445,7 +445,7 @@
             <!-- Treasure Chest -->
             {% if purchases %}
             <div class="rounded-2xl shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 p-4 ring-1 ring-purple-100">
-                <h2 class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-3">🎒 Treasure Chest</h2>
+                <h2 class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-3">Treasure Chest</h2>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     {% for p in purchases %}
                     <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-50/80 border border-red-100' if p.refunded_at else 'bg-white/70 border border-purple-100' }}">
@@ -477,7 +477,7 @@
             <!-- Achievements -->
             {% if achievements %}
             <div class="rounded-2xl shadow-lg bg-white p-4 ring-1 ring-black/5">
-                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">🏆 Achievements</h2>
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Achievements</h2>
                 <div class="grid grid-cols-2 gap-3">
                     {% for a in achievements %}
                     <div class="flex flex-col items-center p-3 rounded-xl bg-gradient-to-b from-amber-50 to-yellow-50 border border-amber-200 shadow-sm">

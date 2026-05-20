@@ -19,9 +19,7 @@
         {% endif %}
         <input type="file" name="avatar_file" accept="image/*"
                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-        <p class="text-xs text-gray-400 mt-1">Or provide a URL:</p>
-        <input type="url" name="avatar_url" value="{{ member.avatar_url or '' }}" placeholder="https://..."
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mt-1">
+        <input type="hidden" name="avatar_url" value="{{ member.avatar_url or '' if member else '' }}">
     </div>
     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
         {{ 'Save Changes' if member else 'Add Member' }}

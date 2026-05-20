@@ -1,165 +1,224 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ 'Edit' if quest else 'New' }} Quest{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">{{ 'Edit' if quest else 'New' }} Quest</h1>
-
-<form method="POST" class="bg-white rounded-lg shadow p-6 max-w-lg" enctype="multipart/form-data">
-    {% if not quest %}
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Member</label>
-        <select name="member_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            {% for m in members %}
-            <option value="{{ m.id }}">{{ m.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    {% endif %}
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Campaign (optional)</label>
-        <select name="campaign_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">-- None (standalone quest) --</option>
-            {% for j in campaigns %}
-            <option value="{{ j.id }}" {{ 'selected' if (quest and quest.campaign_id == j.id) or (not quest and preselect_campaign and preselect_campaign|string == j.id|string) }}>{{ j.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Theme Name</label>
-        <input type="text" name="theme_name" value="{{ quest.theme_name if quest else '' }}" required placeholder="e.g., Pokemon Trainer"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-    </div>
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Theme Graphic URL (optional)</label>
-        <input type="url" name="theme_graphic_url" value="{{ quest.theme_graphic_url or '' }}"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <label class="block text-sm font-medium text-gray-700 mt-2 mb-1">Or upload an image</label>
-        <input type="file" name="theme_graphic_file" accept="image/*"
-               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-    </div>
-    <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
-            <input type="color" name="color_primary" value="{{ quest.color_primary if quest else '#4F46E5' }}"
-                   class="w-full h-10 rounded-md cursor-pointer">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
-            <input type="color" name="color_secondary" value="{{ quest.color_secondary if quest else '#818CF8' }}"
-                   class="w-full h-10 rounded-md cursor-pointer">
-        </div>
-    </div>
-    <div class="grid grid-cols-3 gap-4 mb-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Currency Label</label>
-            <input type="text" name="currency_label" value="{{ quest.currency_label or '' }}" placeholder="Gold"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Progress Label</label>
-            <input type="text" name="progress_label" value="{{ quest.progress_label or '' }}" placeholder="XP"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Party Goal Label</label>
-            <input type="text" name="party_goal_label" value="{{ quest.party_goal_label or '' }}" placeholder="Party Goal"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-    </div>
-
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">{{ 'Edit' if quest else 'New' }} Quest</h1>
     {% if quest %}
-    <!-- Completion / Victory Settings -->
-    <hr class="my-6">
-    <h3 class="font-semibold mb-3">Quest Completion (Victory Condition)</h3>
-    <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Target (lifetime earned)</label>
-            <input type="number" name="completion_target" value="{{ quest.completion_target or '' }}" min="1" placeholder="e.g., 100"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <p class="text-xs text-gray-500 mt-1">Leave empty for no completion target</p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Bonus (currency)</label>
-            <input type="number" name="completion_bonus" value="{{ quest.completion_bonus or '' }}" min="0" placeholder="0"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <p class="text-xs text-gray-500 mt-1">Extra currency awarded when quest is completed</p>
-        </div>
-    </div>
-    {% if quest.completed_at %}
-    <div class="p-3 bg-green-50 border border-green-200 rounded mb-4">
-        <p class="text-sm text-green-800 font-medium">Quest Completed: {{ quest.completed_at.strftime('%B %d, %Y') }}</p>
-    </div>
-    {% endif %}
-
-    <!-- Activity Types & Earning Rules (edit mode) -->
-    <hr class="my-6">
-    <h3 class="font-semibold mb-3">Activity Types</h3>
-    <div class="space-y-3 mb-4" id="activity-types">
-        {% for at in quest.activity_types %}
-        <div class="p-3 bg-gray-50 rounded">
-            <div class="flex items-center gap-2 text-sm mb-2">
-                <span class="font-medium">{{ at.name }}</span>
-                <span class="text-gray-500">({{ at.unit_label }})</span>
-            </div>
-            {% for rule in at.earning_rules %}
-            <div class="flex items-center gap-2 text-sm">
-                <label class="text-xs text-gray-500">Every</label>
-                <input type="number" name="rule_qty_{{ rule.id }}" value="{{ rule.quantity_required }}" class="w-16 px-2 py-1 border rounded text-sm">
-                <label class="text-xs text-gray-500">{{ at.unit_label }} =</label>
-                <input type="number" name="rule_reward_{{ rule.id }}" value="{{ rule.currency_reward }}" class="w-16 px-2 py-1 border rounded text-sm">
-                <label class="text-xs text-gray-500">currency</label>
-            </div>
-            {% endfor %}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Add Activity Type (available on both create and edit) -->
-    <hr class="my-6">
-    <h3 class="font-semibold mb-3">{{ 'Add Activity Type' if quest else 'First Activity Type' }}</h3>
-    <p class="text-xs text-gray-500 mb-3">{{ 'Define how the adventurer earns currency.' if not quest else '' }}</p>
-    <div class="p-3 bg-blue-50 rounded mb-4">
-        <div class="grid grid-cols-2 gap-2 mb-2">
-            <input type="text" name="new_activity_name" placeholder="Name (e.g., Reading)" class="px-2 py-1 border rounded text-sm">
-            <input type="text" name="new_activity_unit" placeholder="Unit (e.g., pages)" class="px-2 py-1 border rounded text-sm">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-            <input type="number" name="new_rule_qty" placeholder="Qty per reward (e.g., 50)" class="px-2 py-1 border rounded text-sm">
-            <input type="number" name="new_rule_reward" placeholder="Currency reward (e.g., 1)" class="px-2 py-1 border rounded text-sm">
-        </div>
-        <label class="flex items-center gap-2 mt-2 text-xs text-gray-600">
-            <input type="checkbox" name="new_activity_milestone" class="rounded border-gray-300 text-amber-600">
-            This is a milestone (e.g., "Books Finished") -- logged via checkbox, not quantity
-        </label>
-    </div>
-
-    {% if not quest %}
-    <!-- Completion target on creation -->
-    <hr class="my-6">
-    <h3 class="font-semibold mb-3">Quest Completion (optional)</h3>
-    <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Target</label>
-            <input type="number" name="completion_target" min="1" placeholder="e.g., 100"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <p class="text-xs text-gray-500 mt-1">Total earned to complete quest (leave empty for no end)</p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Completion Bonus</label>
-            <input type="number" name="completion_bonus" min="0" value="0" placeholder="0"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <p class="text-xs text-gray-500 mt-1">Bonus currency on quest complete</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-        {{ 'Save Changes' if quest else 'Create Quest' }}
-    </button>
-    {% if quest %}
-    <a href="{{ url_for('admin.quest_detail', quest_id=quest.id) }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
+    <a href="{{ url_for('admin.quest_detail', quest_id=quest.id) }}" class="text-gray-500 text-sm hover:underline">Back to Quest</a>
     {% else %}
-    <a href="{{ url_for('admin.index') }}" class="ml-3 text-gray-600 hover:underline text-sm">Cancel</a>
+    <a href="{{ url_for('admin.index') }}" class="text-gray-500 text-sm hover:underline">Back</a>
     {% endif %}
-</form>
+</div>
+
+<div class="grid grid-cols-1 {{ 'lg:grid-cols-3 gap-6' if quest else '' }}">
+
+    <!-- Main Quest Settings -->
+    <form method="POST" class="bg-white rounded-lg shadow p-6 {{ 'lg:col-span-2' if quest else 'max-w-2xl' }}" enctype="multipart/form-data">
+        <h2 class="font-semibold text-gray-800 mb-4">Quest Settings</h2>
+
+        {% if not quest %}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Member</label>
+            <select name="member_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {% for m in members %}
+                <option value="{{ m.id }}">{{ m.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campaign (optional)</label>
+                <select name="campaign_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- None (standalone) --</option>
+                    {% for j in campaigns %}
+                    <option value="{{ j.id }}" {{ 'selected' if (quest and quest.campaign_id == j.id) or (not quest and preselect_campaign and preselect_campaign|string == j.id|string) }}>{{ j.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Theme Name</label>
+                <input type="text" name="theme_name" value="{{ quest.theme_name if quest else '' }}" required placeholder="e.g., Pokemon Trainer"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Theme Graphic</label>
+            {% if quest and quest.theme_graphic_url %}
+            <div class="mb-2 flex items-center gap-3">
+                <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}" alt="Theme" class="w-12 h-12 rounded object-cover">
+                <span class="text-xs text-gray-500">Current graphic</span>
+            </div>
+            {% endif %}
+            <input type="file" name="theme_graphic_file" accept="image/*"
+                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            <input type="hidden" name="theme_graphic_url" value="{{ quest.theme_graphic_url or '' if quest else '' }}">
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
+                <input type="color" name="color_primary" value="{{ quest.color_primary if quest else '#4F46E5' }}"
+                       class="w-full h-10 rounded-md cursor-pointer">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
+                <input type="color" name="color_secondary" value="{{ quest.color_secondary if quest else '#818CF8' }}"
+                       class="w-full h-10 rounded-md cursor-pointer">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Completion Target</label>
+                <input type="number" name="completion_target" value="{{ quest.completion_target or '' if quest else '' }}" min="1" placeholder="None"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Completion Bonus</label>
+                <input type="number" name="completion_bonus" value="{{ quest.completion_bonus or '' if quest else '0' }}" min="0" placeholder="0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Currency Label</label>
+                <input type="text" name="currency_label" value="{{ quest.currency_label or '' if quest else '' }}" placeholder="Gold"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Progress Label</label>
+                <input type="text" name="progress_label" value="{{ quest.progress_label or '' if quest else '' }}" placeholder="XP"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Party Goal Label</label>
+                <input type="text" name="party_goal_label" value="{{ quest.party_goal_label or '' if quest else '' }}" placeholder="Party Goal"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        {% if quest and quest.completed_at %}
+        <div class="p-3 bg-green-50 border border-green-200 rounded mb-4">
+            <p class="text-sm text-green-800 font-medium">Quest Completed: {{ quest.completed_at.strftime('%B %d, %Y') }}</p>
+        </div>
+        {% endif %}
+
+        {% if quest %}
+        <!-- Existing Activity Types (inline editing) -->
+        <hr class="my-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Activity Types</h3>
+        {% if quest.activity_types|list %}
+        <div class="space-y-3 mb-4">
+            {% for at in quest.activity_types %}
+            <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="font-semibold">{{ at.name }}</span>
+                        <span class="text-gray-400">({{ at.unit_label }})</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+                            <input type="checkbox" name="milestone_{{ at.id }}" {{ 'checked' if at.is_milestone }} class="rounded border-gray-300 text-amber-600">
+                            Milestone
+                        </label>
+                        <form method="POST" action="{{ url_for('admin.activity_type_delete', at_id=at.id) }}" class="inline"
+                              onsubmit="return confirm('Remove {{ at.name }}? Only works if no activities logged.')">
+                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs font-medium">Remove</button>
+                        </form>
+                    </div>
+                </div>
+                {% for rule in at.earning_rules %}
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-gray-500 text-xs">Every</span>
+                    <input type="number" name="rule_qty_{{ rule.id }}" value="{{ rule.quantity_required }}" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm">
+                    <span class="text-gray-500 text-xs">{{ at.unit_label }} =</span>
+                    <input type="number" name="rule_reward_{{ rule.id }}" value="{{ rule.currency_reward }}" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm">
+                    <span class="text-gray-500 text-xs">currency</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-sm mb-4">No activity types defined yet.</p>
+        {% endif %}
+        {% endif %}
+
+        {% if not quest %}
+        <!-- First Activity Type (create mode only) -->
+        <hr class="my-5">
+        <h3 class="font-semibold text-gray-800 mb-2">First Activity Type</h3>
+        <p class="text-xs text-gray-500 mb-3">Define how the adventurer earns currency.</p>
+        <div class="p-3 bg-blue-50 rounded mb-4">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="text" name="new_activity_name" placeholder="Name (e.g., Reading)" class="px-2 py-1 border rounded text-sm">
+                <input type="text" name="new_activity_unit" placeholder="Unit (e.g., pages)" class="px-2 py-1 border rounded text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="number" name="new_rule_qty" placeholder="Qty per reward (e.g., 50)" class="px-2 py-1 border rounded text-sm">
+                <input type="number" name="new_rule_reward" placeholder="Currency reward (e.g., 1)" class="px-2 py-1 border rounded text-sm">
+            </div>
+            <label class="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                <input type="checkbox" name="new_activity_milestone" class="rounded border-gray-300 text-amber-600">
+                Milestone (logged as a checkbox, not quantity)
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-md hover:bg-indigo-700 font-medium">
+                {{ 'Save Changes' if quest else 'Create Quest' }}
+            </button>
+            {% if quest %}
+            <a href="{{ url_for('admin.quest_detail', quest_id=quest.id) }}" class="text-gray-500 hover:underline text-sm">Cancel</a>
+            {% else %}
+            <a href="{{ url_for('admin.index') }}" class="text-gray-500 hover:underline text-sm">Cancel</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if quest %}
+    <!-- Add Activity Type (separate card, separate form) -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow p-5 sticky top-6">
+            <h2 class="font-semibold text-gray-800 mb-3">Add Activity Type</h2>
+            <form method="POST" action="{{ url_for('admin.activity_type_create', quest_id=quest.id) }}">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input type="text" name="new_activity_name" placeholder="e.g., Reading" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                        <input type="text" name="new_activity_unit" placeholder="e.g., pages" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Qty per reward</label>
+                            <input type="number" name="new_rule_qty" placeholder="50"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Currency earned</label>
+                            <input type="number" name="new_rule_reward" placeholder="1"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                        <input type="checkbox" name="new_activity_milestone" class="rounded border-gray-300 text-amber-600">
+                        Milestone (logged as checkbox)
+                    </label>
+                    <button type="submit" class="w-full bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                        Add Activity Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
 {% endblock %}
