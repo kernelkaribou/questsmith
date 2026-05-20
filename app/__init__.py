@@ -1,6 +1,8 @@
 import secrets
+import time
+import logging
 
-from flask import Flask, request, session
+from flask import Flask, request, session, g
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 
@@ -17,6 +19,9 @@ def create_app(config_class=None):
         from app.config import Config
         app.config.from_object(Config)
 
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("questsmith")
+
     db.init_app(app)
 
     with app.app_context():
@@ -28,6 +33,10 @@ def create_app(config_class=None):
             cursor.close()
 
     @app.before_request
+    def start_timer():
+        g.start_time = time.perf_counter()
+
+    @app.before_request
     def csrf_protect():
         if request.method == "POST":
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -35,8 +44,18 @@ def create_app(config_class=None):
             token = session.get("csrf_token")
             form_token = request.form.get("csrf_token")
             if not token or token != form_token:
-                from flask import abort
-                abort(403)
+                from flask import redirect, flash
+                flash("Session expired. Please try again.")
+                return redirect(request.url)
+
+    @app.after_request
+    def log_request_time(response):
+        if hasattr(g, "start_time"):
+            elapsed = (time.perf_counter() - g.start_time) * 1000
+            logger.info(f"{request.method} {request.path} - {response.status_code} - {elapsed:.1f}ms")
+            response.headers["X-Response-Time"] = f"{elapsed:.1f}ms"
+            response.headers["Server-Timing"] = f"total;dur={elapsed:.1f}"
+        return response
 
     @app.context_processor
     def inject_csrf_token():

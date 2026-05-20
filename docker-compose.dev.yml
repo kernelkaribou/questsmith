@@ -14,7 +14,8 @@ services:
       - FLASK_DEBUG=1
       - DATABASE_PATH=/app/data/questsmith.db
       - ADMIN_PIN=1234
+      - SECRET_KEY=dev-secret-key-do-not-use-in-production
     command: >
       sh -c "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css &&
       { tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --watch=always &
-      exec flask run --host=0.0.0.0 --port=5000 --reload; }"
+      exec gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --worker-class gthread --timeout 30 --reload 'app:create_app()'; }"

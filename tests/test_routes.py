@@ -238,18 +238,18 @@ def test_admin_achievements_page(auth_client):
 # --- Security Tests ---
 
 def test_csrf_missing_token_rejected(client):
-    """POST without CSRF token should be rejected with 403."""
+    """POST without CSRF token should redirect with session expired message."""
     # Clear CSRF from session
     with client.session_transaction() as sess:
         sess.pop("csrf_token", None)
     r = client.post("/admin/login", data={"pin": "1234"})
-    assert r.status_code == 403
+    assert r.status_code == 302
 
 
 def test_csrf_wrong_token_rejected(client):
-    """POST with wrong CSRF token should be rejected."""
+    """POST with wrong CSRF token should redirect."""
     r = client.post("/admin/login", data={"pin": "1234", "csrf_token": "wrong-token"})
-    assert r.status_code == 403
+    assert r.status_code == 302
 
 
 def test_upload_path_traversal_blocked(auth_client):
