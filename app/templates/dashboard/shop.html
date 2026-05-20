@@ -34,12 +34,68 @@
 </style>
 {% endblock %}
 {% block body %}
+<style>
+    @keyframes shop-burst {
+        0% { opacity: 1; transform: rotate(calc(var(--i) * 30deg)) translateY(0) scale(1); }
+        100% { opacity: 0; transform: rotate(calc(var(--i) * 30deg)) translateY(-80px) scale(0.2); }
+    }
+    .shop-particle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: var(--color-primary);
+        animation: shop-burst 800ms ease-out forwards;
+    }
+    .shop-particle:nth-child(even) { background: var(--color-secondary); }
+    .shop-particle:nth-child(3n) { width: 6px; height: 6px; }
+    @keyframes badge-pop {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.25); }
+        100% { transform: scale(1); }
+    }
+    .badge-pop { animation: badge-pop 500ms ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+        .shop-particle { animation: none; display: none; }
+        .badge-pop { animation: none; }
+    }
+</style>
 <div class="quest-page min-h-screen" x-data="{
     confirmItem: null,
     balance: {{ balance }},
+    displayBalance: {{ balance }},
+    balanceAnimating: false,
     purchasing: false,
+    purchaseState: 'confirm',
     successItem: null,
+    celebrating: false,
+    chestGlowing: false,
     purchases: {{ purchases|map(attribute='shop_item')|map(attribute='name')|list|tojson }},
+
+    animateBalance(from, to) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            this.displayBalance = to;
+            this.balance = to;
+            return;
+        }
+        const duration = 600;
+        const start = performance.now();
+        this.balanceAnimating = true;
+        const tick = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            this.displayBalance = Math.round(from + (to - from) * eased);
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                this.displayBalance = to;
+                this.balance = to;
+                setTimeout(() => this.balanceAnimating = false, 400);
+            }
+        };
+        requestAnimationFrame(tick);
+    },
+
     async claim() {
         if (!this.confirmItem || this.purchasing) return;
         this.purchasing = true;
@@ -51,18 +107,41 @@
             });
             const data = await res.json();
             if (data.success) {
-                this.balance -= this.confirmItem.cost;
-                this.purchases.unshift(this.confirmItem.name);
+                const oldBalance = this.balance;
+                const newBalance = oldBalance - this.confirmItem.cost;
+
                 this.successItem = this.confirmItem.name;
-                this.confirmItem = null;
-                setTimeout(() => this.successItem = null, 2500);
+                this.purchaseState = 'success';
+                this.purchases.unshift(this.confirmItem.name);
+
+                this.celebrating = true;
+                setTimeout(() => this.celebrating = false, 900);
+
+                this.chestGlowing = true;
+                setTimeout(() => this.chestGlowing = false, 1200);
+
+                setTimeout(() => this.animateBalance(oldBalance, newBalance), 200);
+
+                setTimeout(() => {
+                    this.confirmItem = null;
+                    this.purchaseState = 'confirm';
+                    this.successItem = null;
+                }, 1200);
             } else {
                 alert(data.message);
+                this.confirmItem = null;
             }
         } catch(e) { alert('Something went wrong'); }
         this.purchasing = false;
     }
 }">
+    <!-- Sparkle Particles -->
+    <div x-show="celebrating" x-cloak class="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+        <template x-for="i in 12" :key="i">
+            <span class="shop-particle" :style="'--i:' + i"></span>
+        </template>
+    </div>
+
     <div class="max-w-5xl mx-auto px-4 py-8">
 
         <!-- Navigation -->
@@ -73,9 +152,10 @@
             </a>
             <div class="flex items-center gap-3">
                 <span class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }}">{{ member.name }}</span>
-                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm"
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-transform"
+                     :class="balanceAnimating ? 'badge-pop' : ''"
                      style="background-color: var(--color-primary); color: white;">
-                    <span x-text="balance"></span>
+                    <span x-text="displayBalance"></span>
                     <span class="opacity-80 text-xs">{{ ctx.currency_label }}</span>
                 </div>
             </div>
@@ -94,13 +174,6 @@
         <!-- Shop Items (3/4) -->
         {% if shop_items %}
         <section class="flex-1 lg:w-3/4">
-            <!-- Success Toast -->
-            <div x-show="successItem" x-cloak x-transition.opacity
-                 class="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white"
-                 style="background-color: var(--color-primary)">
-                <span x-text="successItem + ' claimed!'"></span>
-            </div>
-
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-5">
                 {% for item in shop_items %}
                 <div class="relative quest-card rounded-2xl p-5 text-center transition-all"
@@ -148,34 +221,53 @@
                 {% endfor %}
             </div>
 
-            <!-- Confirmation Modal -->
+            <!-- Confirmation / Success Modal -->
             <div x-show="confirmItem" x-cloak x-transition.opacity
                  class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
                  style="background-color: {{ bg_hex }}cc"
-                 @click.self="confirmItem = null">
+                 @click.self="purchaseState === 'confirm' ? confirmItem = null : null">
                 <div x-show="confirmItem" x-transition.scale
                      class="rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border {{ 'bg-white' if not bg_dark else '' }}"
                      style="{% if bg_dark %}background-color: rgba(255,255,255,0.08);{% endif %} border-color: rgba({% if bg_dark %}255,255,255,0.15{% else %}0,0,0,0.1{% endif %})">
-                    <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg" style="background-color: var(--color-primary)">
-                        <span class="text-3xl">🎁</span>
-                    </div>
-                    <p class="text-xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">Claim This Treasure?</p>
-                    <p class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }} mb-6">
-                        Spend <strong x-text="confirmItem?.cost"></strong> {{ ctx.currency_label }} on
-                        <strong x-text="confirmItem?.name"></strong>?
-                    </p>
-                    <div class="flex gap-3 justify-center">
-                        <button @click="confirmItem = null"
-                                class="px-5 py-2.5 {{ 'bg-white/10 text-white/70 hover:bg-white/20' if bg_dark else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }} rounded-lg text-sm font-medium transition">
-                            Not Yet
-                        </button>
-                        <button @click="claim()" :disabled="purchasing"
-                                class="px-5 py-2.5 text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition disabled:opacity-50"
-                                style="background-color: var(--color-primary)">
-                            <span x-show="!purchasing">Claim!</span>
-                            <span x-show="purchasing" x-cloak>...</span>
-                        </button>
-                    </div>
+
+                    <!-- Confirm State -->
+                    <template x-if="purchaseState === 'confirm'">
+                        <div>
+                            <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg" style="background-color: var(--color-primary)">
+                                <span class="text-3xl">🎁</span>
+                            </div>
+                            <p class="text-xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">Claim This Treasure?</p>
+                            <p class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }} mb-6">
+                                Spend <strong x-text="confirmItem?.cost"></strong> {{ ctx.currency_label }} on
+                                <strong x-text="confirmItem?.name"></strong>?
+                            </p>
+                            <div class="flex gap-3 justify-center">
+                                <button @click="confirmItem = null"
+                                        class="px-5 py-2.5 {{ 'bg-white/10 text-white/70 hover:bg-white/20' if bg_dark else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }} rounded-lg text-sm font-medium transition">
+                                    Not Yet
+                                </button>
+                                <button @click="claim()" :disabled="purchasing"
+                                        class="px-5 py-2.5 text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition disabled:opacity-50"
+                                        style="background-color: var(--color-primary)">
+                                    <span x-show="!purchasing">Claim!</span>
+                                    <span x-show="purchasing" x-cloak>...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Success State -->
+                    <template x-if="purchaseState === 'success'">
+                        <div>
+                            <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-bounce" style="background-color: var(--color-primary)">
+                                <span class="text-4xl">✨</span>
+                            </div>
+                            <p class="text-2xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">Treasure Claimed!</p>
+                            <p class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }}">
+                                <strong x-text="successItem"></strong> added to your collection.
+                            </p>
+                        </div>
+                    </template>
                 </div>
             </div>
         </section>
@@ -189,7 +281,8 @@
         <!-- Treasure Chest Sidebar (1/4) -->
         {% if purchases %}
         <aside class="lg:w-1/4 w-full">
-            <div class="quest-card rounded-2xl p-4 lg:sticky lg:top-4">
+            <div class="quest-card rounded-2xl p-4 lg:sticky lg:top-4 transition-all duration-300"
+                 :class="chestGlowing ? 'ring-4 ring-[var(--color-primary)]/50 shadow-2xl' : ''">
                 <h2 class="text-xs font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-3">{{ quest.display_chest }}</h2>
                 <div class="space-y-2 max-h-[60vh] overflow-y-auto">
                     {% for p in purchases %}
