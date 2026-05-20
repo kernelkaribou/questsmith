@@ -32,28 +32,28 @@ def seed():
         quest_a = Quest(
             member_id=kid_a.id,
             campaign_id=campaign.id,
-            theme_name="Pokemon Trainer",
+            theme_name="Dungeon Explorer",
             theme_graphic_url=None,
-            color_primary="#EF4444",
-            color_secondary="#FCA5A5",
-            color_background="#1a1215",
-            currency_label="Pokeballs",
-            progress_label="Trainer XP",
-            party_goal_label="Gym Battle",
+            color_primary="#6366F1",
+            color_secondary="#A5B4FC",
+            color_background="#1a1525",
+            currency_label="Gold",
+            progress_label="XP",
+            party_goal_label="Raid Boss",
             completion_target=200,
             completion_bonus=25,
         )
         quest_b = Quest(
             member_id=kid_b.id,
             campaign_id=campaign.id,
-            theme_name="Cheer Camp",
+            theme_name="Forest Ranger",
             theme_graphic_url=None,
-            color_primary="#EC4899",
-            color_secondary="#F9A8D4",
-            color_background="#1a1220",
-            currency_label="Spirit Points",
-            progress_label="Cheer Energy",
-            party_goal_label="Team Rally",
+            color_primary="#10B981",
+            color_secondary="#6EE7B7",
+            color_background="#0f1a15",
+            currency_label="Gems",
+            progress_label="Nature XP",
+            party_goal_label="World Event",
             completion_target=150,
             completion_bonus=20,
         )
@@ -106,9 +106,9 @@ def seed():
 
         # Quest Levels (per quest)
         db.session.add_all([
-            QuestLevel(quest_id=quest_a.id, name="Bronze", threshold=100, reward_description="Unlock the prize shop", sort_order=1),
+            QuestLevel(quest_id=quest_a.id, name="Bronze", threshold=100, reward_description="Unlock the treasure shop", sort_order=1),
             QuestLevel(quest_id=quest_a.id, name="Silver", threshold=300, reward_description="Stay up 30 min late", sort_order=2),
-            QuestLevel(quest_id=quest_a.id, name="Gold", threshold=600, reward_description="Pick a new book", sort_order=3),
+            QuestLevel(quest_id=quest_a.id, name="Gold", threshold=600, reward_description="Choose a new book", sort_order=3),
             QuestLevel(quest_id=quest_b.id, name="Bronze", threshold=100, reward_description="Choose a movie", sort_order=1),
             QuestLevel(quest_id=quest_b.id, name="Silver", threshold=300, reward_description="Sleepover with friend", sort_order=2),
             QuestLevel(quest_id=quest_b.id, name="Gold", threshold=600, reward_description="New craft supplies", sort_order=3),
@@ -139,16 +139,16 @@ def seed():
         # Side Quest Chains (multi-step quests)
         chain_a = SideQuestChain(
             quest_id=quest_a.id,
-            name="The Lost Pokedex",
-            description="Help Professor Oak recover the lost Pokedex entries",
+            name="The Lost Tome",
+            description="Venture into the ancient library to recover the lost spellbook",
             currency_reward=50,
             visibility_mode="checklist_sequential",
             sort_order=1,
         )
         chain_b = SideQuestChain(
             quest_id=quest_b.id,
-            name="Spirit Week Challenge",
-            description="Complete all Spirit Week activities to earn bonus points",
+            name="The Enchanted Trail",
+            description="Follow the hidden path through the forest to find the sacred grove",
             currency_reward=40,
             visibility_mode="mystery_sequential",
             sort_order=1,
@@ -159,17 +159,17 @@ def seed():
         # Chain steps
         db.session.add_all([
             SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=1,
-                      name="Talk to Professor Oak", description="Read a non-fiction book about animals"),
+                      name="Enter the Archives", description="Read a non-fiction book about history"),
             SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=2,
-                      name="Search the Tall Grass", description="Read 100 pages in one day"),
+                      name="Decipher the Runes", description="Read 100 pages in one day"),
             SideQuest(quest_id=quest_a.id, chain_id=chain_a.id, chain_order=3,
-                      name="Return the Pokedex", description="Write a short book report"),
+                      name="Restore the Tome", description="Write a short book report"),
             SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=1,
-                      name="Monday: Pep Rally", description="Read for 30 minutes straight"),
+                      name="Find the Trailhead", description="Read for 30 minutes straight"),
             SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=2,
-                      name="Wednesday: Halftime Show", description="Read a new genre"),
+                      name="Cross the Moonlit Bridge", description="Read a new genre"),
             SideQuest(quest_id=quest_b.id, chain_id=chain_b.id, chain_order=3,
-                      name="Friday: Championship", description="Finish a chapter book"),
+                      name="Reach the Sacred Grove", description="Finish a chapter book"),
         ])
 
         # Party Goals (campaign-level shared goals)

@@ -41,7 +41,7 @@ def seeded(app):
     j = Campaign(name="Summer Reading", status="active")
     db.session.add(j)
     db.session.flush()
-    q = Quest(member_id=m.id, campaign_id=j.id, theme_name="Pokemon", color_primary="#FF0000", color_secondary="#FFAA00")
+    q = Quest(member_id=m.id, campaign_id=j.id, theme_name="Dungeon Explorer", color_primary="#FF0000", color_secondary="#FFAA00")
     db.session.add(q)
     db.session.flush()
     at = ActivityType(quest_id=q.id, name="Pages", unit_label="pages")
@@ -74,7 +74,7 @@ def test_dashboard_member_select_redirect(client, seeded):
 def test_dashboard_quest_view(client, seeded):
     response = client.get(f"/quest/{seeded['quest_id']}")
     assert response.status_code == 200
-    assert b"Pokemon" in response.data
+    assert b"Dungeon Explorer" in response.data
 
 
 def test_dashboard_profile(client, seeded):
@@ -142,12 +142,12 @@ def test_admin_create_quest(auth_client, seeded, app):
     r = auth_client.post("/admin/quests/new", data=with_csrf({
         "member_id": member_id,
         "campaign_id": seeded["campaign_id"],
-        "theme_name": "Cheer Camp",
+        "theme_name": "Forest Ranger",
         "color_primary": "#00FF00",
         "color_secondary": "#88FF88",
     }), follow_redirects=True)
     assert r.status_code == 200
-    assert b"Cheer Camp" in r.data
+    assert b"Forest Ranger" in r.data
 
 
 def test_admin_log_activity(auth_client, seeded):
@@ -204,7 +204,7 @@ def test_admin_side_quest_crud(auth_client, seeded):
 def test_admin_quest_detail(auth_client, seeded):
     r = auth_client.get(f"/admin/quests/{seeded['quest_id']}")
     assert r.status_code == 200
-    assert b"Pokemon" in r.data
+    assert b"Dungeon Explorer" in r.data
 
 
 def test_admin_chain_crud(auth_client, seeded, app):

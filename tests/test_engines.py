@@ -32,12 +32,12 @@ def seeded(app):
 
         quest_a = Quest(
             member_id=member_a.id, campaign_id=campaign.id,
-            theme_name="Pokemon", currency_label="Pokeballs",
+            theme_name="Dungeon Explorer", currency_label="Gold",
             color_primary="#FF0000", color_secondary="#FF9999",
         )
         quest_b = Quest(
             member_id=member_b.id, campaign_id=campaign.id,
-            theme_name="Cheer", currency_label="Spirit Points",
+            theme_name="Forest Ranger", currency_label="Gems",
             color_primary="#FF00FF", color_secondary="#FF99FF",
         )
         db.session.add_all([quest_a, quest_b])
@@ -159,7 +159,7 @@ class TestQuestEngine:
         from app.engines.quest import get_quest_context
         with app.app_context():
             ctx = get_quest_context(seeded["quest_a_id"])
-            assert ctx["currency_label"] == "Pokeballs"
+            assert ctx["currency_label"] == "Gold"
             assert ctx["colors"]["primary"] == "#FF0000"
 
 
