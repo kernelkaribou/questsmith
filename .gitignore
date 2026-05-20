@@ -8,6 +8,7 @@ venv/
 .venv/
 node_modules/
 app/static/css/output.css
+app/static/css/style.css
 *.egg-info/
 dist/
 build/

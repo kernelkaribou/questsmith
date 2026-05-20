@@ -14,4 +14,7 @@ services:
       - FLASK_DEBUG=1
       - DATABASE_PATH=/app/data/questsmith.db
       - ADMIN_PIN=1234
-    command: flask run --host=0.0.0.0 --port=5000 --reload
+    command: >
+      sh -c "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css &&
+      { tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --watch=always &
+      exec flask run --host=0.0.0.0 --port=5000 --reload; }"

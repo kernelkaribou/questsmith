@@ -4,7 +4,11 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
+
+RUN npm install --global tailwindcss@3.4.17
 
 COPY requirements-dev.txt requirements.txt ./
 RUN pip install --no-cache-dir -r requirements-dev.txt
