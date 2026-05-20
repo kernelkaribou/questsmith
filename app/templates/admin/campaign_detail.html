@@ -22,6 +22,20 @@
 
 <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
     <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-white">Notes</h2>
+        <a href="{{ url_for('admin.campaign_notes', campaign_id=campaign.id) }}" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">Edit</a>
+    </div>
+    {% if campaign.notes %}
+    <div class="prose prose-invert prose-sm max-w-none text-white/80 [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_a]:text-amber-400 [&_code]:text-amber-300 [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-white/5 [&_pre]:border [&_pre]:border-white/10 [&_pre]:rounded-lg [&_ul]:list-disc [&_ol]:list-decimal [&_li]:text-white/70 [&_blockquote]:border-l-amber-400 [&_blockquote]:text-white/60">
+        {{ notes_html|safe }}
+    </div>
+    {% else %}
+    <p class="text-sm text-white/50">No notes yet.</p>
+    {% endif %}
+</section>
+
+<section class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
+    <div class="flex items-center justify-between mb-3">
         <h2 class="font-semibold text-white">Linked Quests</h2>
         <a href="{{ url_for('admin.quest_create', campaign_id=campaign.id) }}" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">+ Create Quest</a>
     </div>

@@ -364,6 +364,7 @@ class Campaign(db.Model):
     start_date = db.Column(db.Date, nullable=True)
     end_date = db.Column(db.Date, nullable=True)
     status = db.Column(db.String(20), nullable=False, default="active")
+    notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     quests = db.relationship("Quest", back_populates="campaign", lazy="dynamic")

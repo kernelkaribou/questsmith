@@ -1113,14 +1113,17 @@ def campaign_create():
 @bp.route("/campaigns/<int:campaign_id>")
 @admin_required
 def campaign_detail(campaign_id):
+    import markdown2
     campaign = db.session.get(Campaign, campaign_id)
     quests = Quest.query.filter_by(campaign_id=campaign_id).all()
     balances = {q.id: ledger.get_balance(q.id) for q in quests}
+    notes_html = markdown2.markdown(campaign.notes, extras=["fenced-code-blocks", "tables"]) if campaign.notes else ""
     return render_template(
         "admin/campaign_detail.html",
         campaign=campaign,
         quests=quests,
         balances=balances,
+        notes_html=notes_html,
         party_goals=PartyGoal.query.filter_by(campaign_id=campaign_id).order_by(PartyGoal.sort_order).all(),
         shop_items=ShopItem.query.filter_by(campaign_id=campaign_id).order_by(ShopItem.sort_order).all(),
     )
@@ -1140,6 +1143,18 @@ def campaign_edit(campaign_id):
         flash("Campaign updated", "success")
         return redirect(url_for("admin.campaign_detail", campaign_id=campaign_id))
     return render_template("admin/campaign_form.html", campaign=campaign)
+
+
+@bp.route("/campaigns/<int:campaign_id>/notes", methods=["GET", "POST"])
+@admin_required
+def campaign_notes(campaign_id):
+    campaign = _get_or_404(Campaign, campaign_id)
+    if request.method == "POST":
+        campaign.notes = request.form.get("notes") or None
+        db.session.commit()
+        flash("Notes saved", "success")
+        return redirect(url_for("admin.campaign_detail", campaign_id=campaign_id))
+    return render_template("admin/campaign_notes.html", campaign=campaign)
 
 
 # --- Party Goals (belong to campaign) ---
