@@ -78,7 +78,8 @@ def quest_view(quest_id):
     achievements = [db.session.get(Achievement, u.achievement_id) for u in unlocks]
 
     # Activity timeline (recent 5; full log accessible via View Full History)
-    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(5).all()
+    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).limit(5).all()
+    activity_count = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).count()
 
     # Side quest / chain completions for the journal
     # Standalone completions (not chain steps) + chain completions (as single entries)
@@ -131,6 +132,7 @@ def quest_view(quest_id):
         earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,
+        activity_count=activity_count,
         journal_completions=journal_completions,
         purchases=purchases,
         activity_types=activity_types,
@@ -254,7 +256,7 @@ def avatar_delete(member_id, avatar_id):
 def quest_history(quest_id):
     """Activity log timeline for a specific quest."""
     quest = db.session.get(Quest, quest_id)
-    logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).all()
+    logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).all()
     ctx = quest_engine.get_quest_context(quest_id)
 
     # Side quest completions for history
