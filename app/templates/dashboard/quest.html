@@ -452,26 +452,26 @@
             </section>
             {% endif %}
 
-            <!-- Treasure Shop Preview -->
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="lg:w-80 w-full space-y-5 lg:sticky lg:top-4">
+            <!-- Treasure Shop Tile -->
             {% if shop_items %}
             {% set pr = (quest.color_primary[1:3])|int(0, 16) if quest.color_primary|length >= 7 else 79 %}
             {% set pg = (quest.color_primary[3:5])|int(0, 16) if quest.color_primary|length >= 7 else 70 %}
             {% set pb = (quest.color_primary[5:7])|int(0, 16) if quest.color_primary|length >= 7 else 229 %}
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-6 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40"
+               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40"
                style="--glow-color: {{ pr }}, {{ pg }}, {{ pb }}"
-               onmouseenter="this.style.boxShadow='0 0 24px rgba('+this.style.getPropertyValue('--glow-color')+',0.35)'"
+               onmouseenter="this.style.boxShadow='0 0 20px rgba('+this.style.getPropertyValue('--glow-color')+',0.35)'"
                onmouseleave="this.style.boxShadow='none'">
-                <p class="text-center text-lg font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
+                <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
                     💎 Treasure Shop
                 </p>
             </a>
             {% endif %}
 
-        </main>
-
-        <!-- Sidebar -->
-        <aside class="lg:w-80 w-full space-y-5 lg:sticky lg:top-4">
             <!-- Activity Log (Admin) -->
             {% if is_admin %}
             <div class="quest-card rounded-2xl p-4 border-t-4" style="border-top-color: var(--color-primary)">
