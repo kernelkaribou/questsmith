@@ -96,9 +96,9 @@ def quest_view(quest_id):
     # Merge into a unified list sorted by date
     journal_completions = []
     for c in standalone_completions:
-        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "date": c.completed_at})
+        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "prize": c.side_quest.prize_description, "date": c.completed_at})
     for chain in completed_chain_entries:
-        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "date": chain.completed_at})
+        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "prize": chain.prize_description, "date": chain.completed_at})
     journal_completions.sort(key=lambda x: x["date"], reverse=True)
 
     # Shop purchase history
@@ -271,9 +271,9 @@ def quest_history(quest_id):
 
     journal_completions = []
     for c in standalone_completions:
-        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "date": c.completed_at})
+        journal_completions.append({"type": "side_quest", "name": c.side_quest.name, "reward": c.side_quest.currency_reward, "prize": c.side_quest.prize_description, "date": c.completed_at})
     for chain in completed_chains:
-        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "date": chain.completed_at})
+        journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "prize": chain.prize_description, "date": chain.completed_at})
     journal_completions.sort(key=lambda x: x["date"], reverse=True)
 
     return render_template(

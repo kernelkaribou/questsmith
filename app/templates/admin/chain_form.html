@@ -18,8 +18,14 @@
         </div>
         <div>
             <label class="block text-sm font-medium text-white/70">Reward (on completion)</label>
-            <input type="number" name="currency_reward" value="{{ chain.currency_reward if chain else '10' }}" min="0" required
+            <input type="number" name="currency_reward" value="{{ chain.currency_reward if chain else '0' }}" min="0"
                    class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-white/70">Prize (optional)</label>
+            <input type="text" name="prize_description" value="{{ chain.prize_description or '' if chain else '' }}" placeholder="e.g., Pizza Party, New Book"
+                   class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <p class="text-xs text-white/40 mt-1">Exclusive reward unlocked on chain completion.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-white/70">Visibility Mode</label>

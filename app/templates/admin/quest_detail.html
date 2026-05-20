@@ -140,7 +140,8 @@
             <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
                     <span class="font-medium text-white">{{ sq.name }}</span>
-                    <span class="text-white/60 ml-1">(+{{ sq.currency_reward }}, {{ sq.repeat_type_display }})</span>
+                    <span class="text-white/60 ml-1">({% if sq.currency_reward > 0 %}+{{ sq.currency_reward }}{% endif %}{% if sq.currency_reward > 0 and sq.prize_description %}, {% endif %}{{ sq.repeat_type_display }})</span>
+                    {% if sq.prize_description %}<span class="text-xs text-purple-300 ml-1">🎁 {{ sq.prize_description }}</span>{% endif %}
                     {% if sq.expires_at %}<span class="text-xs text-amber-300 ml-1">expires {{ sq.expires_at.strftime('%b %d') }}</span>{% endif %}
                 </div>
                 <div class="flex gap-2">

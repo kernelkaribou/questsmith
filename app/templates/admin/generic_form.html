@@ -86,7 +86,7 @@
     <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
             <label class="block text-sm font-medium text-white/70 mb-1">Currency Reward</label>
-            <input type="number" name="currency_reward" min="1" value="{{ item.currency_reward if item else '' }}" required
+            <input type="number" name="currency_reward" min="0" value="{{ item.currency_reward if item else '0' }}"
                    class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
         </div>
         <div>
@@ -98,6 +98,12 @@
                 <option value="weekly" {{ 'selected' if item and item.repeat_type == 'weekly' }}>Weekly</option>
             </select>
         </div>
+    </div>
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-white/70 mb-1">Prize (optional)</label>
+        <input type="text" name="prize_description" value="{{ item.prize_description or '' if item else '' }}" placeholder="e.g., Special Pokemon Card, Movie Night"
+               class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+        <p class="text-xs text-white/40 mt-1">An exclusive reward unlocked on completion (separate from currency).</p>
     </div>
     <div class="mb-4">
         <label class="block text-sm font-medium text-white/70 mb-1">Expires At (optional)</label>

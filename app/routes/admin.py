@@ -912,7 +912,8 @@ def side_quest_create(quest_id):
             quest_id=quest_id,
             name=request.form["name"],
             description=request.form.get("description") or None,
-            currency_reward=int(request.form["currency_reward"]),
+            currency_reward=int(request.form.get("currency_reward") or 0),
+            prize_description=request.form.get("prize_description") or None,
             repeat_type=request.form.get("repeat_type", "one_time"),
             expires_at=_parse_datetime(request.form.get("expires_at")),
         )
@@ -930,7 +931,8 @@ def side_quest_edit(side_quest_id):
     if request.method == "POST":
         sq.name = request.form["name"]
         sq.description = request.form.get("description") or None
-        sq.currency_reward = int(request.form["currency_reward"])
+        sq.currency_reward = int(request.form.get("currency_reward") or 0)
+        sq.prize_description = request.form.get("prize_description") or None
         sq.repeat_type = request.form.get("repeat_type", "one_time")
         sq.expires_at = _parse_datetime(request.form.get("expires_at"))
         db.session.commit()
@@ -950,7 +952,8 @@ def chain_create(quest_id):
             quest_id=quest.id,
             name=request.form["name"],
             description=request.form.get("description") or None,
-            currency_reward=int(request.form["currency_reward"]),
+            currency_reward=int(request.form.get("currency_reward") or 0),
+            prize_description=request.form.get("prize_description") or None,
             visibility_mode=request.form.get("visibility_mode", "checklist_sequential"),
             expires_at=_parse_datetime(request.form.get("expires_at")),
         )
@@ -976,7 +979,8 @@ def chain_edit(chain_id):
     if request.method == "POST":
         chain.name = request.form["name"]
         chain.description = request.form.get("description") or None
-        chain.currency_reward = int(request.form["currency_reward"])
+        chain.currency_reward = int(request.form.get("currency_reward") or 0)
+        chain.prize_description = request.form.get("prize_description") or None
         chain.visibility_mode = request.form.get("visibility_mode", "checklist_sequential")
         chain.expires_at = _parse_datetime(request.form.get("expires_at"))
         db.session.commit()

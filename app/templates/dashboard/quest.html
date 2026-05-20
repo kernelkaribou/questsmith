@@ -193,7 +193,7 @@
             <!-- Level Path -->
             {% if levels %}
             <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-secondary)">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Level Progress</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ quest.display_level_label }} Progress</h2>
                 <div class="relative">
                     <!-- Vertical path line -->
                     <div class="absolute left-5 top-0 bottom-0 w-0.5" style="background: linear-gradient(to bottom, var(--color-primary), var(--color-secondary))"></div>
@@ -324,6 +324,9 @@
                                 {% if sq.quest.description %}
                                 <p class="text-xs text-gray-600 mt-0.5">{{ sq.quest.description }}</p>
                                 {% endif %}
+                                {% if sq.quest.prize_description %}
+                                <p class="text-[10px] text-purple-600 mt-0.5">🎁 {{ sq.quest.prize_description }}</p>
+                                {% endif %}
                                 {% if sq.quest.expires_at %}
                                 <p class="text-[10px] text-amber-600 mt-0.5">Expires {{ sq.quest.expires_at.strftime('%b %d, %Y') }}</p>
                                 {% endif %}
@@ -353,10 +356,13 @@
                     <div class="rounded-lg p-4 {{ 'border border-indigo-400/30 bg-indigo-500/10' if bg_dark else 'border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/30' }}">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-bold text-sm">{{ cd.chain.name }}</span>
-                            <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }} &middot; +{{ cd.chain.currency_reward }}</span>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }}{% if cd.chain.currency_reward > 0 %} &middot; +{{ cd.chain.currency_reward }}{% endif %}</span>
                         </div>
                         {% if cd.chain.description %}
-                        <p class="text-xs text-gray-500 mb-3">{{ cd.chain.description }}</p>
+                        <p class="text-xs text-gray-500 mb-2">{{ cd.chain.description }}</p>
+                        {% endif %}
+                        {% if cd.chain.prize_description %}
+                        <p class="text-[10px] text-purple-600 mb-3">🎁 {{ cd.chain.prize_description }}</p>
                         {% endif %}
                         <!-- Chain progress -->
                         <div class="w-full h-2 rounded-full mb-3 overflow-hidden {{ 'bg-white/10' if bg_dark else 'bg-gray-200' }}">
@@ -412,15 +418,25 @@
                     </button>
                     <div x-show="open" x-collapse class="mt-2 space-y-1">
                         {% for chain in chains_completed %}
-                        <div class="flex justify-between items-center p-2 rounded text-xs {{ 'bg-white/5 text-white/40' if bg_dark else 'bg-gray-50 text-gray-400' }}">
-                            <span class="line-through">{{ chain.name }} (chain)</span>
-                            <span>+{{ chain.currency_reward }}</span>
+                        <div class="p-2 rounded text-xs {{ 'bg-white/5 text-white/40' if bg_dark else 'bg-gray-50 text-gray-400' }}">
+                            <div class="flex justify-between items-center">
+                                <span class="line-through">{{ chain.name }} (chain)</span>
+                                {% if chain.currency_reward > 0 %}<span>+{{ chain.currency_reward }}</span>{% endif %}
+                            </div>
+                            {% if chain.prize_description %}
+                            <p class="text-purple-500 text-[10px] mt-0.5">🎁 {{ chain.prize_description }}</p>
+                            {% endif %}
                         </div>
                         {% endfor %}
                         {% for sq in sq_completed %}
-                        <div class="flex justify-between items-center p-2 rounded text-xs {{ 'bg-white/5 text-white/40' if bg_dark else 'bg-gray-50 text-gray-400' }}">
-                            <span class="line-through">{{ sq.quest.name }}</span>
-                            <span>+{{ sq.quest.currency_reward }}</span>
+                        <div class="p-2 rounded text-xs {{ 'bg-white/5 text-white/40' if bg_dark else 'bg-gray-50 text-gray-400' }}">
+                            <div class="flex justify-between items-center">
+                                <span class="line-through">{{ sq.quest.name }}</span>
+                                {% if sq.quest.currency_reward > 0 %}<span>+{{ sq.quest.currency_reward }}</span>{% endif %}
+                            </div>
+                            {% if sq.quest.prize_description %}
+                            <p class="text-purple-500 text-[10px] mt-0.5">🎁 {{ sq.quest.prize_description }}</p>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -548,6 +564,9 @@
                             <span class="text-green-500 text-[10px]">completed</span>
                             {% endif %}
                         </div>
+                        {% if jc.prize %}
+                        <p class="text-purple-600 text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
+                        {% endif %}
                         <div class="text-green-400 text-[10px] mt-0.5">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
