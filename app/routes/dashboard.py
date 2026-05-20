@@ -212,16 +212,26 @@ def journey_view(journey_id):
         target = goal.target_amount or 1
         min_req = math.ceil(target / num_members) if num_members > 0 else target
         pct = min(100, int(combined_total / target * 100))
-        # Goal is only complete if combined total meets target AND all members met minimum
         all_met_min = all(
             journey_totals.get(q.member_id, 0) >= min_req for q in quests
         )
+        # Per-member contribution toward their minimum
+        member_progress = []
+        for q in quests:
+            contrib = journey_totals.get(q.member_id, 0)
+            member_progress.append({
+                "member": q.member,
+                "contribution": contrib,
+                "percent": min(100, int(contrib / min_req * 100)) if min_req > 0 else 100,
+                "met_min": contrib >= min_req,
+            })
         goals_data.append({
             "goal": goal,
             "current": combined_total,
             "percent": pct,
             "complete": combined_total >= target and all_met_min,
             "min_required": min_req,
+            "member_progress": member_progress,
         })
 
     return render_template(
