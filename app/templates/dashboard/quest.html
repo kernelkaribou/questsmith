@@ -354,16 +354,23 @@
                 <div class="space-y-4 {{ 'border-t pt-4' if sq_available }}">
                     {% for cd in chain_data %}
                     <div class="rounded-lg p-4 {{ 'border border-indigo-400/30 bg-indigo-500/10' if bg_dark else 'border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/30' }}">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-bold text-sm">{{ cd.chain.name }}</span>
-                            <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }}{% if cd.chain.currency_reward > 0 %} &middot; +{{ cd.chain.currency_reward }}{% endif %}</span>
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <p class="font-bold text-sm">{{ cd.chain.name }}</p>
+                                {% if cd.chain.description %}
+                                <p class="text-xs text-gray-500 mt-0.5">{{ cd.chain.description }}</p>
+                                {% endif %}
+                                {% if cd.chain.prize_description %}
+                                <p class="text-[10px] text-purple-600 mt-0.5">🎁 {{ cd.chain.prize_description }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }}</span>
+                                {% if cd.chain.currency_reward > 0 %}
+                                <span class="text-sm font-bold px-2 py-0.5 rounded-full shadow-sm bg-white/10">+{{ cd.chain.currency_reward }}</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        {% if cd.chain.description %}
-                        <p class="text-xs text-gray-500 mb-2">{{ cd.chain.description }}</p>
-                        {% endif %}
-                        {% if cd.chain.prize_description %}
-                        <p class="text-[10px] text-purple-600 mb-3">🎁 {{ cd.chain.prize_description }}</p>
-                        {% endif %}
                         <!-- Chain progress -->
                         <div class="w-full h-2 rounded-full mb-3 overflow-hidden {{ 'bg-white/10' if bg_dark else 'bg-gray-200' }}">
                             <div class="h-full rounded-full transition-all duration-500" style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cd.percent }}%"></div>
