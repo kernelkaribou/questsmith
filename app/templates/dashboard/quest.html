@@ -204,7 +204,7 @@
                             {% else %}
                             <p class="text-xs text-gray-500">My contribution: <strong>{{ cp.my_contribution }}</strong>{% if cp.my_remaining > 0 %} ({{ cp.my_remaining }} more needed from me){% endif %}</p>
                             {% endif %}
-                            <span class="text-xs text-gray-500">Party: {{ cp.percent }}%</span>
+                            <span class="text-xs text-gray-500">Party: {{ cp.percent }}%{% if cp.percent >= 100 and not cp.all_met_min %} <span class="text-amber-500">(not all members met min)</span>{% endif %}</span>
                         </div>
                         {% if cp.goal.reward_description and not cp.goal.unlocked_at %}
                         <p class="text-xs text-gray-500 mt-0.5 italic">Reward: {{ cp.goal.reward_description }}</p>

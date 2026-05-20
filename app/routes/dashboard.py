@@ -45,6 +45,10 @@ def quest_view(quest_id):
         for goal in party_goals:
             target = goal.target_amount or 1
             min_req = math.ceil(target / num_members) if num_members > 0 else target
+            all_met_min = all(
+                journey_totals.get(mid, 0) >= min_req
+                for mid, in db.session.query(Quest.member_id).filter_by(journey_id=journey.id).distinct()
+            )
             goal_progress.append({
                 "goal": goal,
                 "current": combined_total,
@@ -54,6 +58,7 @@ def quest_view(quest_id):
                 "my_remaining": max(0, min_req - my_contribution),
                 "min_required": min_req,
                 "min_marker_percent": min(100, int(min_req / target * 100)) if min_req else 0,
+                "all_met_min": all_met_min,
             })
 
     # Quest Levels (belong to quest now)
@@ -201,15 +206,22 @@ def journey_view(journey_id):
 
     # Party goals
     party_goals = PartyGoal.query.filter_by(journey_id=journey_id).order_by(PartyGoal.sort_order).all()
+    num_members = len(quests) if quests else 1
     goals_data = []
     for goal in party_goals:
         target = goal.target_amount or 1
+        min_req = math.ceil(target / num_members) if num_members > 0 else target
         pct = min(100, int(combined_total / target * 100))
+        # Goal is only complete if combined total meets target AND all members met minimum
+        all_met_min = all(
+            journey_totals.get(q.member_id, 0) >= min_req for q in quests
+        )
         goals_data.append({
             "goal": goal,
             "current": combined_total,
             "percent": pct,
-            "complete": combined_total >= target,
+            "complete": combined_total >= target and all_met_min,
+            "min_required": min_req,
         })
 
     return render_template(

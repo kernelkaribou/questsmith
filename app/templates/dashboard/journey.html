@@ -63,7 +63,7 @@
                 <div class="flex justify-between items-center mb-2">
                     <span class="font-semibold text-white text-sm">{{ g.goal.name }}</span>
                     <span class="text-xs font-bold {{ 'text-green-400' if g.complete else 'text-amber-300' }}">
-                        {% if g.complete %}Complete{% else %}{{ g.percent }}%{% endif %}
+                        {% if g.complete %}Complete{% elif g.percent >= 100 %}Waiting on party{% else %}{{ g.percent }}%{% endif %}
                     </span>
                 </div>
                 <div class="relative w-full h-3 bg-white/10 rounded-full overflow-hidden">
@@ -72,7 +72,9 @@
                 </div>
                 <div class="flex justify-between mt-1.5">
                     <span class="text-[11px] text-white/50">{{ "{:,}".format(g.current) }} / {{ "{:,}".format(g.goal.target_amount) }}</span>
-                    {% if g.goal.reward_description %}
+                    {% if not g.complete and g.percent >= 100 %}
+                    <span class="text-[11px] text-amber-400/80">Each member needs {{ "{:,}".format(g.min_required) }}</span>
+                    {% elif g.goal.reward_description %}
                     <span class="text-[11px] text-amber-300/70 italic">{{ g.goal.reward_description }}</span>
                     {% endif %}
                 </div>
