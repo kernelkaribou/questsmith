@@ -266,11 +266,17 @@
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="text-xs text-white/40">{{ c.completed_at.strftime('%b %d') }}</span>
                     {% if not c.reversed_at %}
-                    <form method="POST" action="{{ url_for('admin.completion_reverse', quest_id=quest.id, completion_id=c.id) }}"
-                          onsubmit="return confirm('Reverse this completion? Currency will be debited.')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="text-red-400 hover:text-red-300 text-xs transition-colors">Reverse</button>
-                    </form>
+                    <div x-data="{ confirm: false }">
+                        <button x-show="!confirm" @click="confirm = true" class="text-red-400 hover:text-red-300 text-xs transition-colors">Reverse</button>
+                        <div x-show="confirm" x-cloak class="flex items-center gap-1.5">
+                            <span class="text-xs text-white/60">Sure?</span>
+                            <form method="POST" action="{{ url_for('admin.completion_reverse', quest_id=quest.id, completion_id=c.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-medium transition-colors">Yes</button>
+                            </form>
+                            <button @click="confirm = false" class="text-white/40 hover:text-white/60 text-xs transition-colors">No</button>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -345,11 +351,17 @@
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="text-xs text-white/40">{{ log.logged_at.strftime('%b %d') }}</span>
                     {% if not log.reversed %}
-                    <form method="POST" action="{{ url_for('admin.activity_log_undo', log_id=log.id) }}"
-                          onsubmit="return confirm('Undo this activity? A reversal transaction will be created.')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="text-red-400 hover:text-red-300 text-xs transition-colors">Undo</button>
-                    </form>
+                    <div x-data="{ confirm: false }">
+                        <button x-show="!confirm" @click="confirm = true" class="text-red-400 hover:text-red-300 text-xs transition-colors">Undo</button>
+                        <div x-show="confirm" x-cloak class="flex items-center gap-1.5">
+                            <span class="text-xs text-white/60">Sure?</span>
+                            <form method="POST" action="{{ url_for('admin.activity_log_undo', log_id=log.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-medium transition-colors">Yes</button>
+                            </form>
+                            <button @click="confirm = false" class="text-white/40 hover:text-white/60 text-xs transition-colors">No</button>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
