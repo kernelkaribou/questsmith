@@ -278,11 +278,15 @@ def quest_history(quest_id):
         journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "prize": chain.prize_description, "date": chain.completed_at})
     journal_completions.sort(key=lambda x: x["date"], reverse=True)
 
+    # Shop purchases for history
+    purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
+
     return render_template(
         "dashboard/history.html",
         quest=quest,
         logs=logs,
         journal_completions=journal_completions,
+        purchases=purchases,
         ctx=ctx,
     )
 
