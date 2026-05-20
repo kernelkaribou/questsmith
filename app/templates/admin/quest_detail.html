@@ -198,6 +198,37 @@
     </section>
 
     <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
+        <h2 class="font-semibold text-white mb-3">Completion Log</h2>
+        {% if completions %}
+        <div class="space-y-2">
+            {% for c in completions %}
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm {% if c.reversed_at %}opacity-50{% endif %}">
+                <div>
+                    <span class="font-medium text-white {% if c.reversed_at %}line-through{% endif %}">{{ c.side_quest.name }}</span>
+                    {% if c.side_quest.is_chain_step %}
+                    <span class="text-xs text-indigo-300 ml-1">({{ c.side_quest.chain.name }})</span>
+                    {% endif %}
+                    {% if c.reversed_at %}<span class="text-xs text-red-400 ml-1">reversed</span>{% endif %}
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-white/40">{{ c.completed_at.strftime('%b %d') }}</span>
+                    {% if not c.reversed_at %}
+                    <form method="POST" action="{{ url_for('admin.completion_reverse', quest_id=quest.id, completion_id=c.id) }}"
+                          onsubmit="return confirm('Reverse this completion? Currency will be debited.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Reverse</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-white/40 text-sm">No completions yet.</p>
+        {% endif %}
+    </section>
+
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
             <h2 class="font-semibold text-white">Shop</h2>
             <a href="{{ url_for('admin.quest_shop_item_create', quest_id=quest.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>

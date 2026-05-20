@@ -127,3 +127,18 @@ def record_completion_bonus(quest_id, amount, description):
     )
     db.session.add(txn)
     return txn
+
+
+def record_reversal(quest_id, amount, description):
+    """Record a reversal (debit) for a previously awarded reward."""
+    if amount <= 0:
+        return None
+
+    txn = Transaction(
+        quest_id=quest_id,
+        type="reversal",
+        amount=amount,
+        description=description,
+    )
+    db.session.add(txn)
+    return txn

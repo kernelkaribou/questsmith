@@ -9,7 +9,7 @@ from app import db
 from app.models import (
     Member, Campaign, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
-    ShopPurchase, Transaction,
+    ShopPurchase, Transaction, SideQuestCompletion,
 )
 from app.engines import quest as quest_engine
 from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine, shop as shop_engine
@@ -280,6 +280,7 @@ def quest_detail(quest_id):
         side_quests=SideQuest.query.filter_by(quest_id=quest_id, chain_id=None).order_by(SideQuest.sort_order).all(),
         chains=side_quest_engine.get_available_chains(quest_id),
         all_chains=SideQuestChain.query.filter_by(quest_id=quest_id).order_by(SideQuestChain.sort_order).all(),
+        completions=SideQuestCompletion.query.filter_by(quest_id=quest_id).order_by(SideQuestCompletion.completed_at.desc()).limit(20).all(),
         shop_items=shop_items,
         recent_logs=quest.activity_logs.order_by(db.text("logged_at DESC")).limit(10).all(),
     )
@@ -840,7 +841,27 @@ def side_quest_award(quest_id, side_quest_id):
     return redirect(next_url)
 
 
-# --- Quest Levels (belong to quest) ---
+@bp.route("/quests/<int:quest_id>/completion/<int:completion_id>/reverse", methods=["POST"])
+@admin_required
+def completion_reverse(quest_id, completion_id):
+    """Reverse a side quest or chain step completion."""
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    result = side_quest_engine.reverse_completion(completion_id)
+    if result:
+        db.session.commit()
+        msg = "Completion reversed"
+        if result["chain_reopened"]:
+            msg += " (chain reopened)"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
+    else:
+        msg = "Completion not found or already reversed"
+        if is_ajax:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "error")
+    next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
+    return redirect(next_url)
 
 @bp.route("/quests/<int:quest_id>/levels/new", methods=["GET", "POST"])
 @admin_required
@@ -893,6 +914,7 @@ def side_quest_create(quest_id):
             description=request.form.get("description") or None,
             currency_reward=int(request.form["currency_reward"]),
             repeat_type=request.form.get("repeat_type", "one_time"),
+            expires_at=_parse_datetime(request.form.get("expires_at")),
         )
         db.session.add(sq)
         db.session.commit()
@@ -910,6 +932,7 @@ def side_quest_edit(side_quest_id):
         sq.description = request.form.get("description") or None
         sq.currency_reward = int(request.form["currency_reward"])
         sq.repeat_type = request.form.get("repeat_type", "one_time")
+        sq.expires_at = _parse_datetime(request.form.get("expires_at"))
         db.session.commit()
         flash("Side Quest updated", "success")
         return redirect(url_for("admin.quest_detail", quest_id=sq.quest_id))

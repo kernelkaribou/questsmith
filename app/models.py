@@ -167,6 +167,7 @@ class SideQuestChain(db.Model):
     visibility_mode = db.Column(db.String(30), nullable=False, default="checklist_sequential")
     expires_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
+    completion_transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -225,7 +226,9 @@ class SideQuestCompletion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     side_quest_id = db.Column(db.Integer, db.ForeignKey("side_quests.id"), nullable=False)
     quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
+    transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
     completed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    reversed_at = db.Column(db.DateTime, nullable=True)
 
     side_quest = db.relationship("SideQuest", back_populates="completions")
     quest = db.relationship("Quest", back_populates="side_quest_completions")

@@ -68,8 +68,9 @@ def quest_view(quest_id):
     sq_available = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data if item["can_complete"]]
     sq_completed = [{"quest": item["side_quest"], "available": item["can_complete"]} for item in sq_data if not item["can_complete"]]
 
-    # Quest chains
+    # Quest chains (active + completed)
     chain_data = side_quest_engine.get_available_chains(quest_id)
+    chains_completed = side_quest_engine.get_completed_chains(quest_id)
 
     # Achievements for this member
     unlocks = AchievementUnlock.query.filter_by(member_id=member.id).all()
@@ -104,6 +105,7 @@ def quest_view(quest_id):
         sq_available=sq_available,
         sq_completed=sq_completed,
         chain_data=chain_data,
+        chains_completed=chains_completed,
         earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,

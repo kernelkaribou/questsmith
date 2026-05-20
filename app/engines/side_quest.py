@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 
 from app import db
 from app.models import SideQuest, SideQuestChain, SideQuestCompletion, Quest
-from app.engines.ledger import record_side_quest_reward
+from app.engines.ledger import record_side_quest_reward, record_reversal
 
 
 def get_available_side_quests(quest_id):
@@ -60,7 +60,7 @@ def get_chain_status(chain, quest_id):
     for step in steps:
         count = SideQuestCompletion.query.filter_by(
             side_quest_id=step.id, quest_id=quest_id
-        ).count()
+        ).filter(SideQuestCompletion.reversed_at.is_(None)).count()
         if count > 0:
             completed_ids.add(step.id)
 
@@ -140,6 +140,8 @@ def complete_side_quest(side_quest_id, quest_id):
             amount=side_quest.currency_reward,
             description=f"Side quest: {side_quest.name}",
         )
+        db.session.flush()
+        completion.transaction_id = txn.id
 
     return {"completion": completion, "transaction": txn}
 
@@ -194,6 +196,8 @@ def complete_chain_step(side_quest_id, quest_id):
                 amount=chain.currency_reward,
                 description=f"Chain complete: {chain.name}",
             )
+            db.session.flush()
+            chain.completion_transaction_id = txn.id
 
     return {
         "completion": completion,
@@ -201,6 +205,62 @@ def complete_chain_step(side_quest_id, quest_id):
         "chain_completed": chain_completed,
         "chain": chain,
     }
+
+
+def reverse_completion(completion_id):
+    """
+    Reverse a side quest or chain step completion.
+    Soft-deletes the completion and creates a reversal transaction if needed.
+    If this was a chain-completing step, also reverses the chain reward.
+    """
+    completion = db.session.get(SideQuestCompletion, completion_id)
+    if not completion or completion.reversed_at is not None:
+        return None
+
+    now = datetime.now(timezone.utc)
+    completion.reversed_at = now
+    side_quest = completion.side_quest
+
+    # Reverse the step/side quest reward
+    if completion.transaction_id:
+        from app.models import Transaction
+        original_txn = db.session.get(Transaction, completion.transaction_id)
+        if original_txn:
+            record_reversal(
+                quest_id=completion.quest_id,
+                amount=original_txn.amount,
+                description=f"Reversed: {side_quest.name}",
+            )
+
+    # If this was a chain step, check if we need to reopen the chain
+    chain_reopened = False
+    if side_quest.is_chain_step:
+        chain = side_quest.chain
+        if chain.completed_at is not None:
+            # Reverse chain completion reward
+            if chain.completion_transaction_id:
+                from app.models import Transaction
+                chain_txn = db.session.get(Transaction, chain.completion_transaction_id)
+                if chain_txn:
+                    record_reversal(
+                        quest_id=completion.quest_id,
+                        amount=chain_txn.amount,
+                        description=f"Reversed chain: {chain.name}",
+                    )
+            chain.completed_at = None
+            chain.completion_transaction_id = None
+            chain_reopened = True
+
+    return {"completion": completion, "chain_reopened": chain_reopened}
+
+
+def get_completed_chains(quest_id):
+    """Get chains that have been fully completed for a quest."""
+    return SideQuestChain.query.filter_by(
+        quest_id=quest_id, is_active=True
+    ).filter(SideQuestChain.completed_at.isnot(None)).order_by(
+        SideQuestChain.completed_at.desc()
+    ).all()
 
 
 def _is_expired(expires_at, now):
@@ -214,6 +274,8 @@ def _get_completion_status(side_quest, quest_id):
     """Determine if a standalone side quest can be completed right now."""
     completions = SideQuestCompletion.query.filter_by(
         side_quest_id=side_quest.id, quest_id=quest_id
+    ).filter(
+        SideQuestCompletion.reversed_at.is_(None)
     ).order_by(SideQuestCompletion.completed_at.desc()).all()
 
     total = len(completions)
