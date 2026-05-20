@@ -187,13 +187,27 @@ def quest_create():
         if campaign_id:
             campaign_id = int(campaign_id)
 
+        # Enforce one active quest per member per campaign
+        member_id = int(request.form["member_id"])
+        if campaign_id:
+            conflict = Quest.query.filter(
+                Quest.member_id == member_id,
+                Quest.campaign_id == campaign_id,
+                Quest.status == "active",
+            ).first()
+            if conflict:
+                flash("That member already has an active quest in this campaign.", "error")
+                members = Member.query.all()
+                campaigns = Campaign.query.filter_by(status="active").all()
+                return render_template("admin/quest_form.html", quest=None, members=members, campaigns=campaigns)
+
         completion_target = request.form.get("completion_target") or None
         if completion_target:
             completion_target = int(completion_target)
         completion_bonus = int(request.form.get("completion_bonus") or 0)
 
         quest = Quest(
-            member_id=int(request.form["member_id"]),
+            member_id=member_id,
             campaign_id=campaign_id,
             theme_name=request.form["theme_name"],
             theme_graphic_url=graphic_url,
@@ -203,6 +217,7 @@ def quest_create():
             currency_label=request.form.get("currency_label") or None,
             progress_label=request.form.get("progress_label") or None,
             party_goal_label=request.form.get("party_goal_label") or None,
+            level_label=request.form.get("level_label") or None,
             completion_target=completion_target,
             completion_bonus=completion_bonus,
         )
@@ -275,6 +290,25 @@ def quest_detail(quest_id):
 def quest_edit(quest_id):
     quest = _get_or_404(Quest, quest_id)
     if request.method == "POST":
+        # Handle member reassignment
+        new_member_id = int(request.form["member_id"])
+        if new_member_id != quest.member_id:
+            # Enforce one active quest per member per campaign
+            campaign_id = request.form.get("campaign_id") or None
+            if campaign_id:
+                conflict = Quest.query.filter(
+                    Quest.member_id == new_member_id,
+                    Quest.campaign_id == int(campaign_id),
+                    Quest.status == "active",
+                    Quest.id != quest.id,
+                ).first()
+                if conflict:
+                    flash("That member already has an active quest in this campaign.", "error")
+                    members = Member.query.all()
+                    campaigns = Campaign.query.filter_by(status="active").all()
+                    return render_template("admin/quest_form.html", quest=quest, members=members, campaigns=campaigns)
+            quest.member_id = new_member_id
+
         quest.theme_name = request.form["theme_name"]
         quest.color_primary = request.form.get("color_primary", "#4F46E5")
         quest.color_secondary = request.form.get("color_secondary", "#818CF8")
@@ -282,6 +316,7 @@ def quest_edit(quest_id):
         quest.currency_label = request.form.get("currency_label") or None
         quest.progress_label = request.form.get("progress_label") or None
         quest.party_goal_label = request.form.get("party_goal_label") or None
+        quest.level_label = request.form.get("level_label") or None
 
         # Completion settings
         completion_target = request.form.get("completion_target")

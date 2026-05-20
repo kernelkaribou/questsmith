@@ -28,6 +28,16 @@
                     {% endfor %}
                 </select>
             </div>
+            {% else %}
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white/70 mb-1">Member</label>
+                <select name="member_id" required class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    {% for m in members %}
+                    <option value="{{ m.id }}" {{ 'selected' if quest.member_id == m.id }}>{{ m.name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-white/40 mt-1">Changing member reassigns all quest progress to the new adventurer.</p>
+            </div>
             {% endif %}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -109,6 +119,11 @@
                 <div>
                     <label class="block text-xs font-medium text-white/60 mb-1">Party Goal Label</label>
                     <input type="text" name="party_goal_label" value="{{ quest.party_goal_label or '' if quest else '' }}" placeholder="Party Goal"
+                           class="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-white/60 mb-1">Level Label</label>
+                    <input type="text" name="level_label" value="{{ quest.level_label or '' if quest else '' }}" placeholder="Rank"
                            class="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                 </div>
             </div>

@@ -83,6 +83,7 @@ class Quest(db.Model):
     currency_label = db.Column(db.String(50), nullable=True)
     progress_label = db.Column(db.String(50), nullable=True)
     party_goal_label = db.Column(db.String(50), nullable=True)
+    level_label = db.Column(db.String(50), nullable=True)
 
     # Completion / victory
     completion_target = db.Column(db.Integer, nullable=True)
@@ -116,6 +117,10 @@ class Quest(db.Model):
     @property
     def display_party_goal(self):
         return self.party_goal_label or "Party Goal"
+
+    @property
+    def display_level_label(self):
+        return self.level_label or "Rank"
 
 
 class QuestLevel(db.Model):

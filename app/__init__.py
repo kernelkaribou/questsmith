@@ -72,6 +72,10 @@ def create_app(config_class=None):
     app.register_blueprint(dashboard.bp)
 
     with app.app_context():
-        db.create_all()
+        import sqlalchemy
+        try:
+            db.create_all()
+        except sqlalchemy.exc.OperationalError:
+            pass  # Race between gunicorn workers; table already created
 
     return app
