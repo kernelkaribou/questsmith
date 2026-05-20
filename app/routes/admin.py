@@ -22,7 +22,7 @@ def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get("admin"):
-            return redirect(url_for("admin.login"))
+            return redirect(url_for("admin.login", next=request.path))
         return f(*args, **kwargs)
     return decorated
 
@@ -93,7 +93,13 @@ def _form_int(name, default=None, min_val=None):
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    next_url = request.args.get("next") or request.form.get("next") or url_for("admin.index")
+    if request.method == "POST":
+        next_url = request.form.get("next") or url_for("admin.index")
+    else:
+        next_url = request.args.get("next") or url_for("admin.index")
+    # Ensure next_url is a local path (not external redirect)
+    if not next_url.startswith("/"):
+        next_url = url_for("admin.index")
     if request.method == "POST":
         pin = request.form.get("pin", "")
         if pin == current_app.config["ADMIN_PIN"]:

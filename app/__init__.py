@@ -41,6 +41,8 @@ def create_app(config_class=None):
         if request.method == "POST":
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return
+            if request.endpoint == "admin.login":
+                return
             token = session.get("csrf_token")
             form_token = request.form.get("csrf_token")
             if not token or token != form_token:

@@ -17,7 +17,7 @@
         <p class="bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg text-sm text-center mb-4 px-3 py-2">{{ messages[0] }}</p>
         {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('admin.login', next=next_url) }}">
+        <form method="POST" action="{{ url_for('admin.login') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="next" value="{{ next_url }}">
             <label class="block text-sm font-medium text-white/70 mb-2">Enter PIN</label>
