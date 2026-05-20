@@ -1,0 +1,205 @@
+{% extends "dashboard/base.html" %}
+{% set color_primary = quest.color_primary %}
+{% set color_secondary = quest.color_secondary %}
+{% set bg_hex = quest.color_background|default('#1e293b') %}
+{% set bg_r = (bg_hex[1:3])|int(0, 16) if bg_hex|length >= 7 else 30 %}
+{% set bg_g = (bg_hex[3:5])|int(0, 16) if bg_hex|length >= 7 else 41 %}
+{% set bg_b = (bg_hex[5:7])|int(0, 16) if bg_hex|length >= 7 else 59 %}
+{% set bg_dark = ((bg_r * 299 + bg_g * 587 + bg_b * 114) / 1000) < 128 %}
+{% block title %}Treasure Shop - {{ quest.theme_name }}{% endblock %}
+{% block admin_fab %}{% endblock %}
+{% block head %}
+<style>
+    .quest-page { background-color: {{ bg_hex }}; }
+    {% if bg_dark %}
+    .quest-card {
+        background: rgba(255,255,255,0.05) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #e2e8f0 !important;
+    }
+    .quest-card h2, .quest-card h3 { color: #f8fafc !important; }
+    .quest-card .text-gray-500, .quest-card .text-gray-600, .quest-card .text-gray-400 { color: rgba(255,255,255,0.5) !important; }
+    .quest-card .text-gray-700, .quest-card .text-gray-800 { color: rgba(255,255,255,0.85) !important; }
+    {% else %}
+    .quest-card {
+        background: rgba(255,255,255,0.85) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0,0,0,0.08) !important;
+        color: #1e293b !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .quest-card h2, .quest-card h3 { color: #1e293b !important; }
+    {% endif %}
+</style>
+{% endblock %}
+{% block body %}
+<div class="quest-page min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 py-8">
+
+        <!-- Navigation -->
+        <div class="flex items-center justify-between mb-8">
+            <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}"
+               class="inline-flex items-center gap-2 text-sm font-medium {{ 'text-white/60 hover:text-white' if bg_dark else 'text-gray-500 hover:text-gray-800' }} transition-colors">
+                <span>&larr;</span> Back to Quest
+            </a>
+            <div class="flex items-center gap-3">
+                <span class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }}">{{ member.name }}</span>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm"
+                     style="background-color: var(--color-primary); color: white;">
+                    <span>{{ balance }}</span>
+                    <span class="opacity-80 text-xs">{{ ctx.currency_label }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">
+                <span class="text-4xl mr-2">💎</span> Treasure Shop
+            </h1>
+            <p class="text-sm {{ 'text-white/50' if bg_dark else 'text-gray-500' }}">
+                {% if affordable_count > 0 %}
+                You can claim {{ affordable_count }} reward{{ 's' if affordable_count != 1 else '' }} right now!
+                {% else %}
+                Keep adventuring to earn more {{ ctx.currency_label }}!
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Shop Items -->
+        {% if shop_items %}
+        <section class="mb-12" x-data="{ confirmItem: null }">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                {% for item in shop_items %}
+                <div class="relative quest-card rounded-2xl p-5 text-center transition-all
+                    {% if balance >= item.cost %}
+                    hover:-translate-y-1 cursor-pointer ring-2 {{ 'ring-white/20 hover:ring-[var(--color-primary)]/60' if bg_dark else 'ring-[var(--color-primary)]/20 hover:ring-[var(--color-primary)]/50 hover:shadow-lg' }}
+                    {% else %}
+                    opacity-50
+                    {% endif %}">
+                    {% if balance >= item.cost %}
+                    <div class="absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md text-white" style="background-color: var(--color-primary)">Available!</div>
+                    {% endif %}
+
+                    {% if item.image_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=item.image_url[8:]) if item.image_url.startswith('uploads/') else item.image_url }}"
+                         alt="{{ item.name }}" class="w-16 h-16 mx-auto mb-3 object-contain drop-shadow-md">
+                    {% else %}
+                    <div class="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}">
+                        <span class="text-3xl">🎁</span>
+                    </div>
+                    {% endif %}
+
+                    <p class="text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-1">{{ item.name }}</p>
+                    {% if item.description %}
+                    <p class="text-xs {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mb-2 line-clamp-2">{{ item.description }}</p>
+                    {% endif %}
+
+                    <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}" style="color: var(--color-primary)">
+                        <span>{{ item.cost }}</span>
+                        <span class="opacity-70">{{ ctx.currency_label }}</span>
+                    </div>
+
+                    {% if balance >= item.cost %}
+                    <button @click='confirmItem = {{ {"id": item.id, "name": item.name, "cost": item.cost}|tojson }}'
+                            class="mt-3 w-full text-white text-xs px-4 py-2.5 rounded-lg font-bold hover:opacity-90 transition shadow-md"
+                            style="background-color: var(--color-primary)">
+                        Claim Reward
+                    </button>
+                    {% else %}
+                    <p class="mt-3 text-[11px] {{ 'text-white/40' if bg_dark else 'text-gray-400' }} font-medium">
+                        Need {{ item.cost - balance }} more {{ ctx.currency_label }}
+                    </p>
+                    {% endif %}
+
+                    {% if item.campaign_id %}
+                    <span class="absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded {{ 'bg-white/10 text-white/50' if bg_dark else 'bg-gray-100 text-gray-500' }}">Campaign</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Confirmation Modal -->
+            <div x-show="confirmItem" x-cloak x-transition.opacity
+                 class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+                 style="background-color: {{ bg_hex }}cc"
+                 @click.self="confirmItem = null">
+                <div x-show="confirmItem" x-transition.scale
+                     class="rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border {{ 'bg-white' if not bg_dark else '' }}"
+                     style="{% if bg_dark %}background-color: rgba(255,255,255,0.08);{% endif %} border-color: rgba({% if bg_dark %}255,255,255,0.15{% else %}0,0,0,0.1{% endif %})">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg" style="background-color: var(--color-primary)">
+                        <span class="text-3xl">🎁</span>
+                    </div>
+                    <p class="text-xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">Claim This Treasure?</p>
+                    <p class="text-sm {{ 'text-white/60' if bg_dark else 'text-gray-500' }} mb-6">
+                        Spend <strong x-text="confirmItem?.cost"></strong> {{ ctx.currency_label }} on
+                        <strong x-text="confirmItem?.name"></strong>?
+                    </p>
+                    <div class="flex gap-3 justify-center">
+                        <button @click="confirmItem = null"
+                                class="px-5 py-2.5 {{ 'bg-white/10 text-white/70 hover:bg-white/20' if bg_dark else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }} rounded-lg text-sm font-medium transition">
+                            Not Yet
+                        </button>
+                        <form method="POST" action="{{ url_for('dashboard.redeem', quest_id=quest.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="item_id" :value="confirmItem?.id">
+                            <button type="submit"
+                                    class="px-5 py-2.5 text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition"
+                                    style="background-color: var(--color-primary)">
+                                Claim!
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% else %}
+        <section class="quest-card rounded-2xl p-8 text-center mb-12">
+            <p class="text-2xl mb-2">🏪</p>
+            <p class="text-sm {{ 'text-white/50' if bg_dark else 'text-gray-500' }}">No items in the shop yet. Check back soon!</p>
+        </section>
+        {% endif %}
+
+        <!-- Treasure Chest (Purchase History) -->
+        {% if purchases %}
+        <section class="quest-card rounded-2xl p-5">
+            <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-4">🏆 Treasure Chest</h2>
+            <div class="space-y-2">
+                {% for p in purchases %}
+                <div class="flex items-center gap-3 p-3 rounded-xl {{ 'bg-red-500/10 border border-red-500/20' if p.refunded_at else ('bg-white/5 border border-white/10' if bg_dark else 'bg-gray-50 border border-gray-100') }}">
+                    {% if p.shop_item.image_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url[8:]) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}"
+                         alt="{{ p.shop_item.name }}" class="w-10 h-10 object-contain rounded-lg">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}">
+                        <span class="text-lg">🎁</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium {{ 'text-red-400 line-through' if p.refunded_at else ('text-white' if bg_dark else 'text-gray-800') }} truncate">{{ p.shop_item.name }}</p>
+                        <p class="text-xs {{ 'text-red-400' if p.refunded_at else ('text-white/40' if bg_dark else 'text-gray-400') }}">
+                            {{ p.purchased_at.strftime('%b %d, %Y') }}{% if p.refunded_at %} &middot; Refunded{% endif %}
+                        </p>
+                    </div>
+                    <div class="shrink-0 flex items-center gap-2">
+                        <span class="text-xs font-medium {{ 'text-red-400' if p.refunded_at else '' }}" style="{% if not p.refunded_at %}color: var(--color-primary){% endif %}">
+                            {{ 'Refunded' if p.refunded_at else '-' ~ p.shop_item.cost ~ ' ' ~ ctx.currency_label }}
+                        </span>
+                        {% if not p.refunded_at and is_admin %}
+                        <form method="POST" action="{{ url_for('admin.refund_purchase', purchase_id=p.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="next" value="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}">
+                            <button type="submit" class="text-[10px] text-red-500 hover:text-red-400 underline transition-colors">Refund</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

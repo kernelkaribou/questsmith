@@ -368,6 +368,47 @@ def campaign_view(campaign_id):
     )
 
 
+@bp.route("/quest/<int:quest_id>/shop")
+def quest_shop(quest_id):
+    """Dedicated Treasure Shop page."""
+    quest = db.session.get(Quest, quest_id)
+    if not quest:
+        abort(404)
+    member = quest.member
+    campaign = db.session.get(Campaign, quest.campaign_id) if quest.campaign_id else None
+    balance = ledger.get_balance(quest_id)
+
+    # Combined shop items: quest-owned + campaign-owned
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
+    if campaign:
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + campaign_shop
+
+    # Purchase history
+    purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
+
+    # Theme context
+    ctx = quest_engine.get_quest_context(quest_id)
+
+    # Admin check
+    is_admin = session.get("is_admin", False)
+
+    affordable_count = sum(1 for item in shop_items if balance >= item.cost)
+
+    return render_template(
+        "dashboard/shop.html",
+        quest=quest,
+        campaign=campaign,
+        member=member,
+        balance=balance,
+        shop_items=shop_items,
+        purchases=purchases,
+        ctx=ctx,
+        is_admin=is_admin,
+        affordable_count=affordable_count,
+    )
+
+
 @bp.route("/quest/<int:quest_id>/redeem", methods=["POST"])
 def redeem(quest_id):
     """Self-service shop redemption (no admin required)."""
@@ -393,4 +434,4 @@ def redeem(quest_id):
             return jsonify(success=False, message=msg), status
         flash(msg, "error")
 
-    return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
+    return redirect(url_for("dashboard.quest_shop", quest_id=quest_id))
