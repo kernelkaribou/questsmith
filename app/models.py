@@ -16,6 +16,19 @@ class Member(db.Model):
 
     quests = db.relationship("Quest", back_populates="member", lazy="dynamic")
     achievement_unlocks = db.relationship("AchievementUnlock", back_populates="member", lazy="dynamic")
+    avatars = db.relationship("MemberAvatar", back_populates="member", lazy="dynamic", order_by="MemberAvatar.created_at.desc()")
+
+
+class MemberAvatar(db.Model):
+    """Gallery of uploaded avatars for a member."""
+    __tablename__ = "member_avatars"
+
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    member = db.relationship("Member", back_populates="avatars")
 
 
 class Achievement(db.Model):
@@ -56,14 +69,15 @@ class Quest(db.Model):
     __tablename__ = "quests"
 
     id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False)
-    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("members.id"), nullable=False, index=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=True, index=True)
 
     # Theme configuration
     theme_name = db.Column(db.String(100), nullable=False, default="Adventurer")
     theme_graphic_url = db.Column(db.String(500), nullable=True)
     color_primary = db.Column(db.String(7), nullable=False, default="#4F46E5")
     color_secondary = db.Column(db.String(7), nullable=False, default="#818CF8")
+    color_background = db.Column(db.String(7), nullable=False, default="#1e293b")
 
     # Label overrides (null = use defaults)
     currency_label = db.Column(db.String(50), nullable=True)
@@ -75,7 +89,7 @@ class Quest(db.Model):
     completion_bonus = db.Column(db.Integer, nullable=True, default=0)
     completed_at = db.Column(db.DateTime, nullable=True)
 
-    status = db.Column(db.String(20), nullable=False, default="active")
+    status = db.Column(db.String(20), nullable=False, default="active", index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     member = db.relationship("Member", back_populates="quests")
@@ -277,8 +291,8 @@ class ActivityLog(db.Model):
     __tablename__ = "activity_logs"
 
     id = db.Column(db.Integer, primary_key=True)
-    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
-    activity_type_id = db.Column(db.Integer, db.ForeignKey("activity_types.id"), nullable=False)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False, index=True)
+    activity_type_id = db.Column(db.Integer, db.ForeignKey("activity_types.id"), nullable=False, index=True)
     quantity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
@@ -295,8 +309,8 @@ class Transaction(db.Model):
     __tablename__ = "transactions"
 
     id = db.Column(db.Integer, primary_key=True)
-    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
-    type = db.Column(db.String(20), nullable=False)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False, index=True)
+    type = db.Column(db.String(20), nullable=False, index=True)
     amount = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=True)
     activity_log_id = db.Column(db.Integer, db.ForeignKey("activity_logs.id"), nullable=True)
@@ -318,7 +332,7 @@ class ShopPurchase(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     shop_item_id = db.Column(db.Integer, db.ForeignKey("shop_items.id"), nullable=False)
-    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False)
+    quest_id = db.Column(db.Integer, db.ForeignKey("quests.id"), nullable=False, index=True)
     transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
     purchased_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     refunded_at = db.Column(db.DateTime, nullable=True)

@@ -4,113 +4,108 @@
 <div class="max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold">{{ chain.name }}</h1>
+            <h1 class="text-2xl font-bold text-white">{{ chain.name }}</h1>
             {% if chain.description %}
-            <p class="text-gray-500 mt-1">{{ chain.description }}</p>
+            <p class="text-white/60 mt-1">{{ chain.description }}</p>
             {% endif %}
         </div>
         <a href="{{ url_for('admin.chain_edit', chain_id=chain.id) }}"
-           class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Edit</a>
+           class="px-3 py-1.5 bg-slate-700 text-white/80 rounded hover:bg-slate-600 text-sm transition-colors">Edit</a>
     </div>
 
-    <!-- Chain Info -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-                <p class="text-xs text-gray-500">Reward</p>
-                <p class="text-lg font-bold text-green-600">{{ chain.currency_reward }}</p>
+                <p class="text-xs text-white/60">Reward</p>
+                <p class="text-lg font-bold text-green-300">{{ chain.currency_reward }}</p>
             </div>
             <div>
-                <p class="text-xs text-gray-500">Mode</p>
-                <p class="text-sm font-medium">{{ chain.visibility_display }}</p>
+                <p class="text-xs text-white/60">Mode</p>
+                <p class="text-sm font-medium text-white">{{ chain.visibility_display }}</p>
             </div>
             <div>
-                <p class="text-xs text-gray-500">Progress</p>
-                <p class="text-lg font-bold">{{ status.completed_count }}/{{ status.total_steps }}</p>
+                <p class="text-xs text-white/60">Progress</p>
+                <p class="text-lg font-bold text-white">{{ status.completed_count }}/{{ status.total_steps }}</p>
             </div>
             <div>
-                <p class="text-xs text-gray-500">Status</p>
+                <p class="text-xs text-white/60">Status</p>
                 {% if chain.completed_at %}
-                <span class="text-green-600 font-medium">Completed</span>
+                <span class="text-green-300 font-medium">Completed</span>
                 {% elif chain.expires_at and chain.expires_at < now %}
-                <span class="text-red-600 font-medium">Expired</span>
+                <span class="text-red-300 font-medium">Expired</span>
                 {% else %}
-                <span class="text-blue-600 font-medium">Active</span>
+                <span class="text-indigo-300 font-medium">Active</span>
                 {% endif %}
             </div>
         </div>
         {% if chain.expires_at %}
-        <p class="text-xs text-gray-400 mt-2 text-center">Expires: {{ chain.expires_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+        <p class="text-xs text-white/40 mt-2 text-center">Expires: {{ chain.expires_at.strftime('%b %d, %Y %I:%M %p') }}</p>
         {% endif %}
     </div>
 
-    <!-- Progress Timeline -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold">Steps</h2>
+            <h2 class="text-lg font-semibold text-white">Steps</h2>
             {% if not chain.completed_at %}
             <a href="{{ url_for('admin.chain_step_create', chain_id=chain.id) }}"
-               class="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">+ Add Step</a>
+               class="text-sm px-3 py-1 bg-amber-500 text-slate-900 rounded hover:bg-amber-400 transition-colors font-medium">+ Add Step</a>
             {% endif %}
         </div>
 
-        <!-- Progress bar -->
-        <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
-            <div class="h-full bg-indigo-600 rounded-full transition-all" style="width: {{ status.percent }}%"></div>
+        <div class="w-full h-2 bg-white/10 rounded-full mb-4">
+            <div class="h-full bg-amber-500 rounded-full transition-all" style="width: {{ status.percent }}%"></div>
         </div>
 
-        <!-- Steps timeline -->
         <div class="relative">
             {% for item in status.steps %}
             <div class="flex items-start gap-3 mb-4 last:mb-0">
-                <!-- Timeline dot -->
                 <div class="flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
                         {% if item.completed %}bg-green-500 text-white
                         {% elif item.available %}bg-indigo-500 text-white
-                        {% else %}bg-gray-200 text-gray-500{% endif %}">
+                        {% else %}bg-slate-600 text-white/50{% endif %}">
                         {% if item.completed %}&#10003;{% else %}{{ item.step.chain_order }}{% endif %}
                     </div>
                     {% if not loop.last %}
-                    <div class="w-0.5 h-6 {% if item.completed %}bg-green-300{% else %}bg-gray-200{% endif %}"></div>
+                    <div class="w-0.5 h-6 {% if item.completed %}bg-green-300/60{% else %}bg-white/20{% endif %}"></div>
                     {% endif %}
                 </div>
-                <!-- Step content -->
                 <div class="flex-1 pt-1">
                     <div class="flex items-center justify-between">
                         <div>
                             {% if item.visible %}
-                            <span class="font-medium text-sm">{{ item.step.name }}</span>
+                            <span class="font-medium text-sm text-white">{{ item.step.name }}</span>
                             {% if item.step.description %}
-                            <p class="text-xs text-gray-500">{{ item.step.description }}</p>
+                            <p class="text-xs text-white/60">{{ item.step.description }}</p>
                             {% endif %}
                             {% else %}
-                            <span class="font-medium text-sm text-gray-400 italic">???</span>
+                            <span class="font-medium text-sm text-white/40 italic">???</span>
                             {% endif %}
                         </div>
                         <div class="flex gap-2">
                             {% if item.available and not chain.completed_at %}
                             <form method="POST" action="{{ url_for('admin.chain_step_complete', chain_id=chain.id, step_id=item.step.id) }}">
-                                <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">Complete</button>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors">Complete</button>
                             </form>
                             {% endif %}
                             {% if item.visible and not chain.completed_at %}
                             <a href="{{ url_for('admin.chain_step_edit', chain_id=chain.id, step_id=item.step.id) }}"
-                               class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs hover:bg-gray-300">Edit</a>
+                               class="px-2 py-1 bg-slate-700 text-white/80 rounded text-xs hover:bg-slate-600 transition-colors">Edit</a>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
             {% else %}
-            <p class="text-gray-400 text-sm italic">No steps yet. Add the first step to start the chain.</p>
+            <p class="text-white/40 text-sm italic">No steps yet. Add the first step to start the chain.</p>
             {% endfor %}
         </div>
     </div>
 
     <div class="text-center">
         <a href="{{ url_for('admin.quest_detail', quest_id=chain.quest_id) }}"
-           class="text-indigo-600 hover:underline text-sm">&larr; Back to Quest</a>
+           class="text-white/50 hover:text-white/80 text-sm transition-colors">&larr; Back to Quest</a>
     </div>
 </div>
 {% endblock %}

@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -11,9 +12,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN mkdir -p /app/data /app/uploads && chmod +x /app/entrypoint.sh
+
 EXPOSE 5000
 
-ENV FLASK_APP=app
-ENV FLASK_ENV=production
+ENV PUID=1000
+ENV PGID=1000
+ENV PIN=1234
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app:create_app()"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "app:create_app()"]

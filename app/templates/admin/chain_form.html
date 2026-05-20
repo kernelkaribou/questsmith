@@ -2,43 +2,44 @@
 {% block title %}{{ "Edit" if chain else "New" }} Chain{% endblock %}
 {% block content %}
 <div class="max-w-lg mx-auto">
-    <h1 class="text-2xl font-bold mb-6">{{ "Edit" if chain else "New" }} Side Quest Chain</h1>
+    <h1 class="text-2xl font-bold text-white mb-6">{{ "Edit" if chain else "New" }} Side Quest Chain</h1>
 
-    <form method="POST" class="space-y-4">
+    <form method="POST" class="bg-slate-800/50 border border-white/10 rounded-lg p-6 space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div>
-            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <label class="block text-sm font-medium text-white/70">Name</label>
             <input type="text" name="name" value="{{ chain.name if chain else '' }}" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                   class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <label class="block text-sm font-medium text-white/70">Description</label>
             <textarea name="description" rows="2"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{{ chain.description if chain else '' }}</textarea>
+                      class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">{{ chain.description if chain else '' }}</textarea>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Reward (on completion)</label>
+            <label class="block text-sm font-medium text-white/70">Reward (on completion)</label>
             <input type="number" name="currency_reward" value="{{ chain.currency_reward if chain else '10' }}" min="0" required
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                   class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Visibility Mode</label>
+            <label class="block text-sm font-medium text-white/70">Visibility Mode</label>
             <select name="visibility_mode"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                 <option value="checklist_sequential" {{ 'selected' if chain and chain.visibility_mode == 'checklist_sequential' }}>Checklist (Sequential)</option>
                 <option value="checklist_any_order" {{ 'selected' if chain and chain.visibility_mode == 'checklist_any_order' }}>Checklist (Any Order)</option>
                 <option value="mystery_sequential" {{ 'selected' if chain and chain.visibility_mode == 'mystery_sequential' }}>Mystery (Sequential)</option>
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Expires At (optional)</label>
+            <label class="block text-sm font-medium text-white/70">Expires At (optional)</label>
             <input type="datetime-local" name="expires_at"
                    value="{{ chain.expires_at.strftime('%Y-%m-%dT%H:%M') if chain and chain.expires_at else '' }}"
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                   class="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
         </div>
-        <div class="flex gap-3">
-            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
+        <div class="flex items-center gap-3">
+            <button type="submit" class="px-4 py-2 bg-amber-500 text-slate-900 rounded-md hover:bg-amber-400 transition-colors font-medium">Save</button>
             <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) if chain else url_for('admin.quest_detail', quest_id=quest_id) }}"
-               class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</a>
+               class="text-sm text-white/50 hover:text-white/80 transition-colors">Cancel</a>
         </div>
     </form>
 </div>

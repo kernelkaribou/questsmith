@@ -2,21 +2,21 @@
 {% block title %}Campaigns{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Campaigns</h1>
-    <a href="{{ url_for('admin.campaign_create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">+ New Campaign</a>
+    <h1 class="text-2xl font-bold text-white">Campaigns</h1>
+    <a href="{{ url_for('admin.campaign_create') }}" class="bg-amber-500 text-slate-900 px-4 py-2 rounded hover:bg-amber-400 text-sm font-medium transition-colors">+ New Campaign</a>
 </div>
 
 <div class="space-y-4">
     {% for j in campaigns %}
-    <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center">
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 flex justify-between items-center">
         <div>
-            <a href="{{ url_for('admin.campaign_detail', campaign_id=j.id) }}" class="text-lg font-semibold text-indigo-700 hover:underline">{{ j.name }}</a>
-            <p class="text-sm text-gray-500">{{ j.description or 'No description' }}</p>
-            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if j.status == 'active' else 'bg-gray-100 text-gray-600' }}">
+            <a href="{{ url_for('admin.campaign_detail', campaign_id=j.id) }}" class="text-lg font-semibold text-amber-400 hover:text-amber-300 transition-colors">{{ j.name }}</a>
+            <p class="text-sm text-white/60">{{ j.description or 'No description' }}</p>
+            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded {{ 'bg-green-500/20 text-green-300' if j.status == 'active' else 'bg-white/10 text-white/50' }}">
                 {{ j.status }}
             </span>
         </div>
-        <span class="text-sm text-gray-500">{{ j.quests.count() }} quests</span>
+        <span class="text-sm text-white/60">{{ j.quests.count() }} quests</span>
     </div>
     {% endfor %}
 </div>

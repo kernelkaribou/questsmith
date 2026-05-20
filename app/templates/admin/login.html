@@ -6,29 +6,30 @@
     <title>Admin Login - QuestSmith</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md w-80">
+<body class="bg-slate-900 min-h-screen flex items-center justify-center text-white">
+    <div class="bg-slate-800 border border-white/10 p-8 rounded-lg shadow-xl w-80">
         <div class="flex flex-col items-center mb-6">
             <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-16 h-16 mb-3">
-            <h1 class="text-2xl font-bold text-center text-indigo-700">Admin Access</h1>
+            <h1 class="text-2xl font-bold text-center text-amber-400">Admin Access</h1>
         </div>
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <p class="text-red-600 text-sm text-center mb-4">{{ messages[0] }}</p>
+        <p class="bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg text-sm text-center mb-4 px-3 py-2">{{ messages[0] }}</p>
         {% endif %}
         {% endwith %}
         <form method="POST" action="{{ url_for('admin.login', next=next_url) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="next" value="{{ next_url }}">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Enter PIN</label>
+            <label class="block text-sm font-medium text-white/70 mb-2">Enter PIN</label>
             <input type="password" name="pin" maxlength="10" autofocus
-                   class="w-full px-4 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                   class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-center text-2xl tracking-widest text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                    inputmode="numeric" pattern="[0-9]*">
             <button type="submit"
-                    class="w-full mt-4 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">
+                    class="w-full mt-4 bg-amber-500 text-slate-900 py-2 rounded-md hover:bg-amber-400 transition-colors font-medium">
                 Unlock
             </button>
         </form>
-        <a href="{{ next_url if next_url != url_for('admin.index') else url_for('dashboard.index') }}" class="block text-center text-sm text-gray-400 hover:text-gray-600 mt-4">Back</a>
+        <a href="{{ next_url if next_url != url_for('admin.index') else url_for('dashboard.index') }}" class="block text-center text-sm text-white/50 hover:text-white/80 mt-4 transition-colors">Back</a>
     </div>
 </body>
 </html>

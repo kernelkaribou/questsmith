@@ -1,76 +1,73 @@
 {% extends "admin/base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+<h1 class="text-2xl font-bold text-white mb-6">Admin Dashboard</h1>
 
 <div class="space-y-8">
-    <!-- Campaigns -->
     <section>
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Campaigns</h2>
-            <a href="{{ url_for('admin.campaign_create') }}" class="text-sm text-indigo-600 hover:underline">+ New Campaign</a>
+            <h2 class="text-lg font-semibold text-white">Campaigns</h2>
+            <a href="{{ url_for('admin.campaign_create') }}" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">+ New Campaign</a>
         </div>
         {% if campaigns %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for j in campaigns %}
-            <a href="{{ url_for('admin.campaign_detail', campaign_id=j.id) }}" class="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
-                <h3 class="font-semibold text-indigo-700">{{ j.name }}</h3>
-                <p class="text-xs text-gray-500 mt-1">{{ j.quests|list|length }} quest{{ 's' if j.quests|list|length != 1 }}</p>
+            <a href="{{ url_for('admin.campaign_detail', campaign_id=j.id) }}" class="bg-slate-800/50 border border-white/10 rounded-lg p-4 hover:bg-slate-800/70 hover:border-amber-400/30 transition-colors">
+                <h3 class="font-semibold text-amber-400">{{ j.name }}</h3>
+                <p class="text-xs text-white/60 mt-1">{{ j.quests|list|length }} quest{{ 's' if j.quests|list|length != 1 }}</p>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-500 text-sm">No active campaigns.</p>
+        <p class="text-white/60 text-sm">No active campaigns.</p>
         {% endif %}
     </section>
 
-    <!-- Quests -->
     <section>
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Quests</h2>
-            <a href="{{ url_for('admin.quest_create') }}" class="text-sm text-indigo-600 hover:underline">+ New Quest</a>
+            <h2 class="text-lg font-semibold text-white">Quests</h2>
+            <a href="{{ url_for('admin.quest_create') }}" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">+ New Quest</a>
         </div>
         {% if quests %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for q in quests %}
-            <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="bg-white rounded-lg shadow p-4 hover:shadow-md transition flex items-center gap-3">
+            <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="bg-slate-800/50 border border-white/10 rounded-lg p-4 hover:bg-slate-800/70 hover:border-amber-400/30 transition-colors flex items-center gap-3">
                 <div class="w-4 h-4 rounded-full flex-shrink-0" style="background-color: {{ q.color_primary }}"></div>
                 <div>
-                    <span class="font-medium text-sm">{{ q.theme_name }}</span>
-                    <span class="text-gray-500 text-xs ml-1">({{ q.member.name }})</span>
+                    <span class="font-medium text-sm text-white/80">{{ q.theme_name }}</span>
+                    <span class="text-white/60 text-xs ml-1">({{ q.member.name }})</span>
                     {% if q.campaign %}
-                    <p class="text-xs text-gray-400">{{ q.campaign.name }}</p>
+                    <p class="text-xs text-white/40">{{ q.campaign.name }}</p>
                     {% else %}
-                    <p class="text-xs text-gray-400">Standalone</p>
+                    <p class="text-xs text-white/40">Standalone</p>
                     {% endif %}
                 </div>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-500 text-sm">No active quests.</p>
+        <p class="text-white/60 text-sm">No active quests.</p>
         {% endif %}
     </section>
 
-    <!-- Adventurers -->
     <section>
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-gray-800">Adventurers</h2>
-            <a href="{{ url_for('admin.member_create') }}" class="text-sm text-indigo-600 hover:underline">+ Add Member</a>
+            <h2 class="text-lg font-semibold text-white">Adventurers</h2>
+            <a href="{{ url_for('admin.member_create') }}" class="text-sm text-amber-400 hover:text-amber-300 transition-colors">+ Add Member</a>
         </div>
         {% if members %}
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {% for m in members %}
-            <a href="{{ url_for('admin.member_edit', member_id=m.id) }}" class="bg-white rounded-lg shadow p-3 text-center hover:shadow-md transition">
+            <a href="{{ url_for('admin.member_edit', member_id=m.id) }}" class="bg-slate-800/50 border border-white/10 rounded-lg p-3 text-center hover:bg-slate-800/70 hover:border-amber-400/30 transition-colors">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-lg font-bold mx-auto mb-2">
                     {{ m.name[0] }}
                 </div>
-                <span class="text-sm font-medium text-gray-700">{{ m.name }}</span>
+                <span class="text-sm font-medium text-white/80">{{ m.name }}</span>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-500 text-sm">No members yet.</p>
+        <p class="text-white/60 text-sm">No members yet.</p>
         {% endif %}
     </section>
 </div>

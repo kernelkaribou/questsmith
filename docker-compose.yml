@@ -5,9 +5,10 @@ services:
       - "5000:5000"
     volumes:
       - ./data:/app/data
+      - ./uploads:/app/uploads
     environment:
-      - FLASK_APP=app
-      - FLASK_ENV=production
+      - PUID=1000
+      - PGID=1000
+      - PIN=1234
       - DATABASE_PATH=/app/data/questsmith.db
-      - ADMIN_PIN=1234
     restart: unless-stopped

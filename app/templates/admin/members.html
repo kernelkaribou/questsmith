@@ -2,26 +2,26 @@
 {% block title %}Members{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Members</h1>
-    <a href="{{ url_for('admin.member_create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">+ Add Member</a>
+    <h1 class="text-2xl font-bold text-white">Members</h1>
+    <a href="{{ url_for('admin.member_create') }}" class="bg-amber-500 text-slate-900 px-4 py-2 rounded hover:bg-amber-400 text-sm font-medium transition-colors">+ Add Member</a>
 </div>
 
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-slate-800/50 border border-white/10 rounded-lg overflow-hidden">
     <table class="w-full">
-        <thead class="bg-gray-50">
+        <thead class="bg-white/5">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quests</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Quests</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Actions</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody class="divide-y divide-white/10">
             {% for m in members %}
-            <tr>
-                <td class="px-6 py-4 text-gray-900">{{ m.name }}</td>
-                <td class="px-6 py-4 text-gray-600 text-sm">{{ m.quests.count() }}</td>
+            <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-white/80">{{ m.name }}</td>
+                <td class="px-6 py-4 text-white/60 text-sm">{{ m.quests.count() }}</td>
                 <td class="px-6 py-4">
-                    <a href="{{ url_for('admin.member_edit', member_id=m.id) }}" class="text-indigo-600 hover:underline text-sm">Edit</a>
+                    <a href="{{ url_for('admin.member_edit', member_id=m.id) }}" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">Edit</a>
                 </td>
             </tr>
             {% endfor %}

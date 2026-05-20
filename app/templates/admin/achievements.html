@@ -2,25 +2,25 @@
 {% block title %}Achievements{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Achievements</h1>
-    <a href="{{ url_for('admin.achievement_create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">+ New Achievement</a>
+    <h1 class="text-2xl font-bold text-white">Achievements</h1>
+    <a href="{{ url_for('admin.achievement_create') }}" class="bg-amber-500 text-slate-900 px-4 py-2 rounded hover:bg-amber-400 text-sm font-medium transition-colors">+ New Achievement</a>
 </div>
 
 <div class="space-y-3">
     {% for a in achievements %}
-    <div class="bg-white rounded-lg shadow p-4 flex justify-between items-center">
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 flex justify-between items-center">
         <div>
-            <span class="font-medium">{{ a.name }}</span>
-            <span class="text-sm text-gray-500 ml-2">{{ a.description or '' }}</span>
-            <span class="text-xs ml-2 px-2 py-0.5 rounded {{ 'bg-blue-100 text-blue-800' if a.trigger_type == 'auto' else 'bg-purple-100 text-purple-800' }}">
+            <span class="font-medium text-white">{{ a.name }}</span>
+            <span class="text-sm text-white/60 ml-2">{{ a.description or '' }}</span>
+            <span class="text-xs ml-2 px-2 py-0.5 rounded {{ 'bg-blue-500/20 text-blue-300' if a.trigger_type == 'auto' else 'bg-purple-500/20 text-purple-300' }}">
                 {{ a.trigger_type }}
             </span>
         </div>
         <div class="flex gap-3">
             {% if a.trigger_type == 'manual' %}
-            <a href="{{ url_for('admin.achievement_award', achievement_id=a.id) }}" class="text-xs text-green-600 hover:underline">Award</a>
+            <a href="{{ url_for('admin.achievement_award', achievement_id=a.id) }}" class="text-xs text-green-300 hover:text-green-200 transition-colors">Award</a>
             {% endif %}
-            <a href="{{ url_for('admin.achievement_edit', achievement_id=a.id) }}" class="text-xs text-indigo-600 hover:underline">Edit</a>
+            <a href="{{ url_for('admin.achievement_edit', achievement_id=a.id) }}" class="text-xs text-amber-400 hover:text-amber-300 transition-colors">Edit</a>
         </div>
     </div>
     {% endfor %}

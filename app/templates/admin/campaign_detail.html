@@ -4,105 +4,105 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <div class="flex items-center gap-2 mb-1">
-            <span class="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-bold rounded uppercase tracking-wide">Campaign</span>
-            <h1 class="text-2xl font-bold">{{ campaign.name }}</h1>
+            <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded uppercase tracking-wide">Campaign</span>
+            <h1 class="text-2xl font-bold text-white">{{ campaign.name }}</h1>
         </div>
-        <p class="text-gray-500 text-sm">{{ campaign.description or 'No description' }} &middot; {{ campaign.status }}</p>
+        <p class="text-white/60 text-sm">{{ campaign.description or 'No description' }} &middot; {{ campaign.status }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ url_for('admin.campaign_edit', campaign_id=campaign.id) }}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Edit</a>
+        <a href="{{ url_for('admin.campaign_edit', campaign_id=campaign.id) }}" class="bg-slate-700 text-white/80 px-3 py-1 rounded text-sm hover:bg-slate-600 transition-colors">Edit</a>
         <form method="POST" action="{{ url_for('admin.campaign_archive', campaign_id=campaign.id) }}"
               onsubmit="return confirm('Archive this campaign? It will be hidden from dashboards.')">
-            <button type="submit" class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200">Archive</button>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="bg-red-500/20 text-red-300 px-3 py-1 rounded text-sm hover:bg-red-500/30 transition-colors">Archive</button>
         </form>
-        <a href="{{ url_for('admin.campaigns') }}" class="text-gray-500 text-sm hover:underline self-center">Back</a>
+        <a href="{{ url_for('admin.campaigns') }}" class="text-white/50 text-sm hover:text-white/80 self-center transition-colors">Back</a>
     </div>
 </div>
 
-<!-- Linked Quests -->
-<section class="bg-white rounded-lg shadow p-4 mb-6">
-    <h2 class="font-semibold mb-3">Linked Quests</h2>
+<section class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
+    <h2 class="font-semibold text-white mb-3">Linked Quests</h2>
     {% if quests %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         {% for q in quests %}
-        <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="flex items-center gap-3 p-3 bg-gray-50 rounded hover:bg-gray-100">
+        <a href="{{ url_for('admin.quest_detail', quest_id=q.id) }}" class="flex items-center gap-3 p-3 bg-white/5 rounded hover:bg-white/10 transition-colors">
             <div class="w-3 h-3 rounded-full" style="background-color: {{ q.color_primary }}"></div>
             <div>
-                <span class="font-medium text-sm">{{ q.theme_name }}</span>
-                <span class="text-gray-500 text-xs ml-1">({{ q.member.name }})</span>
-                <p class="text-xs text-gray-400">Balance: {{ balances.get(q.id, 0) }} {{ q.display_currency }}</p>
+                <span class="font-medium text-sm text-white">{{ q.theme_name }}</span>
+                <span class="text-white/60 text-xs ml-1">({{ q.member.name }})</span>
+                <p class="text-xs text-white/40">Balance: {{ balances.get(q.id, 0) }} {{ q.display_currency }}</p>
             </div>
         </a>
         {% endfor %}
     </div>
     {% else %}
-    <p class="text-gray-400 text-sm">No quests linked to this campaign yet.</p>
+    <p class="text-white/40 text-sm">No quests linked to this campaign yet.</p>
     {% endif %}
-    <a href="{{ url_for('admin.quest_create', campaign_id=campaign.id) }}" class="mt-3 inline-block text-sm text-indigo-600 hover:underline">+ Create Quest for this Campaign</a>
+    <a href="{{ url_for('admin.quest_create', campaign_id=campaign.id) }}" class="mt-3 inline-block text-sm text-amber-400 hover:text-amber-300 transition-colors">+ Create Quest for this Campaign</a>
 </section>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Party Goals -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Party Goals</h2>
-            <a href="{{ url_for('admin.party_goal_create', campaign_id=campaign.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Party Goals</h2>
+            <a href="{{ url_for('admin.party_goal_create', campaign_id=campaign.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if party_goals %}
         <div class="space-y-2">
             {% for goal in party_goals %}
-            <div class="p-3 bg-gray-50 rounded text-sm">
+            <div class="p-3 bg-white/5 rounded text-sm">
                 <div class="flex justify-between items-center">
-                    <span class="font-medium">{{ goal.name }}</span>
+                    <span class="font-medium text-white">{{ goal.name }}</span>
                     <div class="flex gap-2">
-                        <a href="{{ url_for('admin.party_goal_edit', goal_id=goal.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                        <a href="{{ url_for('admin.party_goal_edit', goal_id=goal.id) }}" class="text-amber-400 hover:text-amber-300 text-xs transition-colors">Edit</a>
                         <form method="POST" action="{{ url_for('admin.party_goal_delete', goal_id=goal.id) }}"
                               onsubmit="return confirm('Delete party goal: {{ goal.name }}?')">
-                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                         </form>
                     </div>
                 </div>
-                <p class="text-gray-500 text-xs mt-1">Target: {{ goal.target_amount }} &middot; Min per member: {{ goal.min_individual_contribution }}</p>
+                <p class="text-white/60 text-xs mt-1">Target: {{ goal.target_amount }} &middot; Min per member: {{ goal.min_individual_contribution }}</p>
                 {% if goal.reward_description %}
-                <p class="text-xs text-green-700 mt-1">Reward: {{ goal.reward_description }}</p>
+                <p class="text-xs text-green-300 mt-1">Reward: {{ goal.reward_description }}</p>
                 {% endif %}
                 {% if goal.unlocked_at %}
-                <span class="text-xs font-bold text-green-600">UNLOCKED</span>
+                <span class="text-xs font-bold text-green-300">UNLOCKED</span>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No party goals yet.</p>
+        <p class="text-white/40 text-sm">No party goals yet.</p>
         {% endif %}
     </section>
 
-    <!-- Shared Shop -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Shared Shop Items</h2>
-            <a href="{{ url_for('admin.campaign_shop_item_create', campaign_id=campaign.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Shared Shop Items</h2>
+            <a href="{{ url_for('admin.campaign_shop_item_create', campaign_id=campaign.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if shop_items %}
         <div class="space-y-2">
             {% for item in shop_items %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
-                    <span class="font-medium">{{ item.name }}</span>
-                    <span class="text-gray-500 ml-1">({{ item.cost }} currency)</span>
+                    <span class="font-medium text-white">{{ item.name }}</span>
+                    <span class="text-white/60 ml-1">({{ item.cost }} currency)</span>
                 </div>
                 <div class="flex gap-2">
-                    <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-amber-400 hover:text-amber-300 text-xs transition-colors">Edit</a>
                     <form method="POST" action="{{ url_for('admin.shop_item_delete', item_id=item.id) }}"
                           onsubmit="return confirm('Delete shop item: {{ item.name }}?')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No shared shop items. These are available to all linked quests.</p>
+        <p class="text-white/40 text-sm">No shared shop items. These are available to all linked quests.</p>
         {% endif %}
     </section>
 </div>

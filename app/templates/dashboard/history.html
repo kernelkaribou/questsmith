@@ -3,14 +3,14 @@
 {% set color_secondary = quest.color_secondary %}
 {% block title %}{{ quest.theme_name }} - Activity History{% endblock %}
 {% block body %}
-<div class="min-h-screen pb-8">
-    <header class="bg-theme-primary text-white shadow-lg">
+<div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-indigo-950 text-white pb-8">
+    <header class="bg-slate-800/60 backdrop-blur-sm border-b border-white/10">
         <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-bold">{{ quest.theme_name }} - History</h1>
-                <p class="text-xs opacity-80">{{ quest.member.name }} - {{ quest.campaign.name }}</p>
+                <h1 class="text-xl font-bold text-white">{{ quest.theme_name }} - History</h1>
+                <p class="text-xs text-white/50">{{ quest.member.name }}{% if quest.campaign %} - {{ quest.campaign.name }}{% endif %}</p>
             </div>
-            <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="text-sm opacity-80 hover:opacity-100">Back to Quest</a>
+            <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="text-sm text-white/50 hover:text-amber-300 transition">Back to Quest</a>
         </div>
     </header>
 
@@ -18,24 +18,24 @@
         {% if logs %}
         <div class="space-y-3">
             {% for log in logs %}
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-theme-primary">
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4" style="border-left: 4px solid {{ quest.color_primary }}">
                 <div class="flex justify-between items-start">
                     <div>
-                        <span class="font-medium">{{ log.activity_type.name }}</span>
-                        <span class="text-sm text-gray-600 ml-2">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
+                        <span class="font-medium text-white">{{ log.activity_type.name }}</span>
+                        <span class="text-sm text-white/60 ml-2">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
                     </div>
-                    <span class="text-xs text-gray-400">{{ log.logged_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                    <span class="text-xs text-white/30">{{ log.logged_at.strftime('%b %d, %Y %I:%M %p') }}</span>
                 </div>
                 {% if log.description %}
-                <p class="text-sm text-gray-500 mt-1">{{ log.description }}</p>
+                <p class="text-sm text-white/50 mt-1">{{ log.description }}</p>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="bg-white rounded-xl shadow-lg p-8 text-center">
-            <p class="text-gray-400 text-lg">No activities logged yet</p>
-            <p class="text-gray-300 text-sm mt-1">Complete some activities to see your history here!</p>
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 text-center">
+            <p class="text-white/40 text-lg">No activities logged yet</p>
+            <p class="text-white/20 text-sm mt-1">Complete some activities to see your history here!</p>
         </div>
         {% endif %}
     </main>

@@ -1,10 +1,66 @@
 {% extends "dashboard/base.html" %}
 {% set color_primary = quest.color_primary %}
 {% set color_secondary = quest.color_secondary %}
+{% set bg_hex = quest.color_background|default('#1e293b') %}
+{% set bg_r = (bg_hex[1:3])|int(0, 16) if bg_hex|length >= 7 else 30 %}
+{% set bg_g = (bg_hex[3:5])|int(0, 16) if bg_hex|length >= 7 else 41 %}
+{% set bg_b = (bg_hex[5:7])|int(0, 16) if bg_hex|length >= 7 else 59 %}
+{% set bg_dark = ((bg_r * 299 + bg_g * 587 + bg_b * 114) / 1000) < 128 %}
 {% block title %}{{ quest.theme_name }} - {{ member.name }}{% endblock %}
 {% block admin_fab %}{% endblock %}
+{% block head %}
+<style>
+    .quest-page { background-color: {{ bg_hex }}; }
+    {% if bg_dark %}
+    .quest-card {
+        background: rgba(255,255,255,0.05) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #e2e8f0 !important;
+    }
+    .quest-card h2, .quest-card h3 { color: #f8fafc !important; }
+    .quest-card .text-gray-500, .quest-card .text-gray-600, .quest-card .text-gray-400 { color: rgba(255,255,255,0.5) !important; }
+    .quest-card .text-gray-700, .quest-card .text-gray-800, .quest-card .font-semibold { color: rgba(255,255,255,0.85) !important; }
+    .quest-card .text-gray-300 { color: rgba(255,255,255,0.35) !important; }
+    .quest-card .bg-gray-100, .quest-card .bg-gray-50 { background: rgba(255,255,255,0.08) !important; }
+    .quest-card .border-gray-200, .quest-card .border-gray-100, .quest-card .border-gray-300 { border-color: rgba(255,255,255,0.15) !important; }
+    .quest-card input, .quest-card select, .quest-card textarea { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; color: #f1f5f9 !important; }
+    .quest-card input::placeholder, .quest-card textarea::placeholder { color: rgba(255,255,255,0.35) !important; }
+    .quest-card .text-purple-700 { color: rgb(196,167,255) !important; }
+    .quest-card .text-indigo-700 { color: rgb(165,180,252) !important; }
+    .quest-card .text-green-600 { color: rgb(134,239,172) !important; }
+    .quest-card .bg-green-50 { background: rgba(34,197,94,0.1) !important; }
+    .quest-card .text-green-800 { color: rgb(134,239,172) !important; }
+    .quest-nav { background: rgba(15,23,42,0.95) !important; backdrop-filter: blur(8px); border-top: 1px solid rgba(255,255,255,0.1) !important; }
+    {% else %}
+    .quest-card {
+        background: rgba(255,255,255,0.85) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0,0,0,0.08) !important;
+        color: #1e293b !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .quest-card h2, .quest-card h3 { color: #1e293b !important; }
+    .quest-card .text-gray-500, .quest-card .text-gray-600 { color: #64748b !important; }
+    .quest-card .text-gray-700, .quest-card .text-gray-800, .quest-card .font-semibold { color: #1e293b !important; }
+    .quest-card .text-gray-400, .quest-card .text-gray-300 { color: #94a3b8 !important; }
+    .quest-card .bg-gray-100, .quest-card .bg-gray-50 { background: #f1f5f9 !important; }
+    .quest-card .border-gray-200, .quest-card .border-gray-100, .quest-card .border-gray-300 { border-color: #e2e8f0 !important; }
+    .quest-card input, .quest-card select, .quest-card textarea { background: #ffffff !important; border-color: #d1d5db !important; color: #1e293b !important; }
+    .quest-card input::placeholder, .quest-card textarea::placeholder { color: #9ca3af !important; }
+    .quest-card .text-purple-700 { color: #7c3aed !important; }
+    .quest-card .text-indigo-700 { color: #4338ca !important; }
+    .quest-card .text-green-600 { color: #16a34a !important; }
+    .quest-card .bg-green-50 { background: #f0fdf4 !important; }
+    .quest-card .text-green-800 { color: #166534 !important; }
+    .quest-nav { background: rgba(255,255,255,0.95) !important; backdrop-filter: blur(8px); border-top: 1px solid rgba(0,0,0,0.1) !important; }
+    .quest-nav a { color: #64748b !important; }
+    .quest-nav a:hover { color: #1e293b !important; }
+    {% endif %}
+</style>
+{% endblock %}
 {% block body %}
-<div class="min-h-screen pb-20" x-data="{ celebrateMsg: '' }">
+<div class="min-h-screen pb-20 quest-page" x-data="{ celebrateMsg: '' }">
 
     <!-- HERO: Adventure Status -->
     <header class="relative overflow-hidden">
@@ -102,13 +158,13 @@
         </div>
     </header>
 
-    <div class="max-w-4xl mx-auto px-4 mt-6 pb-4 flex flex-col lg:flex-row gap-6" style="background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 5%, white) 0%, white 200px);">
+    <div class="max-w-4xl mx-auto px-4 mt-6 pb-4 flex flex-col lg:flex-row gap-6">
         <!-- Main Content -->
         <main class="flex-1 space-y-5">
 
             <!-- Next Step: Earning Progress -->
             {% if earning_progress %}
-            <section class="rounded-2xl shadow-lg bg-white p-5 border-l-4" style="border-left-color: var(--color-primary)">
+            <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-primary)">
                 <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">🎁 Next Reward</h2>
                 <div class="space-y-4">
                     {% for ep in earning_progress %}
@@ -136,7 +192,7 @@
 
             <!-- Level Path -->
             {% if levels %}
-            <section class="rounded-2xl shadow-lg bg-white p-5 border-l-4" style="border-left-color: var(--color-secondary)">
+            <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-secondary)">
                 <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Level Progress</h2>
                 <div class="relative">
                     <!-- Vertical path line -->
@@ -144,9 +200,9 @@
                     <div class="space-y-1">
                         {% for item in unlocked_levels %}
                         <div class="relative flex items-start gap-4 py-2.5">
-                            <!-- Milestone dot -->
+                            <!-- Milestone dot (opaque to cover line) -->
                             <div class="relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-md
-                                {{ 'bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-white' if item.unlocked else 'bg-gray-50 border-2 border-gray-300 text-gray-400' }}">
+                                {% if item.unlocked %}bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-white{% elif bg_dark %}bg-slate-800 border-2 border-white/20 text-white/60{% else %}bg-white border-2 border-gray-300 text-gray-400{% endif %}">
                                 {% if item.unlocked %}
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                 {% else %}
@@ -175,39 +231,76 @@
 
             <!-- Party Goals -->
             {% if goal_progress %}
-            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
+            <section class="quest-card rounded-2xl p-5">
                 <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}s</h2>
                 <div class="space-y-5">
                     {% for cp in goal_progress %}
-                    <div class="relative">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-semibold text-sm text-gray-800">{{ cp.goal.name }}</span>
-                            {% if cp.goal.unlocked_at %}
-                            <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Unlocked!</span>
+                    <div class="relative p-4 rounded-xl {{ 'opacity-40 pointer-events-none' if not cp.visible else '' }} {{ ('bg-green-500/10 border border-green-500/20' if bg_dark else 'bg-green-50 border border-green-200') if cp.complete else '' }}">
+                        <!-- Header: name + status -->
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-sm">{{ cp.goal.name }}</span>
+                            {% if cp.complete %}
+                            <span class="text-xs font-bold {{ 'text-green-400' if bg_dark else 'text-green-600' }} px-2 py-0.5 rounded-full {{ 'bg-green-400/10' if bg_dark else 'bg-green-50' }}">Complete</span>
+                            {% elif not cp.visible %}
+                            <span class="text-[10px] uppercase tracking-wide opacity-60">🔒 Locked</span>
                             {% else %}
-                            <span class="text-xs text-gray-500">{{ cp.current }} / {{ cp.goal.target_amount }}</span>
+                            <span class="text-xs font-medium opacity-60">{{ cp.percent }}%</span>
                             {% endif %}
                         </div>
-                        <!-- Dual-layer progress -->
-                        <div class="relative w-full h-6 bg-gray-100 rounded-full overflow-visible">
-                            <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 opacity-25"
-                                 style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cp.percent }}%"></div>
-                            <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                                 style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cp.my_percent }}%"></div>
-                            {% if cp.min_marker_percent > 0 and not cp.goal.unlocked_at %}
-                            <div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-black/60 z-10" style="left: {{ cp.min_marker_percent }}%"></div>
-                            {% endif %}
+                        {% if cp.goal.reward_description %}
+                        <p class="text-xs opacity-50 italic mb-3">{{ cp.goal.reward_description }}</p>
+                        {% endif %}
+
+                        {% if cp.complete %}
+                        <p class="text-sm {{ 'text-green-400' if bg_dark else 'text-green-600' }} font-medium text-center mt-2">Reward unlocked!</p>
+                        {% elif cp.visible %}
+                        <div class="flex items-center gap-5">
+                            <!-- Your Share: Ring Gauge -->
+                            <div class="flex flex-col items-center shrink-0">
+                                <div class="relative w-16 h-16">
+                                    <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                                        <circle cx="32" cy="32" r="26" fill="none" stroke="{{ 'rgba(255,255,255,0.1)' if bg_dark else '#e2e8f0' }}" stroke-width="5"/>
+                                        <circle cx="32" cy="32" r="26" fill="none"
+                                                stroke="{{ '#4ade80' if cp.my_percent >= 100 else 'var(--color-primary)' }}"
+                                                stroke-width="5" stroke-linecap="round"
+                                                stroke-dasharray="{{ (3.1416 * 2 * 26 * [cp.my_percent, 100]|min / 100)|round(1) }} {{ 3.1416 * 2 * 26 }}"
+                                                class="transition-all duration-500"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">
+                                        {% if cp.my_percent >= 100 %}
+                                        <svg class="w-5 h-5 {{ 'text-green-400' if bg_dark else 'text-green-500' }}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                        {% else %}
+                                        <span class="tabular-nums">{{ cp.my_percent }}%</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="text-[10px] opacity-50 mt-1">Your Share</span>
+                            </div>
+
+                            <!-- Status + Party Progress -->
+                            <div class="flex-1 min-w-0">
+                                {% if cp.my_percent >= 100 %}
+                                <p class="text-sm font-medium {{ 'text-green-400' if bg_dark else 'text-green-600' }} mb-2">You did your part!</p>
+                                {% if cp.percent < 100 %}
+                                <p class="text-xs opacity-40">Waiting for the party.</p>
+                                {% endif %}
+                                {% else %}
+                                <p class="text-sm font-medium mb-1">{{ cp.my_contribution }} / {{ cp.min_required }} XP</p>
+                                <p class="text-xs opacity-50">{{ cp.my_remaining }} XP to go</p>
+                                {% endif %}
+
+                                <!-- Party total bar -->
+                                <div class="mt-3">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-[10px] uppercase tracking-wide opacity-40">Party Total</span>
+                                        <span class="text-[10px] opacity-40 tabular-nums">{{ cp.current }} / {{ cp.goal.target_amount }}</span>
+                                    </div>
+                                    <div class="w-full h-2 rounded-full overflow-hidden {{ 'bg-white/10' if bg_dark else 'bg-gray-200' }}">
+                                        <div class="h-full rounded-full transition-all duration-500" style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cp.percent }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex justify-between mt-1.5">
-                            {% if cp.goal.unlocked_at %}
-                            <p class="text-xs text-green-600 font-medium">{{ cp.goal.reward_description or 'Reward claimed!' }}</p>
-                            {% else %}
-                            <p class="text-xs text-gray-500">My contribution: <strong>{{ cp.my_contribution }}</strong>{% if cp.my_remaining > 0 %} ({{ cp.my_remaining }} more needed from me){% endif %}</p>
-                            {% endif %}
-                            <span class="text-xs text-gray-500">Party: {{ cp.percent }}%{% if cp.percent >= 100 and not cp.all_met_min %} <span class="text-amber-500">(not all members met min)</span>{% endif %}</span>
-                        </div>
-                        {% if cp.goal.reward_description and not cp.goal.unlocked_at %}
-                        <p class="text-xs text-gray-500 mt-0.5 italic">Reward: {{ cp.goal.reward_description }}</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -217,14 +310,14 @@
 
             <!-- Side Quests -->
             {% if sq_available or sq_completed or chain_data %}
-            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5">
+            <section class="quest-card rounded-2xl p-5">
                 <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Side Quests</h2>
 
                 <!-- Available Missions -->
                 {% if sq_available %}
                 <div class="space-y-3 mb-4">
                     {% for sq in sq_available %}
-                    <div class="relative overflow-hidden rounded-lg border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                    <div class="relative overflow-hidden rounded-lg p-4 {{ 'border border-green-500/30 bg-green-500/10' if bg_dark else 'border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50' }}">
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="font-bold text-sm text-gray-800">{{ sq.quest.name }}</p>
@@ -234,10 +327,11 @@
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 {% if sq.quest.currency_reward > 0 %}
-                                <span class="text-sm font-bold text-theme-primary bg-white/80 px-2 py-0.5 rounded-full shadow-sm">+{{ sq.quest.currency_reward }}</span>
+                                <span class="text-sm font-bold px-2 py-0.5 rounded-full shadow-sm bg-white/10">+{{ sq.quest.currency_reward }}</span>
                                 {% endif %}
                                 {% if is_admin %}
                                 <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.quest.id) }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                                     <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Claim</button>
                                 </form>
@@ -253,16 +347,16 @@
                 {% if chain_data %}
                 <div class="space-y-4 {{ 'border-t pt-4' if sq_available }}">
                     {% for cd in chain_data %}
-                    <div class="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/30 p-4">
+                    <div class="rounded-lg p-4 {{ 'border border-indigo-400/30 bg-indigo-500/10' if bg_dark else 'border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/30' }}">
                         <div class="flex justify-between items-center mb-3">
-                            <span class="font-bold text-sm text-gray-800">{{ cd.chain.name }}</span>
-                            <span class="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">{{ cd.completed_count }}/{{ cd.total_steps }} &middot; +{{ cd.chain.currency_reward }}</span>
+                            <span class="font-bold text-sm">{{ cd.chain.name }}</span>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ 'text-indigo-300 bg-indigo-400/20' if bg_dark else 'text-indigo-600 bg-indigo-100' }}">{{ cd.completed_count }}/{{ cd.total_steps }} &middot; +{{ cd.chain.currency_reward }}</span>
                         </div>
                         {% if cd.chain.description %}
                         <p class="text-xs text-gray-500 mb-3">{{ cd.chain.description }}</p>
                         {% endif %}
                         <!-- Chain progress -->
-                        <div class="w-full h-2 bg-gray-200 rounded-full mb-3 overflow-hidden">
+                        <div class="w-full h-2 rounded-full mb-3 overflow-hidden {{ 'bg-white/10' if bg_dark else 'bg-gray-200' }}">
                             <div class="h-full rounded-full transition-all duration-500" style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); width: {{ cd.percent }}%"></div>
                         </div>
                         <!-- Steps -->
@@ -277,11 +371,12 @@
                                 {% elif item.available %}
                                 <span class="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 animate-pulse shadow-sm">{{ item.step.chain_order }}</span>
                                 {% else %}
-                                <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center shrink-0">{{ item.step.chain_order }}</span>
+                                <span class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 {{ 'bg-white/10 text-white/30' if bg_dark else 'bg-gray-200 text-gray-400' }}">{{ item.step.chain_order }}</span>
                                 {% endif %}
-                                <span class="{{ 'line-through text-gray-400' if item.completed else 'text-gray-700 font-medium' if item.available else 'text-gray-400' }}">{{ item.step.name }}</span>
+                                <span class="{{ 'line-through opacity-40' if item.completed else 'font-medium' if item.available else 'opacity-40' }}">{{ item.step.name }}</span>
                                 {% if is_admin and item.available %}
                                 <form method="POST" action="{{ url_for('admin.chain_step_complete', chain_id=cd.chain.id, step_id=item.step.id) }}" class="inline ml-auto">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                                     <button type="submit" class="text-white px-2 py-0.5 rounded text-[10px] font-bold hover:opacity-90" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))">Complete</button>
                                 </form>
@@ -289,8 +384,8 @@
                             </div>
                             {% else %}
                             <div class="flex items-center gap-3 text-xs">
-                                <span class="w-6 h-6 rounded-full bg-gray-100 border border-dashed border-gray-300 text-gray-300 flex items-center justify-center shrink-0">?</span>
-                                <span class="text-gray-300 italic">???</span>
+                                <span class="w-6 h-6 rounded-full border border-dashed flex items-center justify-center shrink-0 {{ 'border-white/20 text-white/20 bg-white/5' if bg_dark else 'bg-gray-100 border-gray-300 text-gray-300' }}">?</span>
+                                <span class="{{ 'text-white/20' if bg_dark else 'text-gray-300' }} italic">???</span>
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -302,14 +397,14 @@
 
                 <!-- Completed (collapsed) -->
                 {% if sq_completed %}
-                <div class="mt-4 border-t pt-3" x-data="{ open: false }">
-                    <button @click="open = !open" class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
+                <div class="mt-4 border-t {{ 'border-white/10' if bg_dark else '' }} pt-3" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center gap-1 text-xs {{ 'text-white/40 hover:text-white/70' if bg_dark else 'text-gray-400 hover:text-gray-600' }}">
                         <svg :class="open && 'rotate-90'" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         Completed ({{ sq_completed|length }})
                     </button>
                     <div x-show="open" x-collapse class="mt-2 space-y-1">
                         {% for sq in sq_completed %}
-                        <div class="flex justify-between items-center p-2 rounded bg-gray-50 text-xs text-gray-400">
+                        <div class="flex justify-between items-center p-2 rounded text-xs {{ 'bg-white/5 text-white/40' if bg_dark else 'bg-gray-50 text-gray-400' }}">
                             <span class="line-through">{{ sq.quest.name }}</span>
                             <span>+{{ sq.quest.currency_reward }}</span>
                         </div>
@@ -322,34 +417,38 @@
 
             <!-- Quest Shop -->
             {% if shop_items %}
-            <section class="rounded-2xl shadow-lg bg-white p-5 ring-1 ring-black/5" x-data="{ confirmItem: null }">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">💎 Treasure Shop</h2>
+            <section class="quest-card rounded-2xl p-5" x-data="{ confirmItem: null }">
+                <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-4">💎 Treasure Shop</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {% for p in shop_items %}
                     <div class="relative rounded-xl p-4 text-center transition-all
-                        {{ 'bg-gradient-to-b from-white to-[var(--color-primary)]/5 ring-2 ring-[var(--color-primary)]/30 hover:shadow-lg hover:-translate-y-1 cursor-pointer' if balance >= p.cost else 'bg-gray-50 ring-1 ring-gray-200 opacity-60' }}">
+                        {% if balance >= p.cost %}
+                        {{ 'bg-slate-700/80 ring-2 ring-[var(--color-primary)]/40 hover:ring-[var(--color-primary)]/70 hover:-translate-y-1 cursor-pointer' if bg_dark else 'bg-white ring-2 ring-[var(--color-primary)]/30 hover:shadow-lg hover:-translate-y-1 cursor-pointer' }}
+                        {% else %}
+                        {{ 'bg-slate-700/40 ring-1 ring-white/10 opacity-60' if bg_dark else 'bg-gray-50 ring-1 ring-gray-200 opacity-60' }}
+                        {% endif %}">
                         {% if balance >= p.cost %}
                         <div class="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">Available!</div>
                         {% endif %}
                         {% if p.image_url %}
                         <img src="{{ url_for('admin.serve_upload', filepath=p.image_url[8:]) if p.image_url.startswith('uploads/') else p.image_url }}" alt="{{ p.name }}" class="w-14 h-14 mx-auto mb-2 object-contain drop-shadow-sm">
                         {% else %}
-                        <div class="w-14 h-14 mx-auto mb-2 rounded-full bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-secondary)]/20 flex items-center justify-center">
+                        <div class="w-14 h-14 mx-auto mb-2 rounded-full {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }} flex items-center justify-center">
                             <span class="text-2xl">🎁</span>
                         </div>
                         {% endif %}
-                        <p class="text-sm font-bold text-gray-800">{{ p.name }}</p>
-                        <div class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-bold {{ 'bg-[var(--color-primary)]/10' if balance >= p.cost else 'bg-gray-100' }}" style="color: var(--color-primary)">
+                        <p class="text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }}">{{ p.name }}</p>
+                        <div class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-bold {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}" style="color: var(--color-primary)">
                             <span>{{ p.cost }}</span>
                             <span class="opacity-70">{{ ctx.currency_label }}</span>
                         </div>
                         {% if balance >= p.cost %}
                         <button @click='confirmItem = {{ {"id": p.id, "name": p.name, "cost": p.cost}|tojson }}'
-                                class="mt-3 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white text-xs px-4 py-2 rounded-lg font-bold w-full hover:opacity-90 transition shadow-md">
+                                class="mt-3 bg-[var(--color-primary)] text-white text-xs px-4 py-2 rounded-lg font-bold w-full hover:opacity-90 transition shadow-md">
                             Get It!
                         </button>
                         {% else %}
-                        <p class="mt-2 text-[10px] text-gray-400 font-medium">Need {{ p.cost - balance }} more</p>
+                        <p class="mt-2 text-[10px] {{ 'text-white/40' if bg_dark else 'text-gray-400' }} font-medium">Need {{ p.cost - balance }} more</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -357,18 +456,19 @@
 
                 <!-- Confirmation Modal -->
                 <div x-show="confirmItem" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="confirmItem = null">
-                    <div x-show="confirmItem" x-transition.scale class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+                    <div x-show="confirmItem" x-transition.scale class="bg-slate-800 border border-white/10 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
                         <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] mx-auto mb-3 flex items-center justify-center shadow-lg">
                             <span class="text-2xl">🎁</span>
                         </div>
-                        <p class="text-lg font-bold text-gray-800 mb-1">Claim Your Prize!</p>
-                        <p class="text-sm text-gray-600 mb-4">
+                        <p class="text-lg font-bold text-white mb-1">Claim Your Prize!</p>
+                        <p class="text-sm text-white/60 mb-4">
                             Spend <strong x-text="confirmItem?.cost"></strong> {{ ctx.currency_label }} on
                             <strong x-text="confirmItem?.name"></strong>?
                         </p>
                         <div class="flex gap-3 justify-center">
-                            <button @click="confirmItem = null" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">Not Yet</button>
+                            <button @click="confirmItem = null" class="px-4 py-2 bg-white/10 text-white/70 rounded-lg hover:bg-white/20 text-sm font-medium">Not Yet</button>
                             <form method="POST" action="{{ url_for('dashboard.redeem', quest_id=quest.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <input type="hidden" name="item_id" :value="confirmItem?.id">
                                 <button type="submit" class="px-4 py-2 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition">Claim!</button>
                             </form>
@@ -384,9 +484,10 @@
         <aside class="lg:w-72 w-full space-y-5">
             <!-- Activity Log (Admin) -->
             {% if is_admin %}
-            <div class="rounded-2xl shadow-lg bg-white p-4 border-t-4" style="border-top-color: var(--color-primary)">
+            <div class="quest-card rounded-2xl p-4 border-t-4" style="border-top-color: var(--color-primary)">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Activity Log</h2>
                 <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                     <select name="activity_type_id" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]" required>
@@ -404,7 +505,7 @@
             {% endif %}
 
             <!-- Adventure Journal -->
-            <div class="rounded-2xl shadow-lg bg-white p-4 border-l-4 border-indigo-300">
+            <div class="quest-card rounded-2xl p-4 border-l-4 border-indigo-300">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">📖 Adventure Journal</h2>
                 {% if recent_logs or purchases %}
                 <div class="space-y-2" x-data="{ openLog: null }">
@@ -444,17 +545,17 @@
 
             <!-- Treasure Chest -->
             {% if purchases %}
-            <div class="rounded-2xl shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 p-4 ring-1 ring-purple-100">
-                <h2 class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-3">Treasure Chest</h2>
+            <div class="quest-card rounded-2xl p-4">
+                <h2 class="text-xs font-bold uppercase tracking-wide mb-3" style="color: rgb(196,167,255)">Treasure Chest</h2>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     {% for p in purchases %}
-                    <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-50/80 border border-red-100' if p.refunded_at else 'bg-white/70 border border-purple-100' }}">
+                    <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-500/10 border border-red-500/20' if p.refunded_at else 'bg-white/5 border border-white/10' }}">
                         {% if p.shop_item.image_url %}
                         <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url[8:]) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}" alt="{{ p.shop_item.name }}" class="w-8 h-8 object-contain rounded">
                         {% endif %}
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-medium {{ 'text-red-400 line-through' if p.refunded_at else 'text-purple-900' }} truncate">{{ p.shop_item.name }}</p>
-                            <p class="text-[10px] {{ 'text-red-400' if p.refunded_at else 'text-purple-500' }}">
+                            <p class="text-xs font-medium {{ 'text-red-400 line-through' if p.refunded_at else '' }} truncate">{{ p.shop_item.name }}</p>
+                            <p class="text-[10px] {{ 'text-red-400' if p.refunded_at else 'opacity-50' }}">
                                 {{ p.purchased_at.strftime('%b %d') }}{% if p.refunded_at %} (refunded){% endif %}
                             </p>
                         </div>
@@ -462,11 +563,12 @@
                         <span class="text-[10px] text-red-400 shrink-0">Refunded</span>
                         {% elif is_admin %}
                         <form method="POST" action="{{ url_for('admin.refund_purchase', purchase_id=p.id) }}" class="shrink-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                             <button type="submit" class="text-[10px] text-red-500 hover:text-red-700 underline">Refund</button>
                         </form>
                         {% else %}
-                        <span class="text-[10px] text-purple-400 shrink-0">-{{ p.shop_item.cost }}</span>
+                        <span class="text-[10px] opacity-50 shrink-0">-{{ p.shop_item.cost }}</span>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -476,7 +578,7 @@
 
             <!-- Achievements -->
             {% if achievements %}
-            <div class="rounded-2xl shadow-lg bg-white p-4 ring-1 ring-black/5">
+            <div class="quest-card rounded-2xl p-4">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Achievements</h2>
                 <div class="grid grid-cols-2 gap-3">
                     {% for a in achievements %}
@@ -495,9 +597,9 @@
     </div>
 
     <!-- Bottom Nav -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-30">
+    <nav class="fixed bottom-0 left-0 right-0 quest-nav shadow-lg z-30">
         <div class="max-w-4xl mx-auto flex justify-around py-2.5">
-            <a href="{{ url_for('dashboard.index') }}" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-gray-700 transition">
+            <a href="{{ url_for('dashboard.index') }}" class="flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 <span class="text-[10px] font-medium">Camp</span>
             </a>
@@ -505,16 +607,16 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
                 <span class="text-[10px] font-bold">Quest</span>
             </a>
-            <a href="{{ url_for('dashboard.member_profile', member_id=member.id) }}" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-gray-700 transition">
+            <a href="{{ url_for('dashboard.member_profile', member_id=member.id) }}" class="flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 <span class="text-[10px] font-medium">Profile</span>
             </a>
-            <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-gray-700 transition">
+            <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 <span class="text-[10px] font-medium">History</span>
             </a>
             {% if is_admin %}
-            <a href="{{ url_for('admin.quest_detail', quest_id=quest.id) }}" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-gray-700 transition">
+            <a href="{{ url_for('admin.quest_detail', quest_id=quest.id) }}" class="flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span class="text-[10px] font-medium">Admin</span>
             </a>

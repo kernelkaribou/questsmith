@@ -1,26 +1,26 @@
 {% extends "dashboard/base.html" %}
 {% block title %}{{ member.name }} - Pick a Quest{% endblock %}
 {% block body %}
-<div class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-indigo-50 via-white to-purple-50">
-    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold mb-3 shadow-md ring-4 ring-white">
+<div class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-slate-900 via-slate-800 to-indigo-950 text-white">
+    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold mb-3 shadow-lg shadow-purple-500/20 ring-4 ring-white/10">
         {{ member.name[0] }}
     </div>
-    <h1 class="text-2xl font-bold text-gray-800 mb-1">{{ member.name }}</h1>
-    <p class="text-gray-500 text-sm mb-8">Choose your quest</p>
+    <h1 class="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-100 bg-clip-text text-transparent mb-1">{{ member.name }}</h1>
+    <p class="text-white/50 text-sm mb-8">Choose your quest</p>
 
     {% if quests %}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl w-full">
         {% for q in quests %}
         <a href="{{ url_for('dashboard.quest_view', quest_id=q.id) }}"
-           class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-100">
+           class="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-amber-400/30 transition-all hover:-translate-y-0.5">
             <div class="absolute inset-0 opacity-10" style="background: linear-gradient(135deg, {{ q.color_primary }}, {{ q.color_secondary }})"></div>
             <div class="relative p-6 text-center">
                 {% if q.theme_graphic_url %}
                 <img src="{{ url_for('admin.serve_upload', filepath=q.theme_graphic_url[8:]) if q.theme_graphic_url.startswith('uploads/') else q.theme_graphic_url }}" alt="{{ q.theme_name }}" class="w-16 h-16 mx-auto mb-3 object-contain group-hover:scale-110 transition-transform">
                 {% endif %}
-                <h2 class="text-xl font-bold" style="color: {{ q.color_primary }}">{{ q.theme_name }}</h2>
+                <h2 class="text-xl font-bold text-white group-hover:text-amber-200 transition">{{ q.theme_name }}</h2>
                 {% if q.campaign %}
-                <p class="text-xs text-gray-500 mt-1">{{ q.campaign.name }}</p>
+                <p class="text-xs text-white/40 mt-1">{{ q.campaign.name }}</p>
                 {% endif %}
             </div>
             <div class="h-1.5 w-full" style="background: linear-gradient(90deg, {{ q.color_primary }}, {{ q.color_secondary }})"></div>
@@ -28,12 +28,12 @@
         {% endfor %}
     </div>
     {% else %}
-    <p class="text-gray-400 mb-6">No active quests</p>
+    <p class="text-white/40 mb-6">No active quests</p>
     {% endif %}
 
     {% if completed_quests %}
     <div class="w-full max-w-2xl mt-10" x-data="{ open: false }">
-        <button @click="open = !open" class="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors mx-auto">
+        <button @click="open = !open" class="flex items-center gap-2 text-sm text-white/40 hover:text-amber-300 transition-colors mx-auto">
             <svg :class="open && 'rotate-90'" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             Completed Quests ({{ completed_quests|length }})
         </button>
@@ -41,12 +41,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% for q in completed_quests %}
                 <a href="{{ url_for('dashboard.quest_view', quest_id=q.id) }}"
-                   class="group rounded-xl shadow p-5 border border-gray-200 opacity-60 hover:opacity-100 transition-opacity bg-gray-50">
+                   class="group rounded-xl p-5 border border-white/10 opacity-60 hover:opacity-100 transition-opacity bg-white/5">
                     {% if q.theme_graphic_url %}
                     <img src="{{ url_for('admin.serve_upload', filepath=q.theme_graphic_url[8:]) if q.theme_graphic_url.startswith('uploads/') else q.theme_graphic_url }}" alt="{{ q.theme_name }}" class="w-12 h-12 mx-auto mb-2 object-contain grayscale group-hover:grayscale-0 transition">
                     {% endif %}
-                    <h2 class="text-lg font-bold text-center" style="color: {{ q.color_primary }}">{{ q.theme_name }}</h2>
-                    <p class="text-xs text-center text-gray-400 mt-1">Completed {{ q.completed_at.strftime('%b %d, %Y') }}</p>
+                    <h2 class="text-lg font-bold text-center text-white/70">{{ q.theme_name }}</h2>
+                    <p class="text-xs text-center text-white/30 mt-1">Completed {{ q.completed_at.strftime('%b %d, %Y') }}</p>
                 </a>
                 {% endfor %}
             </div>
@@ -54,6 +54,6 @@
     </div>
     {% endif %}
 
-    <a href="{{ url_for('dashboard.index') }}" class="mt-8 text-gray-400 hover:text-gray-600 text-sm">Back to adventurers</a>
+    <a href="{{ url_for('dashboard.index') }}" class="mt-8 text-white/30 hover:text-amber-300 text-sm transition">Back to adventurers</a>
 </div>
 {% endblock %}

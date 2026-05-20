@@ -3,7 +3,7 @@ import math
 from functools import wraps
 from datetime import date, datetime, timezone
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory, jsonify, abort
 
 from app import db
 from app.models import (
@@ -12,7 +12,7 @@ from app.models import (
     ShopPurchase, Transaction,
 )
 from app.engines import quest as quest_engine
-from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine
+from app.engines import ledger, achievement as achievement_engine, side_quest as side_quest_engine, shop as shop_engine
 from app.engines.uploads import save_uploaded_image
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -48,6 +48,45 @@ def admin_error(message, redirect_url, status=400):
         return jsonify(success=False, message=message), status
     flash(message, "error")
     return redirect(redirect_url)
+
+
+def _get_or_404(model, id):
+    obj = db.session.get(model, id)
+    if obj is None:
+        abort(404)
+    return obj
+
+
+def _parse_datetime(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        return date.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        return None
+
+
+def _form_int(name, default=None, min_val=None):
+    """Parse a form integer, returning default if missing/invalid."""
+    val = request.form.get(name, "").strip()
+    if not val:
+        return default
+    try:
+        result = int(val)
+        if min_val is not None and result < min_val:
+            return default
+        return result
+    except (ValueError, TypeError):
+        return default
 
 
 # --- Auth ---
@@ -154,6 +193,7 @@ def quest_create():
             theme_graphic_url=graphic_url,
             color_primary=request.form.get("color_primary", "#4F46E5"),
             color_secondary=request.form.get("color_secondary", "#818CF8"),
+            color_background=request.form.get("color_background", "#1e293b"),
             currency_label=request.form.get("currency_label") or None,
             progress_label=request.form.get("progress_label") or None,
             party_goal_label=request.form.get("party_goal_label") or None,
@@ -200,7 +240,7 @@ def quest_create():
 @bp.route("/quests/<int:quest_id>")
 @admin_required
 def quest_detail(quest_id):
-    quest = db.session.get(Quest, quest_id)
+    quest = _get_or_404(Quest, quest_id)
     balance = ledger.get_balance(quest_id)
     lifetime_earned = ledger.get_lifetime_earned(quest_id)
 
@@ -227,11 +267,12 @@ def quest_detail(quest_id):
 @bp.route("/quests/<int:quest_id>/edit", methods=["GET", "POST"])
 @admin_required
 def quest_edit(quest_id):
-    quest = db.session.get(Quest, quest_id)
+    quest = _get_or_404(Quest, quest_id)
     if request.method == "POST":
         quest.theme_name = request.form["theme_name"]
         quest.color_primary = request.form.get("color_primary", "#4F46E5")
         quest.color_secondary = request.form.get("color_secondary", "#818CF8")
+        quest.color_background = request.form.get("color_background", "#1e293b")
         quest.currency_label = request.form.get("currency_label") or None
         quest.progress_label = request.form.get("progress_label") or None
         quest.party_goal_label = request.form.get("party_goal_label") or None
@@ -559,9 +600,7 @@ def campaign_archive(campaign_id):
 def activity_log_undo(log_id):
     """Undo an activity log entry by creating reversal transactions."""
     from app.models import ActivityLog
-    log = db.session.get(ActivityLog, log_id)
-    if not log:
-        return admin_error("Activity log not found", url_for("admin.index"))
+    log = _get_or_404(ActivityLog, log_id)
 
     quest_id = log.quest_id
     redirect_url = url_for("admin.quest_detail", quest_id=quest_id)
@@ -586,7 +625,7 @@ def activity_log_undo(log_id):
     db.session.flush()
 
     # Recalculate quest completion state
-    quest = db.session.get(Quest, quest_id)
+    quest = _get_or_404(Quest, quest_id)
     if quest.completed_at:
         lifetime = ledger.get_lifetime_earned(quest_id)
         if quest.completion_target and lifetime < quest.completion_target:
@@ -616,12 +655,12 @@ def log_activity():
     if request.method == "POST":
         quest_id = int(request.form["quest_id"])
         activity_type_id = int(request.form["activity_type_id"])
-        quantity = int(request.form["quantity"])
+        quantity = _form_int("quantity", min_val=1)
         description = request.form.get("description") or None
         notes = request.form.get("notes") or None
 
-        if quantity <= 0:
-            flash("Quantity must be greater than zero", "error")
+        if quantity is None:
+            flash("Quantity must be a positive integer", "error")
             return redirect(request.form.get("next") or url_for("admin.log_activity"))
 
         log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description, notes)
@@ -678,38 +717,24 @@ def log_activity():
 @bp.route("/quests/<int:quest_id>/redeem", methods=["POST"])
 @admin_required
 def redeem(quest_id):
-    item_id = int(request.form["item_id"])
-    item = db.session.get(ShopItem, item_id)
+    item_id = _form_int("item_id", min_val=1)
     quest = db.session.get(Quest, quest_id)
-    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
-    if item.cost == 0:
-        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
-        db.session.add(purchase)
-        db.session.commit()
-        msg = f"{quest.member.name} redeemed '{item.name}' (free)"
-        if is_ajax:
-            return jsonify(success=True, message=msg)
-        flash(msg, "success")
-    else:
-        txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
-        if txn:
-            db.session.flush()
-            purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
-            db.session.add(purchase)
-            db.session.commit()
-            msg = f"{quest.member.name} redeemed '{item.name}'"
-            if is_ajax:
-                return jsonify(success=True, message=msg)
-            flash(msg, "success")
-        else:
-            msg = f"Insufficient balance for '{item.name}'"
-            if is_ajax:
-                return jsonify(success=False, message=msg), 400
-            flash(msg, "error")
+    item = db.session.get(ShopItem, item_id) if item_id is not None else None
+    if not item or not quest:
+        return admin_error("Item or quest not found", url_for("admin.index"))
+    if item.quest_id and item.quest_id != quest_id:
+        return admin_error("Item does not belong to this quest", url_for("admin.quest_detail", quest_id=quest_id))
+    if item.campaign_id and item.campaign_id != quest.campaign_id:
+        return admin_error("Item does not belong to this campaign", url_for("admin.quest_detail", quest_id=quest_id))
 
     next_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
-    return redirect(next_url)
+    success, msg, _purchase = shop_engine.redeem_item(quest_id, item_id, quest.campaign_id)
+    if success:
+        success_msg = f"{quest.member.name} redeemed '{item.name}'"
+        if item.cost == 0:
+            success_msg += " (free)"
+        return admin_success(success_msg, next_url)
+    return admin_error(msg, next_url)
 
 
 @bp.route("/purchases/<int:purchase_id>/refund", methods=["POST"])
@@ -779,11 +804,15 @@ def side_quest_award(quest_id, side_quest_id):
 @bp.route("/quests/<int:quest_id>/levels/new", methods=["GET", "POST"])
 @admin_required
 def level_create(quest_id):
+    quest = _get_or_404(Quest, quest_id)
     if request.method == "POST":
+        threshold = _form_int("threshold", min_val=1)
+        if threshold is None:
+            return admin_error("Threshold must be a positive integer", url_for("admin.level_create", quest_id=quest_id))
         level = QuestLevel(
-            quest_id=quest_id,
+            quest_id=quest.id,
             name=request.form["name"],
-            threshold=int(request.form["threshold"]),
+            threshold=threshold,
             reward_description=request.form.get("reward_description") or None,
         )
         db.session.add(level)
@@ -796,10 +825,13 @@ def level_create(quest_id):
 @bp.route("/levels/<int:level_id>/edit", methods=["GET", "POST"])
 @admin_required
 def level_edit(level_id):
-    level = db.session.get(QuestLevel, level_id)
+    level = _get_or_404(QuestLevel, level_id)
     if request.method == "POST":
+        threshold = _form_int("threshold", min_val=1)
+        if threshold is None:
+            return admin_error("Threshold must be a positive integer", url_for("admin.level_edit", level_id=level_id))
         level.name = request.form["name"]
-        level.threshold = int(request.form["threshold"])
+        level.threshold = threshold
         level.reward_description = request.form.get("reward_description") or None
         db.session.commit()
         flash("Quest Level updated", "success")
@@ -812,6 +844,7 @@ def level_edit(level_id):
 @bp.route("/quests/<int:quest_id>/side-quests/new", methods=["GET", "POST"])
 @admin_required
 def side_quest_create(quest_id):
+    _get_or_404(Quest, quest_id)
     if request.method == "POST":
         sq = SideQuest(
             quest_id=quest_id,
@@ -830,7 +863,7 @@ def side_quest_create(quest_id):
 @bp.route("/side-quests/<int:side_quest_id>/edit", methods=["GET", "POST"])
 @admin_required
 def side_quest_edit(side_quest_id):
-    sq = db.session.get(SideQuest, side_quest_id)
+    sq = _get_or_404(SideQuest, side_quest_id)
     if request.method == "POST":
         sq.name = request.form["name"]
         sq.description = request.form.get("description") or None
@@ -847,14 +880,15 @@ def side_quest_edit(side_quest_id):
 @bp.route("/quests/<int:quest_id>/chains/new", methods=["GET", "POST"])
 @admin_required
 def chain_create(quest_id):
+    quest = _get_or_404(Quest, quest_id)
     if request.method == "POST":
         chain = SideQuestChain(
-            quest_id=quest_id,
+            quest_id=quest.id,
             name=request.form["name"],
             description=request.form.get("description") or None,
             currency_reward=int(request.form["currency_reward"]),
             visibility_mode=request.form.get("visibility_mode", "checklist_sequential"),
-            expires_at=_parse_date(request.form.get("expires_at")),
+            expires_at=_parse_datetime(request.form.get("expires_at")),
         )
         db.session.add(chain)
         db.session.commit()
@@ -866,21 +900,21 @@ def chain_create(quest_id):
 @bp.route("/chains/<int:chain_id>")
 @admin_required
 def chain_detail(chain_id):
-    chain = db.session.get(SideQuestChain, chain_id)
+    chain = _get_or_404(SideQuestChain, chain_id)
     status = side_quest_engine.get_chain_status(chain, chain.quest_id)
-    return render_template("admin/chain_detail.html", chain=chain, status=status)
+    return render_template("admin/chain_detail.html", chain=chain, status=status, now=datetime.now(timezone.utc))
 
 
 @bp.route("/chains/<int:chain_id>/edit", methods=["GET", "POST"])
 @admin_required
 def chain_edit(chain_id):
-    chain = db.session.get(SideQuestChain, chain_id)
+    chain = _get_or_404(SideQuestChain, chain_id)
     if request.method == "POST":
         chain.name = request.form["name"]
         chain.description = request.form.get("description") or None
         chain.currency_reward = int(request.form["currency_reward"])
         chain.visibility_mode = request.form.get("visibility_mode", "checklist_sequential")
-        chain.expires_at = _parse_date(request.form.get("expires_at"))
+        chain.expires_at = _parse_datetime(request.form.get("expires_at"))
         db.session.commit()
         flash("Chain updated", "success")
         return redirect(url_for("admin.chain_detail", chain_id=chain.id))
@@ -890,7 +924,7 @@ def chain_edit(chain_id):
 @bp.route("/chains/<int:chain_id>/steps/new", methods=["GET", "POST"])
 @admin_required
 def chain_step_create(chain_id):
-    chain = db.session.get(SideQuestChain, chain_id)
+    chain = _get_or_404(SideQuestChain, chain_id)
     if request.method == "POST":
         max_order = db.session.query(db.func.max(SideQuest.chain_order)).filter_by(chain_id=chain_id).scalar() or 0
         step = SideQuest(
@@ -912,8 +946,10 @@ def chain_step_create(chain_id):
 @bp.route("/chains/<int:chain_id>/steps/<int:step_id>/edit", methods=["GET", "POST"])
 @admin_required
 def chain_step_edit(chain_id, step_id):
-    chain = db.session.get(SideQuestChain, chain_id)
-    step = db.session.get(SideQuest, step_id)
+    chain = _get_or_404(SideQuestChain, chain_id)
+    step = _get_or_404(SideQuest, step_id)
+    if step.chain_id != chain.id:
+        abort(404)
     if request.method == "POST":
         step.name = request.form["name"]
         step.description = request.form.get("description") or None
@@ -928,7 +964,7 @@ def chain_step_edit(chain_id, step_id):
 @bp.route("/chains/<int:chain_id>/steps/<int:step_id>/complete", methods=["POST"])
 @admin_required
 def chain_step_complete(chain_id, step_id):
-    chain = db.session.get(SideQuestChain, chain_id)
+    chain = _get_or_404(SideQuestChain, chain_id)
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     result = side_quest_engine.complete_chain_step(step_id, chain.quest_id)
     if result:
@@ -936,7 +972,9 @@ def chain_step_complete(chain_id, step_id):
         if result["chain_completed"]:
             msg = f"Chain '{chain.name}' completed! Reward awarded."
         else:
-            step = db.session.get(SideQuest, step_id)
+            step = _get_or_404(SideQuest, step_id)
+            if step.chain_id != chain.id:
+                abort(404)
             msg = f"Step '{step.name}' completed!"
         if is_ajax:
             return jsonify(success=True, message=msg)
@@ -950,23 +988,16 @@ def chain_step_complete(chain_id, step_id):
     return redirect(next_url)
 
 
-def _parse_date(value):
-    """Parse a date string from form input, returning None if empty."""
-    if not value:
-        return None
-    from datetime import datetime, timezone
-    try:
-        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
-    except (ValueError, TypeError):
-        return None
-
-
 # --- Quest Shop Items (belong to quest) ---
 
 @bp.route("/quests/<int:quest_id>/shop/new", methods=["GET", "POST"])
 @admin_required
 def quest_shop_item_create(quest_id):
+    _get_or_404(Quest, quest_id)
     if request.method == "POST":
+        cost = _form_int("cost", min_val=0)
+        if cost is None:
+            return admin_error("Cost must be zero or greater", url_for("admin.quest_shop_item_create", quest_id=quest_id))
         image_url = request.form.get("image_url") or None
         uploaded = request.files.get("image_file")
         if uploaded and uploaded.filename:
@@ -975,7 +1006,7 @@ def quest_shop_item_create(quest_id):
         item = ShopItem(
             quest_id=quest_id,
             name=request.form["name"],
-            cost=int(request.form["cost"]),
+            cost=cost,
             image_url=image_url,
         )
         db.session.add(item)
@@ -1048,8 +1079,11 @@ def campaign_edit(campaign_id):
 @bp.route("/campaigns/<int:campaign_id>/party-goals/new", methods=["GET", "POST"])
 @admin_required
 def party_goal_create(campaign_id):
+    _get_or_404(Campaign, campaign_id)
     if request.method == "POST":
-        target = int(request.form["target_amount"])
+        target = _form_int("target_amount", min_val=1)
+        if target is None:
+            return admin_error("Target amount must be a positive integer", url_for("admin.party_goal_create", campaign_id=campaign_id))
         num_members = db.session.query(Quest.member_id).filter_by(campaign_id=campaign_id).distinct().count()
         min_contrib = math.ceil(target / num_members) if num_members > 0 else target
         goal = PartyGoal(
@@ -1070,11 +1104,14 @@ def party_goal_create(campaign_id):
 @bp.route("/party-goals/<int:goal_id>/edit", methods=["GET", "POST"])
 @admin_required
 def party_goal_edit(goal_id):
-    goal = db.session.get(PartyGoal, goal_id)
+    goal = _get_or_404(PartyGoal, goal_id)
     if request.method == "POST":
+        target_amount = _form_int("target_amount", min_val=1)
+        if target_amount is None:
+            return admin_error("Target amount must be a positive integer", url_for("admin.party_goal_edit", goal_id=goal_id))
         goal.name = request.form["name"]
         goal.description = request.form.get("description") or None
-        goal.target_amount = int(request.form["target_amount"])
+        goal.target_amount = target_amount
         num_members = db.session.query(Quest.member_id).filter_by(campaign_id=goal.campaign_id).distinct().count()
         goal.min_individual_contribution = math.ceil(goal.target_amount / num_members) if num_members > 0 else goal.target_amount
         goal.reward_description = request.form.get("reward_description") or None
@@ -1089,7 +1126,11 @@ def party_goal_edit(goal_id):
 @bp.route("/campaigns/<int:campaign_id>/shop/new", methods=["GET", "POST"])
 @admin_required
 def campaign_shop_item_create(campaign_id):
+    _get_or_404(Campaign, campaign_id)
     if request.method == "POST":
+        cost = _form_int("cost", min_val=0)
+        if cost is None:
+            return admin_error("Cost must be zero or greater", url_for("admin.campaign_shop_item_create", campaign_id=campaign_id))
         image_url = request.form.get("image_url") or None
         uploaded = request.files.get("image_file")
         if uploaded and uploaded.filename:
@@ -1098,7 +1139,7 @@ def campaign_shop_item_create(campaign_id):
         item = ShopItem(
             campaign_id=campaign_id,
             name=request.form["name"],
-            cost=int(request.form["cost"]),
+            cost=cost,
             image_url=image_url,
         )
         db.session.add(item)
@@ -1113,8 +1154,11 @@ def campaign_shop_item_create(campaign_id):
 def shop_item_edit(item_id):
     item = db.session.get(ShopItem, item_id)
     if request.method == "POST":
+        cost = _form_int("cost", min_val=0)
+        if cost is None:
+            return admin_error("Cost must be zero or greater", url_for("admin.shop_item_edit", item_id=item_id))
         item.name = request.form["name"]
-        item.cost = int(request.form["cost"])
+        item.cost = cost
         uploaded = request.files.get("image_file")
         if uploaded and uploaded.filename:
             item.image_url = save_uploaded_image(uploaded)
@@ -1209,19 +1253,11 @@ def achievement_award(achievement_id):
 @bp.route("/uploads/<path:filepath>")
 def serve_upload(filepath):
     import os
+    if ".." in filepath or filepath.startswith("/"):
+        abort(404)
     upload_root = os.path.join(current_app.root_path, "..", "data", "uploads")
     upload_root = os.path.abspath(upload_root)
-    directory = os.path.dirname(os.path.join(upload_root, filepath))
-    filename = os.path.basename(filepath)
-    return send_from_directory(directory, filename)
-
-
-# --- Helpers ---
-
-def _parse_date(date_str):
-    if not date_str:
-        return None
-    try:
-        return date.fromisoformat(date_str)
-    except (ValueError, TypeError):
-        return None
+    full_path = os.path.abspath(os.path.join(upload_root, filepath))
+    if not full_path.startswith(upload_root):
+        abort(404)
+    return send_from_directory(upload_root, filepath)

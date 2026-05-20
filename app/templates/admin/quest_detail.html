@@ -4,62 +4,62 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <div class="flex items-center gap-2 mb-1">
-            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded uppercase tracking-wide">Quest</span>
-            <h1 class="text-2xl font-bold">{{ quest.theme_name }}</h1>
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded uppercase tracking-wide">Quest</span>
+            <h1 class="text-2xl font-bold text-white">{{ quest.theme_name }}</h1>
         </div>
-        <p class="text-gray-500 text-sm">{{ quest.member.name }}{% if quest.campaign %} &middot; {{ quest.campaign.name }}{% else %} &middot; Standalone{% endif %}</p>
+        <p class="text-white/60 text-sm">{{ quest.member.name }}{% if quest.campaign %} &middot; {{ quest.campaign.name }}{% else %} &middot; Standalone{% endif %}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">View as Player</a>
-        <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Edit Quest</a>
+        <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">View as Player</a>
+        <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="bg-slate-700 text-white/80 px-3 py-1 rounded text-sm hover:bg-slate-600 transition-colors">Edit Quest</a>
         <form method="POST" action="{{ url_for('admin.quest_archive', quest_id=quest.id) }}"
               onsubmit="return confirm('Archive this quest? It will be hidden from dashboards.')">
-            <button type="submit" class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200">Archive</button>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="bg-red-500/20 text-red-300 px-3 py-1 rounded text-sm hover:bg-red-500/30 transition-colors">Archive</button>
         </form>
-        <a href="{{ url_for('admin.index') }}" class="text-gray-500 text-sm hover:underline self-center">Back</a>
+        <a href="{{ url_for('admin.index') }}" class="text-white/50 text-sm hover:text-white/80 self-center transition-colors">Back</a>
     </div>
 </div>
 
-<!-- Stats -->
 <div class="grid grid-cols-3 gap-4 mb-6">
-    <div class="bg-white rounded-lg shadow p-4 text-center">
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold" style="color: {{ quest.color_primary }}">{{ balance }}</p>
-        <p class="text-xs text-gray-500">{{ quest.display_currency }} (balance)</p>
+        <p class="text-xs text-white/60">{{ quest.display_currency }} (balance)</p>
     </div>
-    <div class="bg-white rounded-lg shadow p-4 text-center">
-        <p class="text-2xl font-bold text-gray-700">{{ lifetime_earned }}</p>
-        <p class="text-xs text-gray-500">{{ quest.display_progress }} (lifetime)</p>
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-white">{{ lifetime_earned }}</p>
+        <p class="text-xs text-white/60">{{ quest.display_progress }} (lifetime)</p>
     </div>
-    <div class="bg-white rounded-lg shadow p-4 text-center">
-        <p class="text-2xl font-bold text-gray-700">{{ quest.activity_logs.count() }}</p>
-        <p class="text-xs text-gray-500">Activities logged</p>
+    <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-white">{{ quest.activity_logs.count() }}</p>
+        <p class="text-xs text-white/60">Activities logged</p>
     </div>
 </div>
 
-<!-- Quick Log -->
-<section class="bg-white rounded-lg shadow p-4 mb-6">
-    <h2 class="font-semibold mb-3">Quick Log</h2>
+<section class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
+    <h2 class="font-semibold text-white mb-3">Quick Log</h2>
     <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="quest_id" value="{{ quest.id }}">
         <input type="hidden" name="next" value="{{ url_for('admin.quest_detail', quest_id=quest.id) }}">
         <div class="flex gap-2 items-end">
             <div class="flex-1">
-                <select name="activity_type_id" class="w-full px-2 py-1 border rounded text-sm" required>
+                <select name="activity_type_id" class="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
                     {% for at in quest.activity_types %}
                     <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
                     {% endfor %}
                 </select>
             </div>
-            <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 border rounded text-sm">
-            <input type="text" name="notes" placeholder="Notes" class="w-32 px-2 py-1 border rounded text-sm">
-            <button type="submit" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Log</button>
+            <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <input type="text" name="notes" placeholder="Notes" class="w-32 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <button type="submit" class="bg-amber-500 text-slate-900 px-3 py-1 rounded text-sm hover:bg-amber-400 transition-colors font-medium">Log</button>
         </div>
         {% set milestone_types = quest.activity_types | selectattr("is_milestone") | list %}
         {% if milestone_types %}
         <div class="flex flex-wrap gap-3 pt-1 pl-1">
             {% for mt in milestone_types %}
-            <label class="flex items-center gap-1 text-xs text-gray-600">
-                <input type="checkbox" name="milestones" value="{{ mt.id }}" class="rounded border-gray-300 text-indigo-600">
+            <label class="flex items-center gap-1 text-xs text-white/60">
+                <input type="checkbox" name="milestones" value="{{ mt.id }}" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
                 {{ mt.name }}
             </label>
             {% endfor %}
@@ -69,189 +69,191 @@
 </section>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Activity Types -->
-    <section class="bg-white rounded-lg shadow p-4">
-        <h2 class="font-semibold mb-3">Activity Types</h2>
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
+        <h2 class="font-semibold text-white mb-3">Activity Types</h2>
         {% if quest.activity_types|list %}
         <div class="space-y-2">
             {% for at in quest.activity_types %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
-                    <span class="font-medium">{{ at.name }}</span>
-                    <span class="text-gray-500 ml-1">({{ at.unit_label }})</span>
-                    {% if at.is_milestone %}<span class="text-xs bg-yellow-100 text-yellow-700 px-1 rounded ml-1">milestone</span>{% endif %}
+                    <span class="font-medium text-white">{{ at.name }}</span>
+                    <span class="text-white/60 ml-1">({{ at.unit_label }})</span>
+                    {% if at.is_milestone %}<span class="text-xs bg-amber-500/20 text-amber-300 px-1 rounded ml-1">milestone</span>{% endif %}
                     {% for rule in at.earning_rules %}
-                    <span class="text-xs text-gray-400 ml-1">+{{ rule.currency_reward }}/{{ rule.quantity_required }}{{ at.unit_label }}</span>
+                    <span class="text-xs text-white/40 ml-1">+{{ rule.currency_reward }}/{{ rule.quantity_required }}{{ at.unit_label }}</span>
                     {% endfor %}
                 </div>
                 <form method="POST" action="{{ url_for('admin.activity_type_delete', at_id=at.id) }}"
                       onsubmit="return confirm('Remove {{ at.name }}? This only works if no activities have been logged with it.')">
-                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Remove</button>
                 </form>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No activity types defined.</p>
+        <p class="text-white/40 text-sm">No activity types defined.</p>
         {% endif %}
-        <p class="text-xs text-gray-400 mt-2">Add new types via <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="text-indigo-500 hover:underline">Edit Quest</a></p>
+        <p class="text-xs text-white/40 mt-2">Add new types via <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="text-amber-400 hover:text-amber-300 transition-colors">Edit Quest</a></p>
     </section>
 
-    <!-- Levels -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Quest Levels</h2>
-            <a href="{{ url_for('admin.level_create', quest_id=quest.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Quest Levels</h2>
+            <a href="{{ url_for('admin.level_create', quest_id=quest.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if levels %}
         <div class="space-y-2">
             {% for level in levels %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
-                    <span class="font-medium">{{ level.name }}</span>
-                    <span class="text-gray-500 ml-2">{{ level.threshold }} {{ quest.display_currency }}</span>
+                    <span class="font-medium text-white">{{ level.name }}</span>
+                    <span class="text-white/60 ml-2">{{ level.threshold }} {{ quest.display_currency }}</span>
                     {% if lifetime_earned >= level.threshold %}
-                    <span class="text-green-600 ml-1 text-xs font-bold">UNLOCKED</span>
+                    <span class="text-green-300 ml-1 text-xs font-bold">UNLOCKED</span>
                     {% endif %}
                 </div>
                 <div class="flex gap-2">
-                    <a href="{{ url_for('admin.level_edit', level_id=level.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <a href="{{ url_for('admin.level_edit', level_id=level.id) }}" class="text-amber-400 hover:text-amber-300 text-xs transition-colors">Edit</a>
                     <form method="POST" action="{{ url_for('admin.level_delete', level_id=level.id) }}"
                           onsubmit="return confirm('Delete level: {{ level.name }}?')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No levels defined yet.</p>
+        <p class="text-white/40 text-sm">No levels defined yet.</p>
         {% endif %}
     </section>
 
-    <!-- Side Quests -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Side Quests</h2>
-            <a href="{{ url_for('admin.side_quest_create', quest_id=quest.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Side Quests</h2>
+            <a href="{{ url_for('admin.side_quest_create', quest_id=quest.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if side_quests %}
         <div class="space-y-2">
             {% for sq in side_quests %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
-                    <span class="font-medium">{{ sq.name }}</span>
-                    <span class="text-gray-500 ml-1">(+{{ sq.currency_reward }}, {{ sq.repeat_type_display }})</span>
-                    {% if sq.expires_at %}<span class="text-xs text-orange-500 ml-1">expires {{ sq.expires_at.strftime('%b %d') }}</span>{% endif %}
+                    <span class="font-medium text-white">{{ sq.name }}</span>
+                    <span class="text-white/60 ml-1">(+{{ sq.currency_reward }}, {{ sq.repeat_type_display }})</span>
+                    {% if sq.expires_at %}<span class="text-xs text-amber-300 ml-1">expires {{ sq.expires_at.strftime('%b %d') }}</span>{% endif %}
                 </div>
                 <div class="flex gap-2">
                     <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.id) }}">
-                        <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Award</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-green-300 hover:text-green-200 text-xs font-medium transition-colors">Award</button>
                     </form>
-                    <a href="{{ url_for('admin.side_quest_edit', side_quest_id=sq.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <a href="{{ url_for('admin.side_quest_edit', side_quest_id=sq.id) }}" class="text-amber-400 hover:text-amber-300 text-xs transition-colors">Edit</a>
                     <form method="POST" action="{{ url_for('admin.side_quest_delete', sq_id=sq.id) }}"
                           onsubmit="return confirm('Delete side quest: {{ sq.name }}?')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No standalone side quests yet.</p>
+        <p class="text-white/40 text-sm">No standalone side quests yet.</p>
         {% endif %}
     </section>
 
-    <!-- Quest Chains -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Quest Chains</h2>
-            <a href="{{ url_for('admin.chain_create', quest_id=quest.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Quest Chains</h2>
+            <a href="{{ url_for('admin.chain_create', quest_id=quest.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if all_chains %}
         <div class="space-y-2">
             {% for chain in all_chains %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}" class="flex-1 hover:text-indigo-600">
-                    <span class="font-medium">{{ chain.name }}</span>
-                    <span class="text-gray-500 ml-1">(+{{ chain.currency_reward }})</span>
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
+                <a href="{{ url_for('admin.chain_detail', chain_id=chain.id) }}" class="flex-1 hover:text-amber-300 transition-colors">
+                    <span class="font-medium text-white">{{ chain.name }}</span>
+                    <span class="text-white/60 ml-1">(+{{ chain.currency_reward }})</span>
                     {% if chain.completed_at %}
-                    <span class="text-xs bg-green-100 text-green-700 px-1 rounded ml-1">completed</span>
+                    <span class="text-xs bg-green-500/20 text-green-300 px-1 rounded ml-1">completed</span>
                     {% elif chain.expires_at %}
-                    <span class="text-xs text-orange-500 ml-1">expires {{ chain.expires_at.strftime('%b %d') }}</span>
+                    <span class="text-xs text-amber-300 ml-1">expires {{ chain.expires_at.strftime('%b %d') }}</span>
                     {% endif %}
                 </a>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ chain.steps.count() }} steps</span>
+                    <span class="text-xs text-white/60">{{ chain.steps.count() }} steps</span>
                     <form method="POST" action="{{ url_for('admin.chain_delete', chain_id=chain.id) }}"
                           onsubmit="return confirm('Delete chain: {{ chain.name }}? All steps will be removed.')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No quest chains yet.</p>
+        <p class="text-white/40 text-sm">No quest chains yet.</p>
         {% endif %}
     </section>
 
-    <!-- Shop -->
-    <section class="bg-white rounded-lg shadow p-4">
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Shop</h2>
-            <a href="{{ url_for('admin.quest_shop_item_create', quest_id=quest.id) }}" class="text-indigo-600 text-sm hover:underline">+ Add</a>
+            <h2 class="font-semibold text-white">Shop</h2>
+            <a href="{{ url_for('admin.quest_shop_item_create', quest_id=quest.id) }}" class="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Add</a>
         </div>
         {% if shop_items %}
         <div class="space-y-2">
             {% for item in shop_items %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                 <div>
-                    <span class="font-medium">{{ item.name }}</span>
-                    <span class="text-gray-500 ml-1">({{ item.cost }} {{ quest.display_currency }})</span>
-                    {% if item.campaign_id %}<span class="text-xs bg-blue-100 text-blue-700 px-1 rounded ml-1">shared</span>{% endif %}
+                    <span class="font-medium text-white">{{ item.name }}</span>
+                    <span class="text-white/60 ml-1">({{ item.cost }} {{ quest.display_currency }})</span>
+                    {% if item.campaign_id %}<span class="text-xs bg-blue-500/20 text-blue-300 px-1 rounded ml-1">shared</span>{% endif %}
                 </div>
                 <div class="flex gap-2">
                     {% if balance >= item.cost %}
                     <form method="POST" action="{{ url_for('admin.redeem', quest_id=quest.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <input type="hidden" name="item_id" value="{{ item.id }}">
                         <input type="hidden" name="next" value="{{ url_for('admin.quest_detail', quest_id=quest.id) }}">
-                        <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Redeem</button>
+                        <button type="submit" class="text-green-300 hover:text-green-200 text-xs font-medium transition-colors">Redeem</button>
                     </form>
                     {% endif %}
-                    <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-gray-400 hover:text-gray-600 text-xs">Edit</a>
+                    <a href="{{ url_for('admin.shop_item_edit', item_id=item.id) }}" class="text-amber-400 hover:text-amber-300 text-xs transition-colors">Edit</a>
                     <form method="POST" action="{{ url_for('admin.shop_item_delete', item_id=item.id) }}"
                           onsubmit="return confirm('Delete shop item: {{ item.name }}?')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Delete</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No shop items yet.</p>
+        <p class="text-white/40 text-sm">No shop items yet.</p>
         {% endif %}
     </section>
 
-    <!-- Recent Activity -->
-    <section class="bg-white rounded-lg shadow p-4">
-        <h2 class="font-semibold mb-3">Recent Activity</h2>
+    <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
+        <h2 class="font-semibold text-white mb-3">Recent Activity</h2>
         {% if recent_logs %}
         <div class="space-y-2">
             {% for log in recent_logs %}
-            <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm {% if log.reversed %}opacity-50 line-through{% endif %}">
+            <div class="flex justify-between items-center p-2 bg-white/5 rounded text-sm {% if log.reversed %}opacity-50 line-through{% endif %}">
                 <div>
-                    <span class="font-medium">{{ log.activity_type.name }}</span>
-                    <span class="text-gray-500">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
-                    {% if log.notes %}<span class="text-xs text-gray-400 ml-1">{{ log.notes }}</span>{% endif %}
-                    {% if log.reversed %}<span class="text-xs text-red-500 ml-1">reversed</span>{% endif %}
+                    <span class="font-medium text-white">{{ log.activity_type.name }}</span>
+                    <span class="text-white/60">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
+                    {% if log.notes %}<span class="text-xs text-white/40 ml-1">{{ log.notes }}</span>{% endif %}
+                    {% if log.reversed %}<span class="text-xs text-red-400 ml-1">reversed</span>{% endif %}
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400">{{ log.logged_at.strftime('%b %d') }}</span>
+                    <span class="text-xs text-white/40">{{ log.logged_at.strftime('%b %d') }}</span>
                     {% if not log.reversed %}
                     <form method="POST" action="{{ url_for('admin.activity_log_undo', log_id=log.id) }}"
                           onsubmit="return confirm('Undo this activity? A reversal transaction will be created.')">
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Undo</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs transition-colors">Undo</button>
                     </form>
                     {% endif %}
                 </div>
@@ -259,7 +261,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-gray-400 text-sm">No activity logged yet.</p>
+        <p class="text-white/40 text-sm">No activity logged yet.</p>
         {% endif %}
     </section>
 </div>

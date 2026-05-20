@@ -1,15 +1,23 @@
 import math
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, abort
 
 from app import db
 from app.models import (
-    Member, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
+    Member, MemberAvatar, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
     ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
+from app.engines import party_goals as party_goals_engine, shop as shop_engine
 
 bp = Blueprint("dashboard", __name__, url_prefix="/")
+
+
+def _get_or_404(model, id):
+    obj = db.session.get(model, id)
+    if obj is None:
+        abort(404)
+    return obj
 
 
 @bp.route("/")
@@ -26,7 +34,7 @@ def index():
 @bp.route("/quest/<int:quest_id>")
 def quest_view(quest_id):
     """Main quest dashboard."""
-    quest = db.session.get(Quest, quest_id)
+    quest = _get_or_404(Quest, quest_id)
     campaign = quest.campaign
     member = quest.member
     is_admin = session.get("admin", False)
@@ -37,29 +45,7 @@ def quest_view(quest_id):
     # Party Goals progress (only if quest is in a campaign)
     goal_progress = []
     if campaign:
-        party_goals = PartyGoal.query.filter_by(campaign_id=campaign.id).order_by(PartyGoal.sort_order).all()
-        campaign_totals = ledger.get_campaign_totals(campaign.id)
-        combined_total = sum(campaign_totals.values())
-        my_contribution = campaign_totals.get(member.id, 0)
-        num_members = db.session.query(Quest.member_id).filter_by(campaign_id=campaign.id).distinct().count()
-        for goal in party_goals:
-            target = goal.target_amount or 1
-            min_req = math.ceil(target / num_members) if num_members > 0 else target
-            all_met_min = all(
-                campaign_totals.get(mid, 0) >= min_req
-                for mid, in db.session.query(Quest.member_id).filter_by(campaign_id=campaign.id).distinct()
-            )
-            goal_progress.append({
-                "goal": goal,
-                "current": combined_total,
-                "my_contribution": my_contribution,
-                "my_percent": min(100, int(my_contribution / target * 100)),
-                "percent": min(100, int(combined_total / target * 100)),
-                "my_remaining": max(0, min_req - my_contribution),
-                "min_required": min_req,
-                "min_marker_percent": min(100, int(min_req / target * 100)) if min_req else 0,
-                "all_met_min": all_met_min,
-            })
+        goal_progress = party_goals_engine.get_member_goal_progress(campaign.id, member.id)
 
     # Quest Levels (belong to quest now)
     levels = QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.threshold).all()
@@ -131,7 +117,7 @@ def quest_view(quest_id):
 @bp.route("/member/<int:member_id>")
 def member_select(member_id):
     """Show active quests for a member to pick."""
-    member = db.session.get(Member, member_id)
+    member = _get_or_404(Member, member_id)
     session["active_member_id"] = member.id
     session["active_member_name"] = member.name
     quests = Quest.query.filter_by(member_id=member_id, status="active").filter(Quest.completed_at.is_(None)).all()
@@ -144,7 +130,7 @@ def member_select(member_id):
 @bp.route("/member/<int:member_id>/profile")
 def member_profile(member_id):
     """Lifetime stats and achievement showcase for a member."""
-    member = db.session.get(Member, member_id)
+    member = _get_or_404(Member, member_id)
     stats = lifetime.get_all_stats(member_id)
 
     unlocks = AchievementUnlock.query.filter_by(member_id=member_id).order_by(AchievementUnlock.unlocked_at.desc()).all()
@@ -153,15 +139,90 @@ def member_profile(member_id):
         ach = db.session.get(Achievement, u.achievement_id)
         achievements.append({"achievement": ach, "unlocked_at": u.unlocked_at})
 
+    # Precompute quest history with stats
     all_quests = Quest.query.filter_by(member_id=member_id).order_by(Quest.created_at.desc()).all()
+    quest_history = []
+    for q in all_quests:
+        earned = ledger.get_lifetime_earned(q.id)
+        levels = QuestLevel.query.filter_by(quest_id=q.id).order_by(QuestLevel.threshold).all()
+        current_level = None
+        for lv in levels:
+            if earned >= lv.threshold:
+                current_level = lv.name
+        quest_history.append({
+            "quest": q,
+            "earned": earned,
+            "current_level": current_level,
+            "level_count": len(levels),
+            "levels_unlocked": sum(1 for lv in levels if earned >= lv.threshold),
+        })
+
+    # Avatar gallery (seed current avatar into gallery if not already there)
+    gallery = MemberAvatar.query.filter_by(member_id=member_id).order_by(MemberAvatar.created_at.desc()).all()
+    if member.avatar_url and not any(a.image_url == member.avatar_url for a in gallery):
+        new_avatar = MemberAvatar(member_id=member_id, image_url=member.avatar_url)
+        db.session.add(new_avatar)
+        db.session.commit()
+        gallery = MemberAvatar.query.filter_by(member_id=member_id).order_by(MemberAvatar.created_at.desc()).all()
+
+    is_admin = session.get("admin", False)
 
     return render_template(
         "dashboard/profile.html",
         member=member,
         stats=stats,
         achievements=achievements,
-        all_quests=all_quests,
+        quest_history=quest_history,
+        gallery=gallery,
+        is_admin=is_admin,
     )
+
+
+@bp.route("/member/<int:member_id>/avatar/select", methods=["POST"])
+def avatar_select(member_id):
+    """Player selects an avatar from their gallery."""
+    member = db.session.get(Member, member_id)
+    avatar_id = int(request.form["avatar_id"])
+    avatar = db.session.get(MemberAvatar, avatar_id)
+    if avatar and avatar.member_id == member_id:
+        member.avatar_url = avatar.image_url
+        db.session.commit()
+    return redirect(url_for("dashboard.member_profile", member_id=member_id))
+
+
+@bp.route("/member/<int:member_id>/avatar/upload", methods=["POST"])
+def avatar_upload(member_id):
+    """Upload a new avatar (admin only)."""
+    if not session.get("admin"):
+        return redirect(url_for("dashboard.member_profile", member_id=member_id))
+    member = db.session.get(Member, member_id)
+    from app.engines.uploads import save_uploaded_image
+    uploaded = request.files.get("avatar_file")
+    if uploaded and uploaded.filename:
+        url = save_uploaded_image(uploaded)
+        # Add to gallery
+        avatar = MemberAvatar(member_id=member_id, image_url=url)
+        db.session.add(avatar)
+        # Set as current
+        member.avatar_url = url
+        db.session.commit()
+    return redirect(url_for("dashboard.member_profile", member_id=member_id))
+
+
+@bp.route("/member/<int:member_id>/avatar/<int:avatar_id>/delete", methods=["POST"])
+def avatar_delete(member_id, avatar_id):
+    """Remove an avatar from gallery (admin only). Does not delete the file."""
+    if not session.get("admin"):
+        return redirect(url_for("dashboard.member_profile", member_id=member_id))
+    member = db.session.get(Member, member_id)
+    avatar = db.session.get(MemberAvatar, avatar_id)
+    if avatar and avatar.member_id == member_id:
+        # If this was the active avatar, clear it
+        if member.avatar_url == avatar.image_url:
+            member.avatar_url = None
+        db.session.delete(avatar)
+        db.session.commit()
+    return redirect(url_for("dashboard.member_profile", member_id=member_id))
 
 
 @bp.route("/quest/<int:quest_id>/history")
@@ -181,7 +242,7 @@ def quest_history(quest_id):
 @bp.route("/campaign/<int:campaign_id>")
 def campaign_view(campaign_id):
     """Campaign overview scorecard — game-show style party display."""
-    campaign = db.session.get(Campaign, campaign_id)
+    campaign = _get_or_404(Campaign, campaign_id)
     quests = Quest.query.filter_by(campaign_id=campaign_id, status="active").all()
     campaign_totals = ledger.get_campaign_totals(campaign_id)
     combined_total = sum(campaign_totals.values())
@@ -262,49 +323,26 @@ def campaign_view(campaign_id):
 @bp.route("/quest/<int:quest_id>/redeem", methods=["POST"])
 def redeem(quest_id):
     """Self-service shop redemption (no admin required)."""
-    item_id = int(request.form["item_id"])
-    item = db.session.get(ShopItem, item_id)
+    item_id = request.form.get("item_id", type=int)
     quest = db.session.get(Quest, quest_id)
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
-    if not item or not quest:
+    if item_id is None or not quest:
         msg = "Invalid item or quest"
         if is_ajax:
             return jsonify(success=False, message=msg), 400
         flash(msg, "error")
         return redirect(url_for("dashboard.index"))
 
-    # Validate item belongs to this quest or its campaign
-    if item.quest_id != quest_id and not (quest.campaign_id and item.campaign_id == quest.campaign_id):
-        msg = "Item not available for this quest"
-        if is_ajax:
-            return jsonify(success=False, message=msg), 403
-        flash(msg, "error")
-        return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
-
-    if item.cost == 0:
-        purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=None)
-        db.session.add(purchase)
-        db.session.commit()
-        msg = f"Redeemed '{item.name}'!"
+    success, msg, _purchase = shop_engine.redeem_item(quest_id, item_id, quest.campaign_id)
+    if success:
         if is_ajax:
             return jsonify(success=True, message=msg)
         flash(msg, "success")
     else:
-        txn = ledger.record_spend(quest_id, item.cost, f"Purchased: {item.name}")
-        if txn:
-            db.session.flush()
-            purchase = ShopPurchase(shop_item_id=item.id, quest_id=quest_id, transaction_id=txn.id)
-            db.session.add(purchase)
-            db.session.commit()
-            msg = f"Redeemed '{item.name}'!"
-            if is_ajax:
-                return jsonify(success=True, message=msg)
-            flash(msg, "success")
-        else:
-            msg = f"Not enough {quest.display_currency} for '{item.name}'"
-            if is_ajax:
-                return jsonify(success=False, message=msg), 400
-            flash(msg, "error")
+        if is_ajax:
+            status = 403 if "belong" in msg else 400
+            return jsonify(success=False, message=msg), status
+        flash(msg, "error")
 
     return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
