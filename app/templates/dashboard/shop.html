@@ -55,15 +55,18 @@
 
         <!-- Hero -->
         <div class="text-center mb-10">
-            <h1 class="text-3xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} mb-2">
-                <span class="text-4xl mr-2">💎</span> Treasure Shop
+            <h1 class="text-3xl font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }}">
+                <span class="text-4xl">💎</span> Treasure Shop <span class="text-4xl">💎</span>
             </h1>
         </div>
 
-        <!-- Shop Items -->
+        <!-- Shop Layout: 3/4 items + 1/4 chest -->
+        <div class="flex flex-col lg:flex-row gap-6">
+
+        <!-- Shop Items (3/4) -->
         {% if shop_items %}
-        <section class="mb-12" x-data="{ confirmItem: null }">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+        <section class="flex-1 lg:w-3/4" x-data="{ confirmItem: null }">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-5">
                 {% for item in shop_items %}
                 <div class="relative quest-card rounded-2xl p-5 text-center transition-all
                     {% if balance >= item.cost %}
@@ -148,50 +151,49 @@
             </div>
         </section>
         {% else %}
-        <section class="quest-card rounded-2xl p-8 text-center mb-12">
+        <section class="flex-1 lg:w-3/4 quest-card rounded-2xl p-8 text-center">
             <p class="text-2xl mb-2">🏪</p>
             <p class="text-sm {{ 'text-white/50' if bg_dark else 'text-gray-500' }}">No items in the shop yet. Check back soon!</p>
         </section>
         {% endif %}
 
-        <!-- Treasure Chest (Purchase History) -->
+        <!-- Treasure Chest Sidebar (1/4) -->
         {% if purchases %}
-        <section class="quest-card rounded-2xl p-5">
-            <h2 class="text-sm font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-4">🏆 Treasure Chest</h2>
-            <div class="space-y-2">
-                {% for p in purchases %}
-                <div class="flex items-center gap-3 p-3 rounded-xl {{ 'bg-red-500/10 border border-red-500/20' if p.refunded_at else ('bg-white/5 border border-white/10' if bg_dark else 'bg-gray-50 border border-gray-100') }}">
-                    {% if p.shop_item.image_url %}
-                    <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url[8:]) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}"
-                         alt="{{ p.shop_item.name }}" class="w-10 h-10 object-contain rounded-lg">
-                    {% else %}
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}">
-                        <span class="text-lg">🎁</span>
-                    </div>
-                    {% endif %}
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium {{ 'text-red-400 line-through' if p.refunded_at else ('text-white' if bg_dark else 'text-gray-800') }} truncate">{{ p.shop_item.name }}</p>
-                        <p class="text-xs {{ 'text-red-400' if p.refunded_at else ('text-white/40' if bg_dark else 'text-gray-400') }}">
-                            {{ p.purchased_at.strftime('%b %d, %Y') }}{% if p.refunded_at %} &middot; Refunded{% endif %}
-                        </p>
-                    </div>
-                    <div class="shrink-0 flex items-center gap-2">
-                        <span class="text-xs font-medium {{ 'text-red-400' if p.refunded_at else '' }}" style="{% if not p.refunded_at %}color: var(--color-primary){% endif %}">
-                            {{ 'Refunded' if p.refunded_at else '-' ~ p.shop_item.cost ~ ' ' ~ ctx.currency_label }}
-                        </span>
+        <aside class="lg:w-1/4 w-full">
+            <div class="quest-card rounded-2xl p-4 lg:sticky lg:top-4">
+                <h2 class="text-xs font-bold {{ 'text-white/80' if bg_dark else 'text-gray-700' }} uppercase tracking-wide mb-3">🏆 Treasure Chest</h2>
+                <div class="space-y-2 max-h-[60vh] overflow-y-auto">
+                    {% for p in purchases %}
+                    <div class="flex items-center gap-2 p-2 rounded-lg {{ 'bg-red-500/10 border border-red-500/20' if p.refunded_at else ('bg-white/5 border border-white/10' if bg_dark else 'bg-gray-50 border border-gray-100') }}">
+                        {% if p.shop_item.image_url %}
+                        <img src="{{ url_for('admin.serve_upload', filepath=p.shop_item.image_url[8:]) if p.shop_item.image_url.startswith('uploads/') else p.shop_item.image_url }}"
+                             alt="{{ p.shop_item.name }}" class="w-8 h-8 object-contain rounded">
+                        {% else %}
+                        <div class="w-8 h-8 rounded flex items-center justify-center {{ 'bg-white/10' if bg_dark else 'bg-[var(--color-primary)]/10' }}">
+                            <span class="text-sm">🎁</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium {{ 'text-red-400 line-through' if p.refunded_at else ('text-white' if bg_dark else 'text-gray-800') }} truncate">{{ p.shop_item.name }}</p>
+                            <p class="text-[10px] {{ 'text-red-400' if p.refunded_at else ('text-white/40' if bg_dark else 'text-gray-400') }}">
+                                {{ p.purchased_at.strftime('%b %d') }}{% if p.refunded_at %} &middot; Refunded{% endif %}
+                            </p>
+                        </div>
                         {% if not p.refunded_at and is_admin %}
-                        <form method="POST" action="{{ url_for('admin.refund_purchase', purchase_id=p.id) }}">
+                        <form method="POST" action="{{ url_for('admin.refund_purchase', purchase_id=p.id) }}" class="shrink-0">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <input type="hidden" name="next" value="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}">
-                            <button type="submit" class="text-[10px] text-red-500 hover:text-red-400 underline transition-colors">Refund</button>
+                            <button type="submit" class="text-[10px] text-red-500 hover:text-red-400 underline">Refund</button>
                         </form>
                         {% endif %}
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
-        </section>
+        </aside>
         {% endif %}
+
+        </div><!-- end flex layout -->
 
     </div>
 </div>
