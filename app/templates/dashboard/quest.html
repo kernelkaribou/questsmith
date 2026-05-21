@@ -468,8 +468,9 @@
                 }
                 @keyframes shop-shimmer {
                     0% { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
-                    15% { opacity: 1; }
-                    85% { opacity: 1; }
+                    5% { opacity: 1; }
+                    25% { opacity: 1; }
+                    30% { transform: translateX(400%) skewX(-20deg); opacity: 0; }
                     100% { transform: translateX(400%) skewX(-20deg); opacity: 0; }
                 }
             </style>
@@ -479,7 +480,7 @@
                onmouseenter="this.style.animation='none'; this.style.boxShadow='0 0 24px rgba({{ pr }},{{ pg }},{{ pb }},0.4)'"
                onmouseleave="this.style.boxShadow=''; this.style.animation='shop-glow 3s ease-in-out infinite'">
                 <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                    <div class="absolute inset-0 opacity-10" style="background: linear-gradient(90deg, transparent 20%, rgba({{ pr }},{{ pg }},{{ pb }},0.3) 50%, transparent 80%); width: 30%; animation: shop-shimmer 7s ease-in-out infinite; animation-delay: 3s;"></div>
+                    <div class="absolute inset-0 opacity-10" style="background: linear-gradient(90deg, transparent 20%, rgba({{ pr }},{{ pg }},{{ pb }},0.3) 50%, transparent 80%); width: 30%; animation: shop-shimmer 10s ease-in-out infinite; animation-delay: 3s;"></div>
                 </div>
                 <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
                     {{ quest.display_shop }}
