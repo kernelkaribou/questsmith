@@ -11,10 +11,6 @@
 {% block head %}
 <style>
     .quest-page { background-color: {{ bg_hex }}; }
-    @keyframes quest-breathe {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1); }
-    }
     @keyframes shop-breathe {
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.03); }
@@ -117,27 +113,19 @@
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
                 <div class="shrink-0 text-center">
-                    <div class="relative w-16 h-16 mx-auto {% if completion_pct >= 100 %}animate-[quest-breathe_2s_ease-in-out_infinite]{% endif %}">
+                    <div class="relative w-16 h-16 mx-auto">
                         <svg class="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="10"/>
-                            {% if completion_pct > 0 %}
+                            {% if ring_pct > 0 %}
                             <circle cx="50" cy="50" r="38" fill="none"
-                                    stroke="white" stroke-width="10"
+                                    stroke="{{ '#4ade80' if ring_pct >= 100 else 'white' }}" stroke-width="10"
                                     stroke-linecap="round"
                                     stroke-dasharray="{{ (3.1416 * 2 * 38 * ring_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
-                                    filter="drop-shadow(0 0 {% if completion_pct >= 100 %}6{% else %}3{% endif %}px rgba(255,255,255,{% if completion_pct >= 100 %}0.8{% else %}0.5{% endif %}))"
                                     class="transition-all duration-700"/>
-                            {% if completion_pct >= 100 %}
-                            <circle cx="50" cy="50" r="38" fill="none"
-                                    stroke="rgba(255,255,255,0.3)" stroke-width="16"
-                                    stroke-linecap="round"
-                                    stroke-dasharray="{{ 3.1416 * 2 * 38 }} {{ 3.1416 * 2 * 38 }}"
-                                    class="transition-all duration-700"/>
-                            {% endif %}
                             {% endif %}
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-xs font-bold">{{ completion_pct }}%</span>
+                            <span class="text-xs font-bold {{ 'text-green-400' if ring_pct >= 100 else '' }}">{{ [completion_pct, 100]|min }}%</span>
                         </div>
                     </div>
                     <p class="text-[9px] uppercase tracking-wide opacity-70 mt-0.5">Quest Progress</p>
