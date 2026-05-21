@@ -538,28 +538,28 @@
                     </div>
                     {% endfor %}
                     {% for jc in journal_completions[:5] %}
-                    <div class="p-2.5 rounded-lg border border-green-100 bg-green-50/30 text-xs">
+                    <div class="p-2.5 rounded-lg border text-xs {{ 'border-green-500/20 bg-green-500/10' if bg_dark else 'border-green-100 bg-green-50/30' }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium text-green-700">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
+                            <span class="font-medium {{ 'text-green-300' if bg_dark else 'text-green-700' }}">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
                             {% if jc.reward > 0 %}
-                            <span class="text-green-600 font-medium">+{{ jc.reward }} {{ ctx.currency_label }}</span>
+                            <span class="font-medium {{ 'text-green-400' if bg_dark else 'text-green-600' }}">+{{ jc.reward }} {{ ctx.currency_label }}</span>
                             {% else %}
-                            <span class="text-green-500 text-[10px]">completed</span>
+                            <span class="text-[10px] {{ 'text-green-400' if bg_dark else 'text-green-500' }}">completed</span>
                             {% endif %}
                         </div>
                         {% if jc.prize %}
                         <p class="text-purple-600 text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
                         {% endif %}
-                        <div class="text-green-400 text-[10px] mt-0.5">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="text-[10px] mt-0.5 {{ 'text-green-500/50' if bg_dark else 'text-green-400' }}">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                     {% for p in purchases[:5] %}
-                    <div class="p-2.5 rounded-lg border {{ 'border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30' }} text-xs">
+                    <div class="p-2.5 rounded-lg border text-xs {{ ('border-red-500/20 bg-red-500/10' if p.refunded_at else 'border-purple-500/20 bg-purple-500/10') if bg_dark else ('border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30') }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium {{ 'text-red-600 line-through' if p.refunded_at else 'text-purple-700' }}">{{ p.shop_item.name }}</span>
-                            <span class="{{ 'text-red-400' if p.refunded_at else 'text-purple-500 font-medium' }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
+                            <span class="font-medium {{ ('text-red-400 line-through' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600 line-through' if p.refunded_at else 'text-purple-700') }}">{{ p.shop_item.name }}</span>
+                            <span class="{{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
-                        <div class="{{ 'text-red-300' if p.refunded_at else 'text-purple-400' }} text-[10px] mt-0.5">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="text-[10px] mt-0.5 {{ ('text-red-400/50' if p.refunded_at else 'text-purple-400/50') if bg_dark else ('text-red-300' if p.refunded_at else 'text-purple-400') }}">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                 </div>
