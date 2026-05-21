@@ -78,7 +78,8 @@ def quest_view(quest_id):
     achievements = [db.session.get(Achievement, u.achievement_id) for u in unlocks]
 
     # Activity timeline (recent 5; full log accessible via View Full History)
-    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).limit(5).all()
+    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).limit(5).all()
+    activity_count = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).count()
 
     # Side quest / chain completions for the journal
     # Standalone completions (not chain steps) + chain completions (as single entries)
@@ -131,6 +132,7 @@ def quest_view(quest_id):
         earning_progress=earning_progress,
         achievements=achievements,
         recent_logs=recent_logs,
+        activity_count=activity_count,
         journal_completions=journal_completions,
         purchases=purchases,
         activity_types=activity_types,
@@ -254,7 +256,9 @@ def avatar_delete(member_id, avatar_id):
 def quest_history(quest_id):
     """Activity log timeline for a specific quest."""
     quest = db.session.get(Quest, quest_id)
-    logs = ActivityLog.query.filter_by(quest_id=quest_id).order_by(ActivityLog.logged_at.desc()).all()
+    if not quest:
+        abort(404)
+    logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).all()
     ctx = quest_engine.get_quest_context(quest_id)
 
     # Side quest completions for history
@@ -276,11 +280,15 @@ def quest_history(quest_id):
         journal_completions.append({"type": "chain", "name": chain.name, "reward": chain.currency_reward, "prize": chain.prize_description, "date": chain.completed_at})
     journal_completions.sort(key=lambda x: x["date"], reverse=True)
 
+    # Shop purchases for history
+    purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
+
     return render_template(
         "dashboard/history.html",
         quest=quest,
         logs=logs,
         journal_completions=journal_completions,
+        purchases=purchases,
         ctx=ctx,
     )
 
@@ -366,6 +374,47 @@ def campaign_view(campaign_id):
     )
 
 
+@bp.route("/quest/<int:quest_id>/shop")
+def quest_shop(quest_id):
+    """Dedicated Treasure Shop page."""
+    quest = db.session.get(Quest, quest_id)
+    if not quest:
+        abort(404)
+    member = quest.member
+    campaign = db.session.get(Campaign, quest.campaign_id) if quest.campaign_id else None
+    balance = ledger.get_balance(quest_id)
+
+    # Combined shop items: quest-owned + campaign-owned (only available)
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id, is_available=True).order_by(ShopItem.sort_order).all()
+    if campaign:
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id, is_available=True).order_by(ShopItem.sort_order).all()
+        shop_items = shop_items + campaign_shop
+
+    # Purchase history
+    purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
+
+    # Theme context
+    ctx = quest_engine.get_quest_context(quest_id)
+
+    # Admin check
+    is_admin = session.get("admin", False)
+
+    affordable_count = sum(1 for item in shop_items if balance >= item.cost)
+
+    return render_template(
+        "dashboard/shop.html",
+        quest=quest,
+        campaign=campaign,
+        member=member,
+        balance=balance,
+        shop_items=shop_items,
+        purchases=purchases,
+        ctx=ctx,
+        is_admin=is_admin,
+        affordable_count=affordable_count,
+    )
+
+
 @bp.route("/quest/<int:quest_id>/redeem", methods=["POST"])
 def redeem(quest_id):
     """Self-service shop redemption (no admin required)."""
@@ -383,7 +432,8 @@ def redeem(quest_id):
     success, msg, _purchase = shop_engine.redeem_item(quest_id, item_id, quest.campaign_id)
     if success:
         if is_ajax:
-            return jsonify(success=True, message=msg)
+            new_balance = ledger.get_balance(quest_id)
+            return jsonify(success=True, message=msg, balance=new_balance)
         flash(msg, "success")
     else:
         if is_ajax:
@@ -391,4 +441,4 @@ def redeem(quest_id):
             return jsonify(success=False, message=msg), status
         flash(msg, "error")
 
-    return redirect(url_for("dashboard.quest_view", quest_id=quest_id))
+    return redirect(url_for("dashboard.quest_shop", quest_id=quest_id))

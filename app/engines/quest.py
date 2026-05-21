@@ -167,6 +167,7 @@ def get_earning_progress(quest_id):
         ).filter(
             ActivityLog.quest_id == quest_id,
             ActivityLog.activity_type_id == at.id,
+            ActivityLog.reversed == False,
         ).scalar()
 
         for rule in rules:

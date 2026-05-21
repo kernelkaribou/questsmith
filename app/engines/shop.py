@@ -11,6 +11,9 @@ def redeem_item(quest_id, item_id, quest_campaign_id=None):
     if not item:
         return False, "Item not found", None
 
+    if not item.is_available:
+        return False, "Item is no longer available", None
+
     if item.quest_id and item.quest_id != quest_id:
         return False, "Item does not belong to this quest", None
     if item.campaign_id and item.campaign_id != quest_campaign_id:

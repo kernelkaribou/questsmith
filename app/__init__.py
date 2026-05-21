@@ -39,13 +39,13 @@ def create_app(config_class=None):
     @app.before_request
     def csrf_protect():
         if request.method == "POST":
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return
             if request.endpoint == "admin.login":
                 return
             token = session.get("csrf_token")
-            form_token = request.form.get("csrf_token")
+            form_token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
             if not token or token != form_token:
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return {"error": "CSRF token invalid"}, 403
                 from flask import redirect, flash
                 flash("Session expired. Please try again.")
                 return redirect(request.url)
@@ -78,4 +78,25 @@ def create_app(config_class=None):
         except sqlalchemy.exc.OperationalError:
             pass  # Race between gunicorn workers; table already created
 
+        _apply_migrations(db)
+
     return app
+
+
+def _apply_migrations(db):
+    """Apply schema migrations for upgrades from prior versions."""
+    migrations = [
+        ("quests", "shop_label", "ALTER TABLE quests ADD COLUMN shop_label VARCHAR(50)"),
+        ("quests", "chest_label", "ALTER TABLE quests ADD COLUMN chest_label VARCHAR(50)"),
+        ("campaigns", "notes", "ALTER TABLE campaigns ADD COLUMN notes TEXT"),
+    ]
+    for table, column, sql in migrations:
+        try:
+            db.session.execute(db.text(f"SELECT {column} FROM {table} LIMIT 1"))
+        except Exception:
+            db.session.rollback()
+            try:
+                db.session.execute(db.text(sql))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()

@@ -15,37 +15,72 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4 mt-6">
-        {% if logs or journal_completions %}
-        <div class="space-y-3">
-            {% for log in logs %}
-            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4" style="border-left: 4px solid {{ quest.color_primary }}">
+        {# Build unified timeline #}
+        {% set ns = namespace(events=[]) %}
+        {% for log in logs %}
+            {% set ns.events = ns.events + [{"kind": "activity", "date": log.logged_at, "name": log.activity_type.name, "detail": log.quantity ~ " " ~ log.activity_type.unit_label, "desc": log.description}] %}
+        {% endfor %}
+        {% for jc in journal_completions %}
+            {% set ns.events = ns.events + [{"kind": jc.type, "date": jc.date, "name": jc.name, "reward": jc.reward, "prize": jc.prize}] %}
+        {% endfor %}
+        {% for p in purchases %}
+            {% set ns.events = ns.events + [{"kind": "purchase", "date": p.purchased_at, "name": p.shop_item.name, "cost": p.shop_item.cost, "refunded": p.refunded_at is not none}] %}
+        {% endfor %}
+        {% set ns.events = ns.events|sort(attribute="date", reverse=true) %}
+
+        {% if ns.events %}
+        {% set ns.current_month = "" %}
+        {% for event in ns.events %}
+            {% set month_key = event.date.strftime('%B %Y') %}
+            {% if month_key != ns.current_month %}
+                {% set ns.current_month = month_key %}
+                <div class="mt-6 mb-3 first:mt-0">
+                    <h2 class="text-sm font-bold text-white/40 uppercase tracking-wider">{{ month_key }}</h2>
+                </div>
+            {% endif %}
+
+            {% if event.kind == "activity" %}
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 mb-2" style="border-left: 4px solid {{ quest.color_primary }}">
                 <div class="flex justify-between items-start">
                     <div>
-                        <span class="font-medium text-white">{{ log.activity_type.name }}</span>
-                        <span class="text-sm text-white/60 ml-2">{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
+                        <span class="font-medium text-white">{{ event.name }}</span>
+                        <span class="text-sm text-white/60 ml-2">{{ event.detail }}</span>
                     </div>
-                    <span class="text-xs text-white/30">{{ log.logged_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                    <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
                 </div>
-                {% if log.description %}
-                <p class="text-sm text-white/50 mt-1">{{ log.description }}</p>
+                {% if event.desc %}
+                <p class="text-sm text-white/50 mt-1">{{ event.desc }}</p>
                 {% endif %}
             </div>
-            {% endfor %}
-            {% for jc in journal_completions %}
-            <div class="bg-green-500/5 backdrop-blur-sm border border-green-500/20 rounded-lg p-4" style="border-left: 4px solid #22c55e">
+
+            {% elif event.kind in ["side_quest", "chain"] %}
+            <div class="bg-green-500/5 backdrop-blur-sm border border-green-500/20 rounded-lg p-4 mb-2" style="border-left: 4px solid #22c55e">
                 <div class="flex justify-between items-start">
                     <div>
-                        <span class="font-medium text-green-300">{{ jc.name }}</span>
-                        {% if jc.type == 'chain' %}<span class="text-xs text-green-400/60 ml-1">(chain)</span>{% endif %}
+                        <span class="font-medium text-green-300">{{ event.name }}</span>
+                        {% if event.kind == 'chain' %}<span class="text-xs text-green-400/60 ml-1">(chain)</span>{% endif %}
                     </div>
-                    <span class="text-xs text-white/30">{{ jc.date.strftime('%b %d, %Y %I:%M %p') }}</span>
+                    <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
                 </div>
-                {% if jc.reward > 0 %}
-                <p class="text-sm text-green-400/60 mt-1">+{{ jc.reward }} {{ ctx.currency_label }}</p>
+                {% if event.reward > 0 %}
+                <p class="text-sm text-green-400/60 mt-1">+{{ event.reward }} {{ ctx.currency_label }}</p>
                 {% endif %}
             </div>
-            {% endfor %}
-        </div>
+
+            {% elif event.kind == "purchase" %}
+            <div class="backdrop-blur-sm border rounded-lg p-4 mb-2 {{ 'bg-red-500/5 border-red-500/20' if event.refunded else 'bg-amber-500/5 border-amber-500/20' }}" style="border-left: 4px solid {{ '#ef4444' if event.refunded else '#f59e0b' }}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-medium {{ 'text-red-300 line-through' if event.refunded else 'text-amber-300' }}">{{ event.name }}</span>
+                        {% if event.refunded %}<span class="text-xs text-red-400/60 ml-1">(refunded)</span>{% endif %}
+                    </div>
+                    <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
+                </div>
+                <p class="text-sm {{ 'text-red-400/60' if event.refunded else 'text-amber-400/60' }} mt-1">-{{ event.cost }} {{ ctx.currency_label }}</p>
+            </div>
+            {% endif %}
+
+        {% endfor %}
         {% else %}
         <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 text-center">
             <p class="text-white/40 text-lg">No activities logged yet</p>
