@@ -239,7 +239,7 @@
             {% set active_goal = goal_progress | selectattr('visible') | rejectattr('complete') | first %}
             {% if active_goal %}
             <section class="quest-card rounded-2xl p-5">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">{{ ctx.party_goal_label }}</h2>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Next {{ ctx.party_goal_label }}</h2>
                 <div class="relative p-4 rounded-xl">
                     <!-- Header: name + status -->
                     <div class="flex justify-between items-center mb-1">
