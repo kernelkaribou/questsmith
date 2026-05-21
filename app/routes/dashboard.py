@@ -59,10 +59,11 @@ def quest_view(quest_id):
         db.session.commit()
 
     # Combined Shop: quest-owned + campaign-owned
-    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.cost).all()
     if campaign:
-        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id).order_by(ShopItem.sort_order).all()
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id).order_by(ShopItem.cost).all()
         shop_items = shop_items + campaign_shop
+        shop_items.sort(key=lambda x: x.cost)
 
     # Side quests (belong to quest now) - split into available and completed
     sq_data = side_quest_engine.get_available_side_quests(quest_id)
@@ -385,10 +386,11 @@ def quest_shop(quest_id):
     balance = ledger.get_balance(quest_id)
 
     # Combined shop items: quest-owned + campaign-owned (only available)
-    shop_items = ShopItem.query.filter_by(quest_id=quest_id, is_available=True).order_by(ShopItem.sort_order).all()
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id, is_available=True).order_by(ShopItem.cost).all()
     if campaign:
-        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id, is_available=True).order_by(ShopItem.sort_order).all()
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id, is_available=True).order_by(ShopItem.cost).all()
         shop_items = shop_items + campaign_shop
+        shop_items.sort(key=lambda x: x.cost)
 
     # Purchase history
     purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
