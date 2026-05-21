@@ -73,35 +73,50 @@
         <div class="relative max-w-4xl mx-auto px-4 py-6 text-white">
             <!-- Quest Identity Row -->
             <div class="flex items-center gap-4 mb-4">
-                <!-- Adventurer avatar + quest icon stacked -->
-                <div class="relative shrink-0">
-                    {% if member.avatar_url %}
-                    <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-16 h-16 rounded-full object-cover ring-3 ring-white/40 shadow-lg">
-                    {% else %}
-                    <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold ring-3 ring-white/40 shadow-lg">{{ member.name[0] }}</div>
-                    {% endif %}
+                <!-- Quest theme icon -->
+                <div class="shrink-0">
                     {% if quest.theme_graphic_url %}
                     <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}"
-                         alt="{{ quest.theme_name }}" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain drop-shadow-md">
+                         alt="{{ quest.theme_name }}" class="w-14 h-14 object-contain drop-shadow-md">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold ring-3 ring-white/40 shadow-lg">{{ quest.theme_name[0] }}</div>
                     {% endif %}
                 </div>
                 <div class="flex-1 min-w-0">
                     <h1 class="text-3xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <p class="text-base font-medium opacity-95 mt-0.5">{{ member.name }}</p>
                     {% if campaign %}
                     <a href="{{ url_for('dashboard.campaign_view', campaign_id=campaign.id) }}" class="text-sm opacity-75 hover:opacity-100 underline underline-offset-2 transition">{{ campaign.name }}</a>
                     {% endif %}
                 </div>
+                <!-- Member profile picture + name -->
+                <div class="shrink-0 text-center">
+                    {% if member.avatar_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-14 h-14 rounded-full object-cover ring-3 ring-white/40 shadow-lg mx-auto">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-bold ring-3 ring-white/40 shadow-lg mx-auto">{{ member.name[0] }}</div>
+                    {% endif %}
+                    <p class="text-[10px] uppercase tracking-wide opacity-80 mt-1">{{ member.name }}</p>
+                </div>
+            </div>
+
+            <!-- Quest Complete Banner -->
+            {% if quest.completed_at %}
+            <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 mb-4 text-center border border-white/30">
+                <p class="font-bold text-lg">Quest Complete!</p>
+                <p class="text-xs opacity-90">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if quest.completion_target and ((total_earned / quest.completion_target) * 100)|int > 100 %} &middot; {{ ((total_earned / quest.completion_target) * 100)|int }}% beyond the goal{% endif %}</p>
+            </div>
+            {% endif %}
+
+            <!-- Stats Row: Progress ring + KPI tiles -->
+            <div class="flex items-center gap-3">
                 {% if quest.completion_target %}
                 {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
                 {% set ring_pct = [completion_pct, 100]|min %}
-                <div class="relative shrink-0 text-center">
-                    <div class="relative w-24 h-24 mx-auto {% if completion_pct >= 100 %}animate-[quest-breathe_2s_ease-in-out_infinite]{% endif %}">
-                        <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                            <!-- Track ring (always visible) -->
+                <div class="shrink-0 text-center">
+                    <div class="relative w-16 h-16 mx-auto {% if completion_pct >= 100 %}animate-[quest-breathe_2s_ease-in-out_infinite]{% endif %}">
+                        <svg class="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="10"/>
                             {% if completion_pct > 0 %}
-                            <!-- Progress ring -->
                             <circle cx="50" cy="50" r="38" fill="none"
                                     stroke="white" stroke-width="10"
                                     stroke-linecap="round"
@@ -109,7 +124,6 @@
                                     filter="drop-shadow(0 0 {% if completion_pct >= 100 %}6{% else %}3{% endif %}px rgba(255,255,255,{% if completion_pct >= 100 %}0.8{% else %}0.5{% endif %}))"
                                     class="transition-all duration-700"/>
                             {% if completion_pct >= 100 %}
-                            <!-- Glow for completed quest -->
                             <circle cx="50" cy="50" r="38" fill="none"
                                     stroke="rgba(255,255,255,0.3)" stroke-width="16"
                                     stroke-linecap="round"
@@ -119,48 +133,38 @@
                             {% endif %}
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-sm font-bold">{{ completion_pct }}%</span>
+                            <span class="text-xs font-bold">{{ completion_pct }}%</span>
                         </div>
                     </div>
-                    <p class="text-[10px] uppercase tracking-wide opacity-80 mt-1">Quest Progress</p>
+                    <p class="text-[9px] uppercase tracking-wide opacity-70 mt-0.5">Quest Progress</p>
                 </div>
                 {% endif %}
-            </div>
-
-            <!-- Quest Complete Banner -->
-            {% if quest.completed_at %}
-            <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 mb-4 text-center border border-white/30">
-                <p class="font-bold text-lg">Quest Complete!</p>
-                <p class="text-xs opacity-90">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if completion_pct > 100 %} &middot; {{ completion_pct }}% beyond the goal{% endif %}</p>
-            </div>
-            {% endif %}
-
-            <!-- Stats Row -->
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ balance }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.currency_label }}</p>
+                <div class="flex-1 grid grid-cols-3 gap-2">
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ balance }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ ctx.currency_label }}</p>
+                    </div>
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ total_earned }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ ctx.progress_label }}</p>
+                    </div>
+                    {% if levels %}
+                    {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
+                    {% for item in unlocked_levels %}
+                        {% if item.unlocked %}{% set ns.current_level = item.level.name %}
+                        {% elif ns.next_threshold == 0 %}{% set ns.next_threshold = item.level.threshold %}{% endif %}
+                    {% endfor %}
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-base font-bold truncate">{{ ns.current_level }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ quest.display_level_label }}</p>
+                    </div>
+                    {% else %}
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ activity_count }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">Activities</p>
+                    </div>
+                    {% endif %}
                 </div>
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ total_earned }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.progress_label }}</p>
-                </div>
-                {% if levels %}
-                {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
-                {% for item in unlocked_levels %}
-                    {% if item.unlocked %}{% set ns.current_level = item.level.name %}
-                    {% elif ns.next_threshold == 0 %}{% set ns.next_threshold = item.level.threshold %}{% endif %}
-                {% endfor %}
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-lg font-bold truncate">{{ ns.current_level }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ quest.display_level_label }}</p>
-                </div>
-                {% else %}
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ activity_count }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">Activities</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </header>
