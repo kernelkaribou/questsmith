@@ -112,7 +112,7 @@ function shopComponent() {
                 const data = await res.json();
                 if (data.success) {
                     const oldBalance = this.balance;
-                    const newBalance = oldBalance - this.confirmItem.cost;
+                    const newBalance = data.balance !== undefined ? data.balance : (oldBalance - this.confirmItem.cost);
 
                     this.successItem = this.confirmItem.name;
                     this.purchaseState = 'success';
@@ -209,7 +209,7 @@ function shopComponent() {
                     </div>
 
                     <template x-if="balance >= {{ item.cost }}">
-                        <button @click="confirmItem = { id: {{ item.id }}, name: '{{ item.name|replace("'", "\\'") }}', cost: {{ item.cost }} }"
+                        <button @click='confirmItem = {{ {"id": item.id, "name": item.name, "cost": item.cost}|tojson|e }}'
                                 class="mt-3 w-full text-white text-xs px-4 py-2.5 rounded-lg font-bold hover:opacity-90 transition shadow-md"
                                 style="background-color: var(--color-primary)">
                             Claim Reward

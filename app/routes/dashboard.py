@@ -256,6 +256,8 @@ def avatar_delete(member_id, avatar_id):
 def quest_history(quest_id):
     """Activity log timeline for a specific quest."""
     quest = db.session.get(Quest, quest_id)
+    if not quest:
+        abort(404)
     logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).all()
     ctx = quest_engine.get_quest_context(quest_id)
 
@@ -382,10 +384,10 @@ def quest_shop(quest_id):
     campaign = db.session.get(Campaign, quest.campaign_id) if quest.campaign_id else None
     balance = ledger.get_balance(quest_id)
 
-    # Combined shop items: quest-owned + campaign-owned
-    shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
+    # Combined shop items: quest-owned + campaign-owned (only available)
+    shop_items = ShopItem.query.filter_by(quest_id=quest_id, is_available=True).order_by(ShopItem.sort_order).all()
     if campaign:
-        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id).order_by(ShopItem.sort_order).all()
+        campaign_shop = ShopItem.query.filter_by(campaign_id=campaign.id, is_available=True).order_by(ShopItem.sort_order).all()
         shop_items = shop_items + campaign_shop
 
     # Purchase history
@@ -395,7 +397,7 @@ def quest_shop(quest_id):
     ctx = quest_engine.get_quest_context(quest_id)
 
     # Admin check
-    is_admin = session.get("is_admin", False)
+    is_admin = session.get("admin", False)
 
     affordable_count = sum(1 for item in shop_items if balance >= item.cost)
 
@@ -430,7 +432,8 @@ def redeem(quest_id):
     success, msg, _purchase = shop_engine.redeem_item(quest_id, item_id, quest.campaign_id)
     if success:
         if is_ajax:
-            return jsonify(success=True, message=msg)
+            new_balance = ledger.get_balance(quest_id)
+            return jsonify(success=True, message=msg, balance=new_balance)
         flash(msg, "success")
     else:
         if is_ajax:

@@ -1121,7 +1121,7 @@ def campaign_detail(campaign_id):
     campaign = db.session.get(Campaign, campaign_id)
     quests = Quest.query.filter_by(campaign_id=campaign_id).all()
     balances = {q.id: ledger.get_balance(q.id) for q in quests}
-    notes_html = markdown2.markdown(campaign.notes, extras=["fenced-code-blocks", "tables"]) if campaign.notes else ""
+    notes_html = markdown2.markdown(campaign.notes, extras=["fenced-code-blocks", "tables"], safe_mode="escape") if campaign.notes else ""
     return render_template(
         "admin/campaign_detail.html",
         campaign=campaign,

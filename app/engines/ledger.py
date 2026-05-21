@@ -81,12 +81,16 @@ def record_earn(quest_id, amount, description, activity_log_id=None, earning_rul
 
 
 def record_spend(quest_id, amount, description):
-    """Record a currency spend transaction. Returns None if insufficient balance."""
+    """Record a currency spend transaction. Returns None if insufficient balance.
+    Uses immediate transaction to prevent double-spend under concurrency."""
     if amount <= 0:
         raise ValueError(f"Spend amount must be positive, got {amount}")
 
+    # Begin immediate write lock to serialize balance checks
+    db.session.execute(db.text("BEGIN IMMEDIATE"))
     balance = get_balance(quest_id)
     if balance < amount:
+        db.session.execute(db.text("ROLLBACK"))
         return None
 
     txn = Transaction(
