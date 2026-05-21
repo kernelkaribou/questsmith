@@ -11,6 +11,13 @@
 {% block head %}
 <style>
     .quest-page { background-color: {{ bg_hex }}; }
+    @keyframes shop-breathe {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+    }
     {% if bg_dark %}
     .quest-card {
         background: rgba(255,255,255,0.05) !important;
@@ -64,96 +71,95 @@
 
     <!-- HERO: Adventure Status -->
     <header class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] opacity-90"></div>
+        <div class="absolute inset-0 opacity-90" style="background: linear-gradient(to right, var(--color-primary) 70%, var(--color-secondary) 100%)"></div>
         <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><path d=%22M30 0L60 30L30 60L0 30Z%22 fill=%22white%22 fill-opacity=%220.1%22/></svg>'); background-size: 30px;"></div>
         <div class="relative max-w-4xl mx-auto px-4 py-6 text-white">
             <!-- Quest Identity Row -->
             <div class="flex items-center gap-4 mb-4">
-                <!-- Adventurer avatar + quest icon stacked -->
-                <div class="relative shrink-0">
-                    {% if member.avatar_url %}
-                    <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-16 h-16 rounded-full object-cover ring-3 ring-white/40 shadow-lg">
-                    {% else %}
-                    <div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold ring-3 ring-white/40 shadow-lg">{{ member.name[0] }}</div>
-                    {% endif %}
+                <!-- Quest theme icon -->
+                <div class="shrink-0">
                     {% if quest.theme_graphic_url %}
                     <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}"
-                         alt="{{ quest.theme_name }}" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain rounded-md bg-white/90 p-0.5 shadow-md">
+                         alt="{{ quest.theme_name }}" class="w-14 h-14 object-contain drop-shadow-md">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold ring-3 ring-white/40 shadow-lg">{{ quest.theme_name[0] }}</div>
                     {% endif %}
                 </div>
                 <div class="flex-1 min-w-0">
                     <h1 class="text-3xl font-bold truncate">{{ quest.theme_name }}</h1>
-                    <p class="text-base font-medium opacity-95 mt-0.5">{{ member.name }}</p>
                     {% if campaign %}
                     <a href="{{ url_for('dashboard.campaign_view', campaign_id=campaign.id) }}" class="text-sm opacity-75 hover:opacity-100 underline underline-offset-2 transition">{{ campaign.name }}</a>
                     {% endif %}
                 </div>
-                {% if quest.completion_target %}
-                {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
-                {% set ring_pct = [completion_pct, 100]|min %}
-                <div class="relative w-24 h-24 shrink-0">
-                    <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                        <!-- Track ring (always visible) -->
-                        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="10"/>
-                        {% if completion_pct > 0 %}
-                        <!-- Progress ring -->
-                        <circle cx="50" cy="50" r="38" fill="none"
-                                stroke="white" stroke-width="10"
-                                stroke-linecap="round"
-                                stroke-dasharray="{{ (3.1416 * 2 * 38 * completion_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
-                                filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"
-                                class="transition-all duration-700"/>
-                        {% if completion_pct > 100 %}
-                        <!-- Glow for exceeding goal -->
-                        <circle cx="50" cy="50" r="38" fill="none"
-                                stroke="rgba(255,255,255,0.3)" stroke-width="14"
-                                stroke-linecap="round"
-                                stroke-dasharray="{{ (3.1416 * 2 * 38 * completion_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
-                                class="transition-all duration-700"/>
-                        {% endif %}
-                        {% endif %}
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-sm font-bold">{{ completion_pct }}%</span>
-                    </div>
+                <!-- Member profile picture + name -->
+                <div class="shrink-0 text-center">
+                    {% if member.avatar_url %}
+                    <img src="{{ url_for('admin.serve_upload', filepath=member.avatar_url[8:]) if member.avatar_url.startswith('uploads/') else member.avatar_url }}" alt="{{ member.name }}" class="w-14 h-14 rounded-full object-cover ring-3 ring-white/40 shadow-lg mx-auto">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-bold ring-3 ring-white/40 shadow-lg mx-auto">{{ member.name[0] }}</div>
+                    {% endif %}
+                    <p class="text-[10px] uppercase tracking-wide opacity-80 mt-1">{{ member.name }}</p>
                 </div>
-                {% endif %}
             </div>
 
             <!-- Quest Complete Banner -->
             {% if quest.completed_at %}
             <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 mb-4 text-center border border-white/30">
                 <p class="font-bold text-lg">Quest Complete!</p>
-                <p class="text-xs opacity-90">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if completion_pct > 100 %} &middot; {{ completion_pct }}% beyond the goal{% endif %}</p>
+                <p class="text-xs opacity-90">Completed {{ quest.completed_at.strftime('%B %d, %Y') }}{% if quest.completion_target and ((total_earned / quest.completion_target) * 100)|int > 100 %} &middot; {{ ((total_earned / quest.completion_target) * 100)|int }}% beyond the goal{% endif %}</p>
             </div>
             {% endif %}
 
-            <!-- Stats Row -->
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ balance }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.currency_label }}</p>
-                </div>
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ total_earned }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ ctx.progress_label }}</p>
-                </div>
-                {% if levels %}
-                {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
-                {% for item in unlocked_levels %}
-                    {% if item.unlocked %}{% set ns.current_level = item.level.name %}
-                    {% elif ns.next_threshold == 0 %}{% set ns.next_threshold = item.level.threshold %}{% endif %}
-                {% endfor %}
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-lg font-bold truncate">{{ ns.current_level }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">{{ quest.display_level_label }}</p>
-                </div>
-                {% else %}
-                <div class="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 text-center border border-white/20">
-                    <p class="text-2xl font-bold">{{ activity_count }}</p>
-                    <p class="text-[11px] uppercase tracking-wide opacity-90">Activities</p>
+            <!-- Stats Row: Progress ring + KPI tiles -->
+            <div class="flex items-center gap-3">
+                {% if quest.completion_target %}
+                {% set completion_pct = ((total_earned / quest.completion_target) * 100)|int %}
+                {% set ring_pct = [completion_pct, 100]|min %}
+                <div class="shrink-0 text-center">
+                    <div class="relative w-16 h-16 mx-auto">
+                        <svg class="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="10"/>
+                            {% if ring_pct > 0 %}
+                            <circle cx="50" cy="50" r="38" fill="none"
+                                    stroke="{{ '#4ade80' if ring_pct >= 100 else 'white' }}" stroke-width="10"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="{{ (3.1416 * 2 * 38 * ring_pct / 100)|round(1) }} {{ 3.1416 * 2 * 38 }}"
+                                    class="transition-all duration-700"/>
+                            {% endif %}
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-xs font-bold {{ 'text-green-400' if ring_pct >= 100 else '' }}">{{ [completion_pct, 100]|min }}%</span>
+                        </div>
+                    </div>
+                    <p class="text-[9px] uppercase tracking-wide opacity-70 mt-0.5">Quest Progress</p>
                 </div>
                 {% endif %}
+                <div class="flex-1 grid grid-cols-3 gap-2">
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ balance }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ ctx.currency_label }}</p>
+                    </div>
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ total_earned }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ ctx.progress_label }}</p>
+                    </div>
+                    {% if levels %}
+                    {% set ns = namespace(current_level='Level 0', next_threshold=0) %}
+                    {% for item in unlocked_levels %}
+                        {% if item.unlocked %}{% set ns.current_level = item.level.name %}
+                        {% elif ns.next_threshold == 0 %}{% set ns.next_threshold = item.level.threshold %}{% endif %}
+                    {% endfor %}
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-base font-bold truncate">{{ ns.current_level }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">{{ quest.display_level_label }}</p>
+                    </div>
+                    {% else %}
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center border border-white/20">
+                        <p class="text-lg font-bold">{{ activity_count }}</p>
+                        <p class="text-[10px] uppercase tracking-wide opacity-90">Activities</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </header>
@@ -458,33 +464,12 @@
         <aside class="lg:w-80 w-full space-y-5 lg:sticky lg:top-4">
             <!-- Treasure Shop Tile -->
             {% if shop_items %}
-            {% set pr = (quest.color_primary[1:3])|int(0, 16) if quest.color_primary|length >= 7 else 79 %}
-            {% set pg = (quest.color_primary[3:5])|int(0, 16) if quest.color_primary|length >= 7 else 70 %}
-            {% set pb = (quest.color_primary[5:7])|int(0, 16) if quest.color_primary|length >= 7 else 229 %}
-            <style>
-                @keyframes shop-glow {
-                    0%, 100% { box-shadow: 0 0 8px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.15); }
-                    50% { box-shadow: 0 0 16px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.3); }
-                }
-                @keyframes shop-shimmer {
-                    0% { transform: translateX(-150%) skewX(-15deg); opacity: 0; }
-                    10% { opacity: 1; }
-                    90% { opacity: 1; }
-                    100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
-                }
-            </style>
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 relative overflow-hidden"
-               style="animation: shop-glow 3s ease-in-out infinite"
-               onmouseenter="this.style.animation='none'; this.style.boxShadow='0 0 24px rgba({{ pr }},{{ pg }},{{ pb }},0.4)'"
-               onmouseleave="this.style.boxShadow=''; this.style.animation='shop-glow 3s ease-in-out infinite'">
-                <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                    <div class="absolute inset-0 opacity-20" style="background: linear-gradient(90deg, transparent 0%, rgba({{ pr }},{{ pg }},{{ pb }},0.4) 50%, transparent 100%); width: 40%; animation: shop-shimmer 5s ease-in-out infinite; animation-delay: 2s;"></div>
-                </div>
-                <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
+               class="block quest-card rounded-2xl p-5 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 hover:shadow-lg">
+                <p class="text-center font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300" style="font-size: clamp(1.2rem, 5vw, 2rem); animation: shop-breathe 3s ease-in-out infinite;">
                     {{ quest.display_shop }}
                 </p>
-                <p class="text-center text-xs {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mt-1 font-medium">
+                <p class="text-center text-base {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mt-1 font-medium">
                     {{ balance }} {{ ctx.currency_label }}
                 </p>
             </a>
@@ -533,28 +518,28 @@
                     </div>
                     {% endfor %}
                     {% for jc in journal_completions[:5] %}
-                    <div class="p-2.5 rounded-lg border border-green-100 bg-green-50/30 text-xs">
+                    <div class="p-2.5 rounded-lg border text-xs {{ 'border-green-500/20 bg-green-500/10' if bg_dark else 'border-green-100 bg-green-50/30' }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium text-green-700">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
+                            <span class="font-medium {{ 'text-green-300' if bg_dark else 'text-green-700' }}">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
                             {% if jc.reward > 0 %}
-                            <span class="text-green-600 font-medium">+{{ jc.reward }} {{ ctx.currency_label }}</span>
+                            <span class="font-medium {{ 'text-green-400' if bg_dark else 'text-green-600' }}">+{{ jc.reward }} {{ ctx.currency_label }}</span>
                             {% else %}
-                            <span class="text-green-500 text-[10px]">completed</span>
+                            <span class="text-[10px] {{ 'text-green-400' if bg_dark else 'text-green-500' }}">completed</span>
                             {% endif %}
                         </div>
                         {% if jc.prize %}
-                        <p class="text-purple-600 text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
+                        <p class="{{ 'text-purple-300' if bg_dark else 'text-purple-600' }} text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
                         {% endif %}
-                        <div class="text-green-400 text-[10px] mt-0.5">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="text-[10px] mt-0.5 {{ 'text-green-500/50' if bg_dark else 'text-green-400' }}">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                     {% for p in purchases[:5] %}
-                    <div class="p-2.5 rounded-lg border {{ 'border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30' }} text-xs">
+                    <div class="p-2.5 rounded-lg border text-xs {{ ('border-red-500/20 bg-red-500/10' if p.refunded_at else 'border-purple-500/20 bg-purple-500/10') if bg_dark else ('border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30') }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium {{ 'text-red-600 line-through' if p.refunded_at else 'text-purple-700' }}">{{ p.shop_item.name }}</span>
-                            <span class="{{ 'text-red-400' if p.refunded_at else 'text-purple-500 font-medium' }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
+                            <span class="font-medium {{ ('text-red-400 line-through' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600 line-through' if p.refunded_at else 'text-purple-700') }}">{{ p.shop_item.name }}</span>
+                            <span class="{{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
-                        <div class="{{ 'text-red-300' if p.refunded_at else 'text-purple-400' }} text-[10px] mt-0.5">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
+                        <div class="text-[10px] mt-0.5 {{ ('text-red-400/50' if p.refunded_at else 'text-purple-400/50') if bg_dark else ('text-red-300' if p.refunded_at else 'text-purple-400') }}">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                 </div>
