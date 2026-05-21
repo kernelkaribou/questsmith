@@ -177,19 +177,17 @@ def seed():
             PartyGoal(
                 campaign_id=campaign.id,
                 name="Family Movie Night",
-                description="Earn 500 combined currency to unlock a family movie trip",
+                description="Movie night with popcorn",
                 target_amount=500,
                 min_individual_contribution=100,
-                reward_description="Movie night with popcorn",
                 sort_order=1,
             ),
             PartyGoal(
                 campaign_id=campaign.id,
                 name="Ice Cream Party",
-                description="Earn 1000 combined currency for an ice cream outing",
+                description="Ice cream shop visit",
                 target_amount=1000,
                 min_individual_contribution=300,
-                reward_description="Ice cream shop visit",
                 sort_order=2,
             ),
         ])
