@@ -466,14 +466,24 @@
                     0%, 100% { box-shadow: 0 0 8px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.15); }
                     50% { box-shadow: 0 0 16px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.3); }
                 }
+                @keyframes shop-shimmer {
+                    0% { transform: translateX(-100%) skewX(-15deg); }
+                    100% { transform: translateX(200%) skewX(-15deg); }
+                }
             </style>
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40"
+               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 relative overflow-hidden"
                style="animation: shop-glow 3s ease-in-out infinite"
                onmouseenter="this.style.animation='none'; this.style.boxShadow='0 0 24px rgba({{ pr }},{{ pg }},{{ pb }},0.4)'"
                onmouseleave="this.style.boxShadow=''; this.style.animation='shop-glow 3s ease-in-out infinite'">
+                <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                    <div class="absolute inset-0 opacity-20" style="background: linear-gradient(90deg, transparent 0%, rgba({{ pr }},{{ pg }},{{ pb }},0.4) 50%, transparent 100%); width: 40%; animation: shop-shimmer 4s ease-in-out infinite; animation-delay: 1.5s;"></div>
+                </div>
                 <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300">
                     {{ quest.display_shop }}
+                </p>
+                <p class="text-center text-xs {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mt-1 font-medium">
+                    {{ balance }} {{ ctx.currency_label }}
                 </p>
             </a>
             {% endif %}
