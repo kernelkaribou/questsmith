@@ -12,8 +12,12 @@
 <style>
     .quest-page { background-color: {{ bg_hex }}; }
     @keyframes quest-breathe {
-        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255,255,255,0.3)); }
-        50% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(255,255,255,0.7)); }
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1); }
+    }
+    @keyframes shop-breathe {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.03); }
     }
     {% if bg_dark %}
     .quest-card {
@@ -469,12 +473,6 @@
         <aside class="lg:w-80 w-full space-y-5 lg:sticky lg:top-4">
             <!-- Treasure Shop Tile -->
             {% if shop_items %}
-            <style>
-                @keyframes shop-breathe {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.03); }
-                }
-            </style>
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
                class="block quest-card rounded-2xl p-5 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 hover:shadow-lg">
                 <p class="text-center text-lg font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300" style="animation: shop-breathe 3s ease-in-out infinite;">
