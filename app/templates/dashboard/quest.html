@@ -476,11 +476,11 @@
                 }
             </style>
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 hover:shadow-lg">
-                <p class="text-center text-sm font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300" style="animation: shop-breathe 3s ease-in-out infinite;">
+               class="block quest-card rounded-2xl p-5 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 hover:shadow-lg">
+                <p class="text-center text-lg font-bold {{ 'text-white' if bg_dark else 'text-gray-800' }} uppercase tracking-wider group-hover:tracking-[0.15em] transition-all duration-300" style="animation: shop-breathe 3s ease-in-out infinite;">
                     {{ quest.display_shop }}
                 </p>
-                <p class="text-center text-xs {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mt-1 font-medium">
+                <p class="text-center text-sm {{ 'text-white/50' if bg_dark else 'text-gray-500' }} mt-1 font-medium">
                     {{ balance }} {{ ctx.currency_label }}
                 </p>
             </a>
