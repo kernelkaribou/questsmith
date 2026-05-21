@@ -78,25 +78,4 @@ def create_app(config_class=None):
         except sqlalchemy.exc.OperationalError:
             pass  # Race between gunicorn workers; table already created
 
-        _apply_migrations(db)
-
     return app
-
-
-def _apply_migrations(db):
-    """Apply schema migrations for upgrades from prior versions."""
-    migrations = [
-        ("quests", "shop_label", "ALTER TABLE quests ADD COLUMN shop_label VARCHAR(50)"),
-        ("quests", "chest_label", "ALTER TABLE quests ADD COLUMN chest_label VARCHAR(50)"),
-        ("campaigns", "notes", "ALTER TABLE campaigns ADD COLUMN notes TEXT"),
-    ]
-    for table, column, sql in migrations:
-        try:
-            db.session.execute(db.text(f"SELECT {column} FROM {table} LIMIT 1"))
-        except Exception:
-            db.session.rollback()
-            try:
-                db.session.execute(db.text(sql))
-                db.session.commit()
-            except Exception:
-                db.session.rollback()

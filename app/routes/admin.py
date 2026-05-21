@@ -1179,7 +1179,6 @@ def party_goal_create(campaign_id):
             description=request.form.get("description") or None,
             target_amount=target,
             min_individual_contribution=min_contrib,
-            reward_description=request.form.get("reward_description") or None,
         )
         db.session.add(goal)
         db.session.commit()
@@ -1201,7 +1200,6 @@ def party_goal_edit(goal_id):
         goal.target_amount = target_amount
         num_members = db.session.query(Quest.member_id).filter_by(campaign_id=goal.campaign_id).distinct().count()
         goal.min_individual_contribution = math.ceil(goal.target_amount / num_members) if num_members > 0 else goal.target_amount
-        goal.reward_description = request.form.get("reward_description") or None
         db.session.commit()
         flash("Party Goal updated", "success")
         return redirect(url_for("admin.campaign_detail", campaign_id=goal.campaign_id))

@@ -64,8 +64,8 @@
                         {% endif %}
                     </div>
                     <p class="text-xs text-white/50 mt-0.5">Target: {{ goal.target_amount }} &middot; Min per member: {{ goal.min_individual_contribution }}</p>
-                    {% if goal.reward_description %}
-                    <p class="text-xs text-green-300 mt-0.5">Reward: {{ goal.reward_description }}</p>
+                    {% if goal.description %}
+                    <p class="text-xs text-green-300 mt-0.5">{{ goal.description }}</p>
                     {% endif %}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
