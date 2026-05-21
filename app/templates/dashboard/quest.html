@@ -473,10 +473,6 @@
             {% set pg = (quest.color_primary[3:5])|int(0, 16) if quest.color_primary|length >= 7 else 70 %}
             {% set pb = (quest.color_primary[5:7])|int(0, 16) if quest.color_primary|length >= 7 else 229 %}
             <style>
-                @keyframes shop-glow {
-                    0%, 100% { box-shadow: 0 0 8px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.15); }
-                    50% { box-shadow: 0 0 16px rgba({{ pr }}, {{ pg }}, {{ pb }}, 0.3); }
-                }
                 @keyframes shop-shimmer {
                     0% { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
                     5% { opacity: 1; }
@@ -486,10 +482,7 @@
                 }
             </style>
             <a href="{{ url_for('dashboard.quest_shop', quest_id=quest.id) }}"
-               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 relative overflow-hidden"
-               style="animation: shop-glow 3s ease-in-out infinite"
-               onmouseenter="this.style.animation='none'; this.style.boxShadow='0 0 24px rgba({{ pr }},{{ pg }},{{ pb }},0.4)'"
-               onmouseleave="this.style.boxShadow=''; this.style.animation='shop-glow 3s ease-in-out infinite'">
+               class="block quest-card rounded-2xl p-4 transition-all duration-300 group hover:-translate-y-0.5 hover:ring-1 hover:ring-[var(--color-primary)]/40 hover:shadow-lg relative overflow-hidden"
                 <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
                     <div class="absolute inset-0 opacity-10" style="background: linear-gradient(90deg, transparent 20%, rgba({{ pr }},{{ pg }},{{ pb }},0.3) 50%, transparent 80%); width: 30%; animation: shop-shimmer 10s ease-in-out infinite; animation-delay: 3s;"></div>
                 </div>
