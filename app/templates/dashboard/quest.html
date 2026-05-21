@@ -78,7 +78,7 @@
                     {% endif %}
                     {% if quest.theme_graphic_url %}
                     <img src="{{ url_for('admin.serve_upload', filepath=quest.theme_graphic_url[8:]) if quest.theme_graphic_url.startswith('uploads/') else quest.theme_graphic_url }}"
-                         alt="{{ quest.theme_name }}" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain rounded-md bg-white/90 p-0.5 shadow-md">
+                         alt="{{ quest.theme_name }}" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain drop-shadow-md">
                     {% endif %}
                 </div>
                 <div class="flex-1 min-w-0">
