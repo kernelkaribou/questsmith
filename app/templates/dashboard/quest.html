@@ -15,6 +15,9 @@
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.03); }
     }
+    @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+    }
     {% if bg_dark %}
     .quest-card {
         background: rgba(255,255,255,0.05) !important;
@@ -525,7 +528,7 @@
                             {% endif %}
                         </div>
                         {% if jc.prize %}
-                        <p class="text-purple-600 text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
+                        <p class="{{ 'text-purple-300' if bg_dark else 'text-purple-600' }} text-[10px] mt-0.5">🎁 {{ jc.prize }}</p>
                         {% endif %}
                         <div class="text-[10px] mt-0.5 {{ 'text-green-500/50' if bg_dark else 'text-green-400' }}">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
