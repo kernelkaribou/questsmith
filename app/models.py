@@ -391,7 +391,6 @@ class PartyGoal(db.Model):
     description = db.Column(db.Text, nullable=True)
     target_amount = db.Column(db.Integer, nullable=False)
     min_individual_contribution = db.Column(db.Integer, nullable=False, default=0)
-    reward_description = db.Column(db.Text, nullable=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     unlocked_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
