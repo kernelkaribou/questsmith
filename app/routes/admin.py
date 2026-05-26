@@ -670,6 +670,11 @@ def activity_log_undo(log_id):
     log.reversed = True
     db.session.flush()
 
+    # Reconcile per_batch earning rules: reversed log may have contributed quantity
+    # to batches paid on other logs, requiring additional reversals
+    from app.engines.quest import _reconcile_batch_overpayment
+    _reconcile_batch_overpayment(quest_id, log.activity_type_id)
+
     # Recalculate quest completion state
     quest = _get_or_404(Quest, quest_id)
     if quest.completed_at:
@@ -688,6 +693,10 @@ def activity_log_undo(log_id):
                 )
                 db.session.add(reversal)
             quest.completed_at = None
+
+    # Remove level unlocks that are no longer valid
+    from app.engines.validation import revoke_invalid_unlocks
+    revoke_invalid_unlocks(quest_id)
 
     db.session.commit()
     return admin_success(f"Reversed activity: {log.quantity} {log.activity_type.unit_label}", redirect_url)
@@ -852,6 +861,9 @@ def completion_reverse(quest_id, completion_id):
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     result = side_quest_engine.reverse_completion(completion_id)
     if result:
+        # Remove level unlocks that are no longer valid
+        from app.engines.validation import revoke_invalid_unlocks
+        revoke_invalid_unlocks(quest_id)
         db.session.commit()
         msg = "Completion reversed"
         if result["chain_reopened"]:

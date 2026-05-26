@@ -124,3 +124,15 @@ def check_level_unlocks(quest_id):
                     db.session.rollback()
 
     return new_unlocks
+
+
+def revoke_invalid_unlocks(quest_id):
+    """Remove persisted level unlocks that are no longer valid after a reversal."""
+    lifetime_earned = get_lifetime_earned(quest_id)
+    levels = QuestLevel.query.filter_by(quest_id=quest_id).all()
+
+    for level in levels:
+        if lifetime_earned < level.threshold:
+            QuestLevelUnlock.query.filter_by(
+                quest_id=quest_id, quest_level_id=level.id
+            ).delete()
