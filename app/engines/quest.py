@@ -5,7 +5,7 @@ from app import db
 from app.models import (
     Quest, ActivityType, EarningRule, ActivityLog, Transaction,
 )
-from app.engines.ledger import record_earn, record_completion_bonus, get_lifetime_earned
+from app.engines.ledger import record_earn, record_completion_bonus, record_reversal, get_lifetime_earned
 
 
 def get_quest_context(quest_id):
@@ -129,6 +129,46 @@ def _calculate_reward(rule, quest_id, activity_type_id, activity_log):
             return rule.currency_reward, None
 
     return 0, None
+
+
+def _reconcile_batch_overpayment(quest_id, activity_type_id):
+    """
+    After a reversal, check if per_batch rules have been overpaid.
+    If total valid batches < batches already paid, create reversal transactions.
+    """
+    from app.engines.ledger import record_reversal
+
+    rules = EarningRule.query.filter_by(activity_type_id=activity_type_id, rule_type="per_batch").all()
+
+    for rule in rules:
+        # Current valid quantity (excluding reversed logs)
+        total_logged = db.session.query(
+            db.func.coalesce(db.func.sum(ActivityLog.quantity), 0)
+        ).filter(
+            ActivityLog.quest_id == quest_id,
+            ActivityLog.activity_type_id == activity_type_id,
+            ActivityLog.reversed == False,
+        ).scalar()
+
+        valid_batches = total_logged // rule.quantity_required
+
+        # Total batches paid (only from non-reversed logs)
+        batches_paid = db.session.query(
+            db.func.coalesce(db.func.sum(Transaction.batches_awarded), 0)
+        ).join(ActivityLog, Transaction.activity_log_id == ActivityLog.id).filter(
+            Transaction.quest_id == quest_id,
+            Transaction.earning_rule_id == rule.id,
+            Transaction.type == "earn",
+            ActivityLog.reversed == False,
+        ).scalar()
+
+        overpaid_batches = batches_paid - valid_batches
+        if overpaid_batches > 0:
+            overpaid_amount = overpaid_batches * rule.currency_reward
+            record_reversal(
+                quest_id, overpaid_amount,
+                f"Reconciliation: {overpaid_batches} batch(es) no longer valid",
+            )
 
 
 def _check_quest_completion(quest):
