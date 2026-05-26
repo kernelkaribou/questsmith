@@ -98,21 +98,23 @@ def _calculate_reward(rule, quest_id, activity_type_id, activity_log):
     per_log: If the logged quantity >= quantity_required, award currency_reward once.
     """
     if rule.rule_type == "per_batch":
-        # Sum all logged quantity for this activity type on this quest
+        # Sum all logged quantity for this activity type on this quest (exclude reversed)
         total_logged = db.session.query(
             db.func.coalesce(db.func.sum(ActivityLog.quantity), 0)
         ).filter(
             ActivityLog.quest_id == quest_id,
             ActivityLog.activity_type_id == activity_type_id,
+            ActivityLog.reversed == False,
         ).scalar()
 
-        # Count batches already awarded (robust against rule edits)
+        # Count batches already awarded (exclude reversed activity logs)
         batches_already_paid = db.session.query(
             db.func.coalesce(db.func.sum(Transaction.batches_awarded), 0)
-        ).filter(
+        ).join(ActivityLog, Transaction.activity_log_id == ActivityLog.id).filter(
             Transaction.quest_id == quest_id,
             Transaction.earning_rule_id == rule.id,
             Transaction.type == "earn",
+            ActivityLog.reversed == False,
         ).scalar()
 
         total_batches_ever = total_logged // rule.quantity_required

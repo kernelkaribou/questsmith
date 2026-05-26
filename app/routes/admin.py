@@ -689,6 +689,10 @@ def activity_log_undo(log_id):
                 db.session.add(reversal)
             quest.completed_at = None
 
+    # Remove level unlocks that are no longer valid
+    from app.engines.validation import revoke_invalid_unlocks
+    revoke_invalid_unlocks(quest_id)
+
     db.session.commit()
     return admin_success(f"Reversed activity: {log.quantity} {log.activity_type.unit_label}", redirect_url)
 
