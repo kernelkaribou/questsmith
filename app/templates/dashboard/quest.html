@@ -469,34 +469,30 @@
                 {% set measured_types = activity_types | rejectattr("is_milestone") | list %}
                 {% set milestone_types = activity_types | selectattr("is_milestone") | list %}
                 {% if measured_types or milestone_types %}
-                <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2" x-data="{ at: '' }">
+                <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2" x-data="{ at: '', completions: [{% for mt in milestone_types %}{{ mt.id }}{{ ',' if not loop.last }}{% endfor %}], get isCompletion() { return this.completions.includes(parseInt(this.at)); } }">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                    {% if measured_types %}
-                    <select name="activity_type_id" x-model="at" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]">
-                        <option value="">No measured activity</option>
-                        {% for at in measured_types %}
-                        <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
-                        {% endfor %}
-                    </select>
-                    <div class="flex gap-2">
-                        <input type="number" name="quantity" min="1" :required="at !== ''" placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
-                    </div>
-                    {% endif %}
-                    {% if milestone_types %}
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Completions</p>
-                        <div class="flex flex-wrap gap-x-3 gap-y-1">
-                            {% for mt in milestone_types %}
-                            <label class="flex items-center gap-1 text-xs text-gray-600">
-                                <input type="checkbox" name="milestones" value="{{ mt.id }}" class="rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]/30">
-                                {{ mt.name }}
-                            </label>
+                    <select name="activity_type_id" x-model="at" required class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]">
+                        <option value="">Select activity...</option>
+                        {% if measured_types %}
+                        <optgroup label="Measured">
+                            {% for at in measured_types %}
+                            <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
                             {% endfor %}
-                        </div>
+                        </optgroup>
+                        {% endif %}
+                        {% if milestone_types %}
+                        <optgroup label="Completions">
+                            {% for mt in milestone_types %}
+                            <option value="{{ mt.id }}">{{ mt.name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endif %}
+                    </select>
+                    <div class="flex gap-2" x-show="at !== '' && !isCompletion" x-cloak>
+                        <input type="number" name="quantity" min="1" :required="at !== '' && !isCompletion" placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     </div>
-                    {% endif %}
                     <input type="text" name="notes" placeholder="Notes (optional)" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background-color: var(--color-primary)">Add</button>
                 </form>

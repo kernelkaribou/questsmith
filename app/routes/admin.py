@@ -785,24 +785,32 @@ def log_activity():
         if not quest:
             return _fail("Quest not found")
 
-        # Validate the primary (measured) activity, if one was selected
+        # The dropdown selection may be a measured OR a completion activity.
         primary_id = _safe_int(request.form.get("activity_type_id")) if (request.form.get("activity_type_id") or "").strip() else None
         primary_type = None
         if primary_id is not None:
             primary_type = db.session.get(ActivityType, primary_id)
             if not primary_type or primary_type.quest_id != quest_id:
                 return _fail("Invalid activity type")
-            if primary_type.is_milestone:
-                return _fail("Completion activities are logged via their checkbox, not as a quantity")
 
-        # Validate completion (milestone) selections (deduped)
+        # Determine which activity is measured and which are completions.
+        # A measured activity needs a quantity; completions are logged once each.
+        measured_type = None
         seen_ids = set()
         completion_types = []
+        if primary_type:
+            if primary_type.is_milestone:
+                completion_types.append(primary_type)
+                seen_ids.add(primary_type.id)
+            else:
+                measured_type = primary_type
+
+        # Optional extra completion checkboxes (deduped, must be completions).
         for raw in request.form.getlist("milestones"):
             mid = _safe_int(raw)
-            if mid is None or mid in seen_ids:
-                if mid is None:
-                    return _fail("Invalid completion selection")
+            if mid is None:
+                return _fail("Invalid completion selection")
+            if mid in seen_ids:
                 continue
             seen_ids.add(mid)
             ct = db.session.get(ActivityType, mid)
@@ -810,18 +818,17 @@ def log_activity():
                 return _fail("Invalid completion selection")
             completion_types.append(ct)
 
-        if not primary_type and not completion_types:
-            return _fail("Select an activity or completion to log")
+        if not measured_type and not completion_types:
+            return _fail("Select an activity to log")
 
         txns = []
-        primary_log = None
         quantity = None
-        if primary_type:
+        if measured_type:
             quantity = _form_int("quantity", min_val=1)
             if quantity is None:
                 return _fail("Quantity must be a positive integer")
             primary_log, p_txns = quest_engine.log_activity(
-                quest_id, primary_type.id, quantity, description, notes
+                quest_id, measured_type.id, quantity, description, notes
             )
             if not primary_log:
                 return _fail("Failed to log activity")
@@ -838,16 +845,16 @@ def log_activity():
 
         # Build a message from whatever was actually logged
         parts = []
-        if primary_type:
-            parts.append(f"{quantity} {primary_type.unit_label}")
+        if measured_type:
+            parts.append(f"{quantity} {measured_type.unit_label}")
         if completion_types:
             parts.append(f"{len(completion_types)} completion{'s' if len(completion_types) != 1 else ''}")
         logged_desc = " + ".join(parts)
 
         progress_msg = ""
-        if primary_type:
+        if measured_type:
             progress = quest_engine.get_earning_progress(quest_id)
-            at_progress = [p for p in progress if p["activity_type"].id == primary_type.id]
+            at_progress = [p for p in progress if p["activity_type"].id == measured_type.id]
             if at_progress:
                 p = at_progress[0]
                 progress_msg = f" ({p['units_to_next']} {p['activity_type'].unit_label} to next)"
