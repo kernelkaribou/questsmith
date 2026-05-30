@@ -203,6 +203,10 @@ def get_earning_progress(quest_id):
     progress = []
 
     for at in activity_types:
+        if at.is_milestone:
+            # Completions are flat per-log rewards, not cumulative — never show
+            # a progress bar even if a legacy rule is still marked per_batch.
+            continue
         rules = EarningRule.query.filter_by(activity_type_id=at.id, rule_type="per_batch").all()
         total_logged = db.session.query(
             db.func.coalesce(db.func.sum(ActivityLog.quantity), 0)
@@ -225,3 +229,51 @@ def get_earning_progress(quest_id):
             })
 
     return progress
+
+
+def get_completion_stats(quest_id):
+    """
+    Backward-looking completion tallies for a quest's dashboard.
+
+    Returns (activity_stats, quest_stats):
+      - activity_stats: for each completion (milestone) activity type, the count
+        of non-reversed activity logs -> [{"name", "count"}].
+      - quest_stats: a single merged "Side Quests" entry counting each
+        non-reversed standalone side quest completion plus each completed chain,
+        or [] when the quest has no standalone side quests or chains.
+
+    All counts are reversal-aware: reversed activity logs are excluded, side
+    quest completions with reversed_at set are excluded, and chains are counted
+    only while completed_at is populated (cleared when a completing step is
+    reversed).
+    """
+    from app.models import SideQuest, SideQuestChain, SideQuestCompletion
+
+    activity_stats = []
+    milestone_types = ActivityType.query.filter_by(
+        quest_id=quest_id, is_milestone=True
+    ).order_by(ActivityType.sort_order).all()
+    for at in milestone_types:
+        count = ActivityLog.query.filter_by(
+            quest_id=quest_id, activity_type_id=at.id, reversed=False
+        ).count()
+        activity_stats.append({"name": at.name, "count": count})
+
+    quest_stats = []
+    has_standalone_sq = SideQuest.query.filter(
+        SideQuest.quest_id == quest_id, SideQuest.chain_id.is_(None)
+    ).count() > 0
+    has_chains = SideQuestChain.query.filter_by(quest_id=quest_id).count() > 0
+    if has_standalone_sq or has_chains:
+        sq_done = SideQuestCompletion.query.join(SideQuestCompletion.side_quest).filter(
+            SideQuestCompletion.quest_id == quest_id,
+            SideQuestCompletion.reversed_at.is_(None),
+            SideQuest.chain_id.is_(None),
+        ).count()
+        chain_done = SideQuestChain.query.filter(
+            SideQuestChain.quest_id == quest_id,
+            SideQuestChain.completed_at.isnot(None),
+        ).count()
+        quest_stats.append({"name": "Side Quests", "count": sq_done + chain_done})
+
+    return activity_stats, quest_stats

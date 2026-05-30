@@ -32,6 +32,7 @@
     .quest-card .bg-gray-100, .quest-card .bg-gray-50 { background: rgba(255,255,255,0.08) !important; }
     .quest-card .border-gray-200, .quest-card .border-gray-100, .quest-card .border-gray-300 { border-color: rgba(255,255,255,0.15) !important; }
     .quest-card input, .quest-card select, .quest-card textarea { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; color: #f1f5f9 !important; }
+    .quest-card select option { background: #1e293b !important; color: #f1f5f9 !important; }
     .quest-card input::placeholder, .quest-card textarea::placeholder { color: rgba(255,255,255,0.35) !important; }
     .quest-card .text-purple-700 { color: rgb(196,167,255) !important; }
     .quest-card .text-indigo-700 { color: rgb(165,180,252) !important; }
@@ -54,6 +55,7 @@
     .quest-card .bg-gray-100, .quest-card .bg-gray-50 { background: #f1f5f9 !important; }
     .quest-card .border-gray-200, .quest-card .border-gray-100, .quest-card .border-gray-300 { border-color: #e2e8f0 !important; }
     .quest-card input, .quest-card select, .quest-card textarea { background: #ffffff !important; border-color: #d1d5db !important; color: #1e293b !important; }
+    .quest-card select option { background: #ffffff !important; color: #1e293b !important; }
     .quest-card input::placeholder, .quest-card textarea::placeholder { color: #9ca3af !important; }
     .quest-card .text-purple-700 { color: #7c3aed !important; }
     .quest-card .text-indigo-700 { color: #4338ca !important; }
@@ -332,7 +334,7 @@
                                 <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.quest.id) }}" class="inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background-color: var(--color-primary)">Claim</button>
+                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background-color: var(--color-primary)">Complete</button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -466,21 +468,28 @@
             {% if is_admin %}
             <div class="quest-card rounded-2xl p-4 border-t-4" style="border-top-color: var(--color-primary)">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Activity Log</h2>
-                <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2">
+                {% set measured_types = activity_types | rejectattr("is_milestone") | list %}
+                {% set milestone_types = activity_types | selectattr("is_milestone") | list %}
+                {% if measured_types or milestone_types %}
+                <form method="POST" action="{{ url_for('admin.log_activity') }}" class="space-y-2" x-data="{ at: '', completions: [{% for mt in milestone_types %}{{ mt.id }}{{ ',' if not loop.last }}{% endfor %}], get isCompletion() { return this.completions.includes(parseInt(this.at)); } }">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="quest_id" value="{{ quest.id }}">
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                    <select name="activity_type_id" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]" required>
+                    <select name="activity_type_id" x-model="at" required class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]">
+                        <option value="">Select activity...</option>
                         {% for at in activity_types %}
-                        <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
+                        <option value="{{ at.id }}">{{ at.name }}{% if not at.is_milestone %} ({{ at.unit_label }}){% endif %}</option>
                         {% endfor %}
                     </select>
-                    <div class="flex gap-2">
-                        <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
-                        <input type="text" name="notes" placeholder="Notes" class="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
+                    <div class="flex gap-2" x-show="at !== '' && !isCompletion" x-cloak>
+                        <input type="number" name="quantity" min="1" :required="at !== '' && !isCompletion" placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     </div>
+                    <input type="text" name="notes" placeholder="Notes (optional)" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">
                     <button type="submit" class="w-full text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition" style="background-color: var(--color-primary)">Add</button>
                 </form>
+                {% else %}
+                <p class="text-sm text-gray-500">No activity types defined.</p>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -496,7 +505,11 @@
                          class="p-2.5 rounded-lg border border-gray-100 hover:border-[var(--color-primary)]/30 hover:bg-gray-50 cursor-pointer text-xs transition">
                         <div class="flex justify-between items-center">
                             <span class="font-semibold text-gray-700">{{ log.activity_type.name }}</span>
+                            {% if not log.activity_type.is_milestone %}
                             <span class="font-medium" style="color: var(--color-primary)">+{{ log.quantity }} {{ log.activity_type.unit_label }}</span>
+                            {% else %}
+                            <span class="text-[10px] font-medium" style="color: var(--color-primary)">completed</span>
+                            {% endif %}
                         </div>
                         <div class="text-gray-500 text-[10px] mt-0.5">{{ log.logged_at.strftime('%b %d, %I:%M %p') }}</div>
                         <div x-show="openLog === {{ log.id }}" x-cloak x-collapse class="mt-2 p-2 bg-gray-50 rounded text-[11px] text-gray-600 border-t">
@@ -553,6 +566,33 @@
                 </div>
                 {% endif %}
             </div>
+
+            <!-- Completions tally -->
+            {% if completion_stats or quest_completion_stats %}
+            <div class="quest-card rounded-2xl p-4 border-l-4" style="border-left-color: var(--color-secondary)">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Completions</h2>
+                {% if completion_stats %}
+                <div class="space-y-2">
+                    {% for cs in completion_stats %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-semibold text-gray-800">{{ cs.name }}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-theme-primary/10 text-theme-primary">{{ cs.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if quest_completion_stats %}
+                <div class="space-y-2 {{ 'mt-2' if completion_stats }}">
+                    {% for qs in quest_completion_stats %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-semibold text-gray-800">{{ qs.name }}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-theme-primary/10 text-theme-primary">{{ qs.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <!-- Achievements -->
             {% if achievements %}

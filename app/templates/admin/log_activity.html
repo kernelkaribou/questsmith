@@ -17,31 +17,23 @@
             {% endfor %}
         </select>
     </div>
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-white/70 mb-1">Activity Type</label>
-        <select name="activity_type_id" required x-model="selectedType"
-                class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-            <option value="">Select activity type...</option>
-            <template x-for="at in activityTypes" :key="at.id">
-                <option :value="at.id" x-text="at.name + ' (' + at.unit + ')'"></option>
-            </template>
-        </select>
-    </div>
-    <div class="mb-4">
-        <label class="block text-sm font-medium text-white/70 mb-1">Quantity</label>
-        <input type="number" name="quantity" min="1" required
-               class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-    </div>
-
-    <template x-if="milestoneTypes.length > 0">
-        <div class="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md">
-            <label class="block text-sm font-medium text-amber-300 mb-2">Milestones completed?</label>
-            <template x-for="mt in milestoneTypes" :key="mt.id">
-                <label class="flex items-center gap-2 text-sm text-white/70 mb-1">
-                    <input type="checkbox" name="milestones" :value="mt.id" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
-                    <span x-text="mt.name"></span>
-                </label>
-            </template>
+    <template x-if="activityTypes.length > 0">
+        <div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white/70 mb-1">Activity</label>
+                <select name="activity_type_id" x-model="selectedType" required
+                        class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <option value="">Select activity...</option>
+                    <template x-for="at in activityTypes" :key="at.id">
+                        <option :value="at.id" x-text="at.is_milestone ? at.name : at.name + ' (' + at.unit + ')'"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="mb-4" x-show="selectedType !== '' && !selectedIsCompletion" x-cloak>
+                <label class="block text-sm font-medium text-white/70 mb-1">Quantity</label>
+                <input type="number" name="quantity" min="1" :required="selectedType !== '' && !selectedIsCompletion"
+                       class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            </div>
         </div>
     </template>
 
@@ -65,11 +57,9 @@ function activityForm() {
         selectedQuest: '',
         selectedType: '',
         activityTypes: [],
-        get regularTypes() {
-            return this.activityTypes.filter(at => !at.is_milestone);
-        },
-        get milestoneTypes() {
-            return this.activityTypes.filter(at => at.is_milestone);
+        get selectedIsCompletion() {
+            const t = this.activityTypes.find(at => String(at.id) === String(this.selectedType));
+            return t ? !!t.is_milestone : false;
         },
         updateActivityTypes() {
             const option = document.querySelector(`select[name="quest_id"] option[value="${this.selectedQuest}"]`);

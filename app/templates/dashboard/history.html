@@ -18,7 +18,7 @@
         {# Build unified timeline #}
         {% set ns = namespace(events=[]) %}
         {% for log in logs %}
-            {% set ns.events = ns.events + [{"kind": "activity", "date": log.logged_at, "name": log.activity_type.name, "detail": log.quantity ~ " " ~ log.activity_type.unit_label, "desc": log.description}] %}
+            {% set ns.events = ns.events + [{"kind": "activity", "date": log.logged_at, "name": log.activity_type.name, "detail": log.quantity ~ " " ~ log.activity_type.unit_label, "is_milestone": log.activity_type.is_milestone, "desc": log.description}] %}
         {% endfor %}
         {% for jc in journal_completions %}
             {% set ns.events = ns.events + [{"kind": jc.type, "date": jc.date, "name": jc.name, "reward": jc.reward, "prize": jc.prize}] %}
@@ -47,7 +47,11 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <span class="font-medium text-white">{{ event.name }}</span>
+                        {% if not event.is_milestone %}
                         <span class="text-sm text-white/60 ml-2">{{ event.detail }}</span>
+                        {% else %}
+                        <span class="text-xs text-white/40 ml-2">completed</span>
+                        {% endif %}
                     </div>
                     <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
                 </div>

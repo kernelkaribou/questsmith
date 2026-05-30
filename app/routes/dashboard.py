@@ -128,6 +128,9 @@ def quest_view(quest_id):
     # Earning progress (units toward next currency)
     earning_progress = quest_engine.get_earning_progress(quest_id)
 
+    # Completion tallies (reversal-aware): per-milestone counts + merged quest completions
+    completion_stats, quest_completion_stats = quest_engine.get_completion_stats(quest_id)
+
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)
 
@@ -147,6 +150,8 @@ def quest_view(quest_id):
         chain_data=chain_data,
         chains_completed=chains_completed,
         earning_progress=earning_progress,
+        completion_stats=completion_stats,
+        quest_completion_stats=quest_completion_stats,
         achievements=achievements,
         recent_logs=recent_logs,
         activity_count=activity_count,
