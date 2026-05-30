@@ -267,6 +267,14 @@ def quest_detail(quest_id):
     balance = ledger.get_balance(quest_id)
     lifetime_earned = ledger.get_lifetime_earned(quest_id)
 
+    sibling_quests = []
+    if quest.campaign_id:
+        sibling_quests = (
+            Quest.query.filter_by(campaign_id=quest.campaign_id, status="active")
+            .order_by(Quest.id)
+            .all()
+        )
+
     # Combined shop: quest-owned + campaign-owned (if linked)
     shop_items = ShopItem.query.filter_by(quest_id=quest_id).order_by(ShopItem.sort_order).all()
     if quest.campaign_id:
@@ -278,6 +286,7 @@ def quest_detail(quest_id):
         quest=quest,
         balance=balance,
         lifetime_earned=lifetime_earned,
+        sibling_quests=sibling_quests,
         levels=QuestLevel.query.filter_by(quest_id=quest_id).order_by(QuestLevel.sort_order).all(),
         side_quests=SideQuest.query.filter_by(quest_id=quest_id, chain_id=None).order_by(SideQuest.sort_order).all(),
         chains=side_quest_engine.get_available_chains(quest_id),

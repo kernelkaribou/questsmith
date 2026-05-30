@@ -1,7 +1,14 @@
 {% extends "admin/base.html" %}
 {% block title %}Campaign: {{ campaign.name }}{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
+<nav class="flex items-center flex-wrap gap-1.5 text-xs text-white/50 mb-3">
+    <a href="{{ url_for('admin.index') }}" class="hover:text-amber-300 transition-colors">Dashboard</a>
+    <span>/</span>
+    <a href="{{ url_for('admin.campaigns') }}" class="hover:text-amber-300 transition-colors">Campaigns</a>
+    <span>/</span>
+    <span class="text-white/70">{{ campaign.name }}</span>
+</nav>
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
     <div>
         <div class="flex items-center gap-2 mb-1">
             <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded uppercase tracking-wide">Campaign</span>
@@ -9,7 +16,7 @@
         </div>
         <p class="text-white/60 text-sm">{{ campaign.description or 'No description' }} &middot; {{ campaign.status }}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         <a href="{{ url_for('admin.campaign_edit', campaign_id=campaign.id) }}" class="bg-slate-700 text-white/80 px-3 py-1 rounded text-sm hover:bg-slate-600 transition-colors">Edit</a>
         <form method="POST" action="{{ url_for('admin.campaign_archive', campaign_id=campaign.id) }}"
               onsubmit="return confirm('Archive this campaign? It will be hidden from dashboards.')">
