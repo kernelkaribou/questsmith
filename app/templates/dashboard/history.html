@@ -73,11 +73,12 @@
             {% elif event.kind == "purchase" %}
             <div class="backdrop-blur-sm border rounded-lg p-4 mb-2 {{ 'bg-red-500/5 border-red-500/20' if event.refunded else 'bg-amber-500/5 border-amber-500/20' }}" style="border-left: 4px solid {{ '#ef4444' if event.refunded else '#f59e0b' }}">
                 <div class="flex justify-between items-start">
-                    <div>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <svg class="w-4 h-4 flex-shrink-0 {{ 'text-red-300' if event.refunded else 'text-amber-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11a1 1 0 01-1 1H5a1 1 0 01-1-1L5 9z"/></svg>
                         <span class="font-medium {{ 'text-red-300 line-through' if event.refunded else 'text-amber-300' }}">{{ event.name }}</span>
                         {% if event.refunded %}<span class="text-xs text-red-400/60 ml-1">(refunded)</span>{% endif %}
                     </div>
-                    <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
+                    <span class="text-xs text-white/30 flex-shrink-0 pl-2">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
                 </div>
                 <p class="text-sm {{ 'text-red-400/60' if event.refunded else 'text-amber-400/60' }} mt-1">-{{ event.cost }} {{ ctx.currency_label }}</p>
             </div>

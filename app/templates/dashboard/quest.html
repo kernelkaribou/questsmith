@@ -487,9 +487,11 @@
             <!-- Quest Journal -->
             <div class="quest-card rounded-2xl p-4 border-l-4 border-indigo-300">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Quest Journal</h2>
-                {% if recent_logs or purchases or journal_completions or bonuses %}
+                {% if journal %}
                 <div class="space-y-2" x-data="{ openLog: null }">
-                    {% for log in recent_logs %}
+                    {% for entry in journal %}
+                    {% if entry.kind == "activity" %}
+                    {% set log = entry.log %}
                     <div @click="openLog = openLog === {{ log.id }} ? null : {{ log.id }}"
                          class="p-2.5 rounded-lg border border-gray-100 hover:border-[var(--color-primary)]/30 hover:bg-gray-50 cursor-pointer text-xs transition">
                         <div class="flex justify-between items-center">
@@ -503,8 +505,8 @@
                             {% if earned %}<p><strong>Earned:</strong> {{ earned|map(attribute='amount')|sum }} {{ ctx.currency_label }}</p>{% endif %}
                         </div>
                     </div>
-                    {% endfor %}
-                    {% for jc in journal_completions[:5] %}
+                    {% elif entry.kind == "completion" %}
+                    {% set jc = entry.jc %}
                     <div class="p-2.5 rounded-lg border text-xs {{ 'border-green-500/20 bg-green-500/10' if bg_dark else 'border-green-100 bg-green-50/30' }}">
                         <div class="flex justify-between items-center">
                             <span class="font-medium {{ 'text-green-300' if bg_dark else 'text-green-700' }}">{{ jc.name }}{{ ' (chain)' if jc.type == 'chain' }}</span>
@@ -519,17 +521,20 @@
                         {% endif %}
                         <div class="text-[10px] mt-0.5 {{ 'text-green-500/50' if bg_dark else 'text-green-400' }}">{{ jc.date.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
-                    {% endfor %}
-                    {% for p in purchases[:5] %}
+                    {% elif entry.kind == "purchase" %}
+                    {% set p = entry.p %}
                     <div class="p-2.5 rounded-lg border text-xs {{ ('border-red-500/20 bg-red-500/10' if p.refunded_at else 'border-purple-500/20 bg-purple-500/10') if bg_dark else ('border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30') }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium {{ ('text-red-400 line-through' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600 line-through' if p.refunded_at else 'text-purple-700') }}">{{ p.shop_item.name }}</span>
-                            <span class="{{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
+                            <span class="font-medium flex items-center gap-1 min-w-0 {{ ('text-red-400' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600' if p.refunded_at else 'text-purple-700') }}">
+                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11a1 1 0 01-1 1H5a1 1 0 01-1-1L5 9z"/></svg>
+                                <span class="truncate {{ 'line-through' if p.refunded_at }}">{{ p.shop_item.name }}</span>
+                            </span>
+                            <span class="flex-shrink-0 pl-2 {{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
                         <div class="text-[10px] mt-0.5 {{ ('text-red-400/50' if p.refunded_at else 'text-purple-400/50') if bg_dark else ('text-red-300' if p.refunded_at else 'text-purple-400') }}">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
-                    {% endfor %}
-                    {% for b in bonuses[:5] %}
+                    {% elif entry.kind == "bonus" %}
+                    {% set b = entry.b %}
                     <div class="p-2.5 rounded-lg border text-xs {{ 'border-amber-500/20 bg-amber-500/10' if bg_dark else 'border-amber-100 bg-amber-50/30' }}">
                         <div class="flex justify-between items-center">
                             <span class="font-medium {{ 'text-amber-300' if bg_dark else 'text-amber-700' }}">{{ b.description }}</span>
@@ -537,6 +542,7 @@
                         </div>
                         <div class="text-[10px] mt-0.5 {{ 'text-amber-400/50' if bg_dark else 'text-amber-400' }}">{{ b.created_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 <a href="{{ url_for('dashboard.quest_history', quest_id=quest.id) }}" class="block text-center text-xs font-medium hover:underline mt-3" style="color: var(--color-primary)">View Full History</a>

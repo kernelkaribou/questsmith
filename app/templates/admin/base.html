@@ -3,26 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QuestSmith">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo-256.webp') }}">
     <title>{% block title %}QuestSmith{% endblock %} - Admin</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+    <style>[x-cloak] { display: none !important; }</style>
     {% block head %}{% endblock %}
 </head>
 <body class="bg-slate-900 min-h-screen text-white">
-    <nav class="bg-slate-800/80 backdrop-blur-sm border-b border-white/10">
+    <nav x-data="{ open: false }" class="bg-slate-800/80 backdrop-blur-sm border-b border-white/10 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <a href="{{ url_for('admin.index') }}" class="flex items-center gap-2 text-lg font-bold text-white">
                 <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="QuestSmith" class="w-7 h-7">
                 QuestSmith Admin
             </a>
-            <div class="flex gap-4 text-sm">
+            <div class="hidden sm:flex gap-4 text-sm">
                 <a href="{{ url_for('dashboard.index') }}" class="text-white/70 hover:text-amber-300 transition-colors">View App</a>
                 <a href="{{ url_for('admin.campaigns') }}" class="text-white/70 hover:text-amber-300 transition-colors">Campaigns</a>
                 <a href="{{ url_for('admin.members') }}" class="text-white/70 hover:text-amber-300 transition-colors">Members</a>
                 <a href="{{ url_for('admin.achievements_list') }}" class="text-white/70 hover:text-amber-300 transition-colors">Achievements</a>
                 <a href="{{ url_for('admin.logout') }}" class="text-white/70 hover:text-amber-300 transition-colors">Logout</a>
             </div>
+            <button @click="open = !open" class="sm:hidden text-white/70 hover:text-amber-300 transition-colors p-1 -mr-1" aria-label="Toggle menu">
+                <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <svg x-show="open" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div x-show="open" x-cloak @click.away="open = false" class="sm:hidden border-t border-white/10 px-4 py-2 space-y-1 text-sm">
+            <a href="{{ url_for('dashboard.index') }}" class="block py-2 text-white/70 hover:text-amber-300 transition-colors">View App</a>
+            <a href="{{ url_for('admin.campaigns') }}" class="block py-2 text-white/70 hover:text-amber-300 transition-colors">Campaigns</a>
+            <a href="{{ url_for('admin.members') }}" class="block py-2 text-white/70 hover:text-amber-300 transition-colors">Members</a>
+            <a href="{{ url_for('admin.achievements_list') }}" class="block py-2 text-white/70 hover:text-amber-300 transition-colors">Achievements</a>
+            <a href="{{ url_for('admin.logout') }}" class="block py-2 text-red-400 hover:text-red-300 transition-colors">Logout</a>
         </div>
     </nav>
     <main class="max-w-6xl mx-auto px-4 py-6">

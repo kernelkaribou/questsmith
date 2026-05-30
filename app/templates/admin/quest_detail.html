@@ -1,15 +1,24 @@
 {% extends "admin/base.html" %}
 {% block title %}Quest: {{ quest.theme_name }}{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
+<nav class="flex items-center flex-wrap gap-1.5 text-xs text-white/50 mb-3">
+    <a href="{{ url_for('admin.index') }}" class="hover:text-amber-300 transition-colors">Dashboard</a>
+    {% if quest.campaign %}
+    <span>/</span>
+    <a href="{{ url_for('admin.campaign_detail', campaign_id=quest.campaign.id) }}" class="hover:text-amber-300 transition-colors">{{ quest.campaign.name }}</a>
+    {% endif %}
+    <span>/</span>
+    <span class="text-white/70">{{ quest.theme_name }}</span>
+</nav>
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
     <div>
         <div class="flex items-center gap-2 mb-1">
             <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded uppercase tracking-wide">Quest</span>
             <h1 class="text-2xl font-bold text-white">{{ quest.theme_name }}</h1>
         </div>
-        <p class="text-white/60 text-sm">{{ quest.member.name }}{% if quest.campaign %} &middot; {{ quest.campaign.name }}{% else %} &middot; Standalone{% endif %}</p>
+        <p class="text-white/60 text-sm">{{ quest.member.name }}{% if quest.campaign %} &middot; <a href="{{ url_for('admin.campaign_detail', campaign_id=quest.campaign.id) }}" class="hover:text-amber-300 transition-colors">{{ quest.campaign.name }}</a>{% else %} &middot; Standalone{% endif %}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         <a href="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">View as Player</a>
         <a href="{{ url_for('admin.quest_edit', quest_id=quest.id) }}" class="bg-slate-700 text-white/80 px-3 py-1 rounded text-sm hover:bg-slate-600 transition-colors">Edit Quest</a>
         <form method="POST" action="{{ url_for('admin.quest_archive', quest_id=quest.id) }}"
@@ -17,11 +26,24 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit" class="bg-red-500/20 text-red-300 px-3 py-1 rounded text-sm hover:bg-red-500/30 transition-colors">Archive</button>
         </form>
-        <a href="{{ url_for('admin.index') }}" class="text-white/50 text-sm hover:text-white/80 self-center transition-colors">Back</a>
+        <a href="{% if quest.campaign %}{{ url_for('admin.campaign_detail', campaign_id=quest.campaign.id) }}{% else %}{{ url_for('admin.index') }}{% endif %}" class="text-white/50 text-sm hover:text-white/80 self-center transition-colors">Back</a>
     </div>
 </div>
 
-<div class="grid grid-cols-3 gap-4 mb-6">
+{% if sibling_quests|length > 1 %}
+<div class="flex items-center flex-wrap gap-2 mb-6">
+    <span class="text-xs text-white/40 uppercase tracking-wide mr-1">Quests</span>
+    {% for sq in sibling_quests %}
+    <a href="{{ url_for('admin.quest_detail', quest_id=sq.id) }}"
+       class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-colors {% if sq.id == quest.id %}bg-white/10 border-amber-400/40 text-white{% else %}bg-slate-800/50 border-white/10 text-white/60 hover:bg-slate-800/70 hover:text-white{% endif %}">
+        <span class="w-2.5 h-2.5 rounded-full" style="background-color: {{ sq.color_primary }}"></span>
+        {{ sq.member.name }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <div class="bg-slate-800/50 border border-white/10 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold" style="color: {{ quest.color_primary }}">{{ balance }}</p>
         <p class="text-xs text-white/60">{{ quest.display_currency }} (balance)</p>
@@ -42,7 +64,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="quest_id" value="{{ quest.id }}">
         <input type="hidden" name="next" value="{{ url_for('admin.quest_detail', quest_id=quest.id) }}">
-        <div class="flex gap-2 items-end">
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
             <div class="flex-1">
                 <select name="activity_type_id" class="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500" required>
                     {% for at in quest.activity_types %}
@@ -50,8 +72,8 @@
                     {% endfor %}
                 </select>
             </div>
-            <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-            <input type="text" name="notes" placeholder="Notes" class="w-32 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <input type="number" name="quantity" min="1" required placeholder="Qty" class="w-full sm:w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <input type="text" name="notes" placeholder="Notes" class="w-full sm:w-32 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
             <button type="submit" class="bg-amber-500 text-slate-900 px-3 py-1 rounded text-sm hover:bg-amber-400 transition-colors font-medium">Log</button>
         </div>
         {% set milestone_types = quest.activity_types | selectattr("is_milestone") | list %}
