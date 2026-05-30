@@ -128,6 +128,17 @@ def quest_view(quest_id):
     # Earning progress (units toward next currency)
     earning_progress = quest_engine.get_earning_progress(quest_id)
 
+    # Completion (milestone) tally — infer milestone activity types and count logs
+    completion_stats = []
+    total_completions = 0
+    for at in activity_types:
+        if at.is_milestone:
+            cnt = ActivityLog.query.filter_by(
+                quest_id=quest_id, activity_type_id=at.id, reversed=False
+            ).count()
+            completion_stats.append({"name": at.name, "count": cnt})
+            total_completions += cnt
+
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)
 
@@ -147,6 +158,8 @@ def quest_view(quest_id):
         chain_data=chain_data,
         chains_completed=chains_completed,
         earning_progress=earning_progress,
+        completion_stats=completion_stats,
+        total_completions=total_completions,
         achievements=achievements,
         recent_logs=recent_logs,
         activity_count=activity_count,
