@@ -78,8 +78,8 @@ def quest_view(quest_id):
     unlocks = AchievementUnlock.query.filter_by(member_id=member.id).all()
     achievements = [db.session.get(Achievement, u.achievement_id) for u in unlocks]
 
-    # Activity timeline (recent 5; full log accessible via View Full History)
-    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).limit(5).all()
+    # Activity timeline (fetch more for an accurate merged journal; capped after merge)
+    recent_logs = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).order_by(ActivityLog.logged_at.desc()).limit(15).all()
     activity_count = ActivityLog.query.filter_by(quest_id=quest_id, reversed=False).count()
 
     # Side quest / chain completions for the journal
@@ -108,6 +108,19 @@ def quest_view(quest_id):
 
     # Bonus awards (adjustments)
     bonuses = Transaction.query.filter_by(quest_id=quest_id, type="adjustment").order_by(Transaction.created_at.desc()).all()
+
+    # Unified journal: merge all event types into a single descending timeline
+    journal = []
+    for log in recent_logs:
+        journal.append({"kind": "activity", "date": log.logged_at, "log": log})
+    for jc in journal_completions:
+        journal.append({"kind": "completion", "date": jc["date"], "jc": jc})
+    for p in purchases:
+        journal.append({"kind": "purchase", "date": p.purchased_at, "p": p})
+    for b in bonuses:
+        journal.append({"kind": "bonus", "date": b.created_at, "b": b})
+    journal.sort(key=lambda x: x["date"], reverse=True)
+    journal = journal[:8]
 
     # Explicit activity type list for dropdown (issue: dynamic lazy can confuse templates)
     activity_types = ActivityType.query.filter_by(quest_id=quest_id).order_by(ActivityType.sort_order).all()
@@ -140,6 +153,7 @@ def quest_view(quest_id):
         journal_completions=journal_completions,
         purchases=purchases,
         bonuses=bonuses,
+        journal=journal,
         activity_types=activity_types,
         ctx=ctx,
         is_admin=is_admin,
