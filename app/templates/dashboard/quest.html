@@ -198,21 +198,6 @@
             </section>
             {% endif %}
 
-            <!-- Completions tally -->
-            {% if completion_stats %}
-            <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-secondary)">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Completions</h2>
-                <div class="space-y-2">
-                    {% for cs in completion_stats %}
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="font-semibold text-gray-800">{{ cs.name }}</span>
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-theme-primary/10 text-theme-primary">{{ cs.count }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </section>
-            {% endif %}
-
             <!-- Level Path -->
             {% if levels %}
             <section class="quest-card rounded-2xl p-5 border-l-4" style="border-left-color: var(--color-secondary)">
@@ -581,6 +566,33 @@
                 </div>
                 {% endif %}
             </div>
+
+            <!-- Completions tally -->
+            {% if completion_stats or quest_completion_stats %}
+            <div class="quest-card rounded-2xl p-4 border-l-4" style="border-left-color: var(--color-secondary)">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Completions</h2>
+                {% if completion_stats %}
+                <div class="space-y-2">
+                    {% for cs in completion_stats %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-semibold text-gray-800">{{ cs.name }}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-theme-primary/10 text-theme-primary">{{ cs.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if quest_completion_stats %}
+                <div class="space-y-2 {{ 'mt-2 pt-2 border-t border-gray-200/60' if completion_stats }}">
+                    {% for qs in quest_completion_stats %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-semibold text-gray-800">{{ qs.name }}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-theme-primary/10 text-theme-primary">{{ qs.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <!-- Achievements -->
             {% if achievements %}

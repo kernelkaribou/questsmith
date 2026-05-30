@@ -6,7 +6,7 @@ from app import db
 from app.models import (
     Member, MemberAvatar, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
     ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType, Transaction,
-    SideQuestCompletion, SideQuestChain,
+    SideQuestCompletion, SideQuestChain, SideQuest,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
 from app.engines import party_goals as party_goals_engine, shop as shop_engine
@@ -137,6 +137,26 @@ def quest_view(quest_id):
             ).count()
             completion_stats.append({"name": at.name, "count": cnt})
 
+    # Quest completions — each standalone side quest and each chain counts as 1.
+    # Reversal-aware: reversed side quests set reversed_at; reopened chains clear completed_at.
+    quest_completion_stats = []
+    has_standalone_sq = SideQuest.query.filter(
+        SideQuest.quest_id == quest_id, SideQuest.chain_id.is_(None)
+    ).count() > 0
+    if has_standalone_sq:
+        sq_done = SideQuestCompletion.query.join(SideQuestCompletion.side_quest).filter(
+            SideQuestCompletion.quest_id == quest_id,
+            SideQuestCompletion.reversed_at.is_(None),
+            db.text("side_quests.chain_id IS NULL"),
+        ).count()
+        quest_completion_stats.append({"name": "Side Quests", "count": sq_done})
+    if SideQuestChain.query.filter_by(quest_id=quest_id).count() > 0:
+        chain_done = SideQuestChain.query.filter(
+            SideQuestChain.quest_id == quest_id,
+            SideQuestChain.completed_at.isnot(None),
+        ).count()
+        quest_completion_stats.append({"name": "Chains", "count": chain_done})
+
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)
 
@@ -157,6 +177,7 @@ def quest_view(quest_id):
         chains_completed=chains_completed,
         earning_progress=earning_progress,
         completion_stats=completion_stats,
+        quest_completion_stats=quest_completion_stats,
         achievements=achievements,
         recent_logs=recent_logs,
         activity_count=activity_count,
