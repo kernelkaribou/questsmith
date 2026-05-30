@@ -137,25 +137,25 @@ def quest_view(quest_id):
             ).count()
             completion_stats.append({"name": at.name, "count": cnt})
 
-    # Quest completions — each standalone side quest and each chain counts as 1.
-    # Reversal-aware: reversed side quests set reversed_at; reopened chains clear completed_at.
+    # Quest completions — each standalone side quest and each chain counts as 1,
+    # merged into a single stat. Reversal-aware: reversed side quests set
+    # reversed_at; reopened chains clear completed_at.
     quest_completion_stats = []
     has_standalone_sq = SideQuest.query.filter(
         SideQuest.quest_id == quest_id, SideQuest.chain_id.is_(None)
     ).count() > 0
-    if has_standalone_sq:
+    has_chains = SideQuestChain.query.filter_by(quest_id=quest_id).count() > 0
+    if has_standalone_sq or has_chains:
         sq_done = SideQuestCompletion.query.join(SideQuestCompletion.side_quest).filter(
             SideQuestCompletion.quest_id == quest_id,
             SideQuestCompletion.reversed_at.is_(None),
             db.text("side_quests.chain_id IS NULL"),
         ).count()
-        quest_completion_stats.append({"name": "Side Quests", "count": sq_done})
-    if SideQuestChain.query.filter_by(quest_id=quest_id).count() > 0:
         chain_done = SideQuestChain.query.filter(
             SideQuestChain.quest_id == quest_id,
             SideQuestChain.completed_at.isnot(None),
         ).count()
-        quest_completion_stats.append({"name": "Chain Quests", "count": chain_done})
+        quest_completion_stats.append({"name": "Quest Completions", "count": sq_done + chain_done})
 
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)
