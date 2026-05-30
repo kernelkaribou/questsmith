@@ -525,8 +525,11 @@
                     {% set p = entry.p %}
                     <div class="p-2.5 rounded-lg border text-xs {{ ('border-red-500/20 bg-red-500/10' if p.refunded_at else 'border-purple-500/20 bg-purple-500/10') if bg_dark else ('border-red-100 bg-red-50/50' if p.refunded_at else 'border-purple-100 bg-purple-50/30') }}">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium {{ ('text-red-400 line-through' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600 line-through' if p.refunded_at else 'text-purple-700') }}">{{ p.shop_item.name }}</span>
-                            <span class="{{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
+                            <span class="font-medium flex items-center gap-1 min-w-0 {{ ('text-red-400' if p.refunded_at else 'text-purple-300') if bg_dark else ('text-red-600' if p.refunded_at else 'text-purple-700') }}">
+                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11a1 1 0 01-1 1H5a1 1 0 01-1-1L5 9z"/></svg>
+                                <span class="truncate {{ 'line-through' if p.refunded_at }}">{{ p.shop_item.name }}</span>
+                            </span>
+                            <span class="flex-shrink-0 pl-2 {{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
                         <div class="text-[10px] mt-0.5 {{ ('text-red-400/50' if p.refunded_at else 'text-purple-400/50') if bg_dark else ('text-red-300' if p.refunded_at else 'text-purple-400') }}">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
