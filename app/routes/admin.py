@@ -377,8 +377,11 @@ def quest_edit(quest_id):
                     if rule:
                         rule.quantity_required = int(value)
 
-        # Update milestone toggle for existing activity types
+        # Update existing activity types: name (editable), milestone toggle
         for at in quest.activity_types:
+            new_name = (request.form.get(f"at_name_{at.id}") or "").strip()
+            if new_name:
+                at.name = new_name
             new_milestone = f"milestone_{at.id}" in request.form
             was_milestone = at.is_milestone
             at.is_milestone = new_milestone

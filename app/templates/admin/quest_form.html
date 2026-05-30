@@ -154,7 +154,8 @@
                 {% for at in quest.activity_types %}
                 <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 gap-4 flex-wrap" x-data="{ completion: {{ 'true' if at.is_milestone else 'false' }} }">
                     <div class="flex items-center gap-3 flex-wrap">
-                        <span class="font-semibold text-sm text-white">{{ at.name }}</span>
+                        <input type="text" name="at_name_{{ at.id }}" value="{{ at.name }}" maxlength="200"
+                               class="font-semibold text-sm text-white bg-slate-700 border border-slate-600 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                         <span class="text-white/40 text-sm" x-show="!completion" x-cloak>({{ at.unit_label }})</span>
                         {% for rule in at.earning_rules %}
                         <div class="flex items-center gap-1 text-sm">

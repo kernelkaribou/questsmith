@@ -400,3 +400,26 @@ def test_log_cross_quest_activity_rejected(app, auth_client, seeded):
     }), follow_redirects=True)
     with app.app_context():
         assert ActivityLog.query.filter_by(activity_type_id=other_at_id).count() == 0
+
+
+def test_quest_edit_renames_activity_type(app, auth_client, seeded):
+    r = auth_client.post(f"/admin/quests/{seeded['quest_id']}/edit", data=with_csrf({
+        "member_id": seeded["member_id"],
+        "theme_name": "Dungeon Explorer",
+        f"at_name_{seeded['activity_type_id']}": "Chapters Read",
+    }), follow_redirects=True)
+    assert r.status_code == 200
+    with app.app_context():
+        at = db.session.get(ActivityType, seeded["activity_type_id"])
+        assert at.name == "Chapters Read"
+
+
+def test_quest_edit_blank_activity_name_keeps_existing(app, auth_client, seeded):
+    auth_client.post(f"/admin/quests/{seeded['quest_id']}/edit", data=with_csrf({
+        "member_id": seeded["member_id"],
+        "theme_name": "Dungeon Explorer",
+        f"at_name_{seeded['activity_type_id']}": "   ",
+    }), follow_redirects=True)
+    with app.app_context():
+        at = db.session.get(ActivityType, seeded["activity_type_id"])
+        assert at.name == "Pages"
