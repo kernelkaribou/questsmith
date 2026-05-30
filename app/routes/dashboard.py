@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from app import db
 from app.models import (
     Member, MemberAvatar, Campaign, Quest, PartyGoal, QuestLevel, QuestLevelUnlock, ShopItem,
-    ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType,
+    ShopPurchase, AchievementUnlock, Achievement, ActivityLog, ActivityType, Transaction,
     SideQuestCompletion, SideQuestChain,
 )
 from app.engines import ledger, validation, side_quest as side_quest_engine, quest as quest_engine, lifetime
@@ -106,6 +106,9 @@ def quest_view(quest_id):
     # Shop purchase history
     purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
 
+    # Bonus awards (adjustments)
+    bonuses = Transaction.query.filter_by(quest_id=quest_id, type="adjustment").order_by(Transaction.created_at.desc()).all()
+
     # Explicit activity type list for dropdown (issue: dynamic lazy can confuse templates)
     activity_types = ActivityType.query.filter_by(quest_id=quest_id).order_by(ActivityType.sort_order).all()
 
@@ -136,6 +139,7 @@ def quest_view(quest_id):
         activity_count=activity_count,
         journal_completions=journal_completions,
         purchases=purchases,
+        bonuses=bonuses,
         activity_types=activity_types,
         ctx=ctx,
         is_admin=is_admin,
@@ -284,12 +288,16 @@ def quest_history(quest_id):
     # Shop purchases for history
     purchases = ShopPurchase.query.filter_by(quest_id=quest_id).order_by(ShopPurchase.purchased_at.desc()).all()
 
+    # Bonus awards
+    bonuses = Transaction.query.filter_by(quest_id=quest_id, type="adjustment").order_by(Transaction.created_at.desc()).all()
+
     return render_template(
         "dashboard/history.html",
         quest=quest,
         logs=logs,
         journal_completions=journal_completions,
         purchases=purchases,
+        bonuses=bonuses,
         ctx=ctx,
     )
 

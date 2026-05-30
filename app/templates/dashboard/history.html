@@ -26,6 +26,9 @@
         {% for p in purchases %}
             {% set ns.events = ns.events + [{"kind": "purchase", "date": p.purchased_at, "name": p.shop_item.name, "cost": p.shop_item.cost, "refunded": p.refunded_at is not none}] %}
         {% endfor %}
+        {% for b in bonuses %}
+            {% set ns.events = ns.events + [{"kind": "bonus", "date": b.created_at, "name": b.description, "amount": b.amount}] %}
+        {% endfor %}
         {% set ns.events = ns.events|sort(attribute="date", reverse=true) %}
 
         {% if ns.events %}
@@ -77,6 +80,15 @@
                     <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
                 </div>
                 <p class="text-sm {{ 'text-red-400/60' if event.refunded else 'text-amber-400/60' }} mt-1">-{{ event.cost }} {{ ctx.currency_label }}</p>
+            </div>
+
+            {% elif event.kind == "bonus" %}
+            <div class="bg-amber-500/5 backdrop-blur-sm border border-amber-400/20 rounded-lg p-4 mb-2" style="border-left: 4px solid #d97706">
+                <div class="flex justify-between items-start">
+                    <span class="font-medium text-amber-300">{{ event.name }}</span>
+                    <span class="text-xs text-white/30">{{ event.date.strftime('%b %d, %I:%M %p') }}</span>
+                </div>
+                <p class="text-sm text-amber-400/60 mt-1">+{{ event.amount }} {{ ctx.currency_label }}</p>
             </div>
             {% endif %}
 

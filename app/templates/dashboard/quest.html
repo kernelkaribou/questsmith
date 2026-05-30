@@ -487,7 +487,7 @@
             <!-- Quest Journal -->
             <div class="quest-card rounded-2xl p-4 border-l-4 border-indigo-300">
                 <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Quest Journal</h2>
-                {% if recent_logs or purchases or journal_completions %}
+                {% if recent_logs or purchases or journal_completions or bonuses %}
                 <div class="space-y-2" x-data="{ openLog: null }">
                     {% for log in recent_logs %}
                     <div @click="openLog = openLog === {{ log.id }} ? null : {{ log.id }}"
@@ -527,6 +527,15 @@
                             <span class="{{ ('text-red-400' if p.refunded_at else 'text-purple-400 font-medium') if bg_dark else ('text-red-400' if p.refunded_at else 'text-purple-500 font-medium') }}">{{ 'refunded' if p.refunded_at else '-' ~ p.shop_item.cost }}</span>
                         </div>
                         <div class="text-[10px] mt-0.5 {{ ('text-red-400/50' if p.refunded_at else 'text-purple-400/50') if bg_dark else ('text-red-300' if p.refunded_at else 'text-purple-400') }}">{{ p.purchased_at.strftime('%b %d, %I:%M %p') }}</div>
+                    </div>
+                    {% endfor %}
+                    {% for b in bonuses[:5] %}
+                    <div class="p-2.5 rounded-lg border text-xs {{ 'border-amber-500/20 bg-amber-500/10' if bg_dark else 'border-amber-100 bg-amber-50/30' }}">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium {{ 'text-amber-300' if bg_dark else 'text-amber-700' }}">{{ b.description }}</span>
+                            <span class="font-medium {{ 'text-amber-400' if bg_dark else 'text-amber-600' }}">+{{ b.amount }} {{ ctx.currency_label }}</span>
+                        </div>
+                        <div class="text-[10px] mt-0.5 {{ 'text-amber-400/50' if bg_dark else 'text-amber-400' }}">{{ b.created_at.strftime('%b %d, %I:%M %p') }}</div>
                     </div>
                     {% endfor %}
                 </div>
