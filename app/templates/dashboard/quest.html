@@ -475,20 +475,9 @@
                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
                     <select name="activity_type_id" x-model="at" required class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]">
                         <option value="">Select activity...</option>
-                        {% if measured_types %}
-                        <optgroup label="Measured">
-                            {% for at in measured_types %}
-                            <option value="{{ at.id }}">{{ at.name }} ({{ at.unit_label }})</option>
-                            {% endfor %}
-                        </optgroup>
-                        {% endif %}
-                        {% if milestone_types %}
-                        <optgroup label="Completions">
-                            {% for mt in milestone_types %}
-                            <option value="{{ mt.id }}">{{ mt.name }}</option>
-                            {% endfor %}
-                        </optgroup>
-                        {% endif %}
+                        {% for at in activity_types %}
+                        <option value="{{ at.id }}">{{ at.name }}{% if not at.is_milestone %} ({{ at.unit_label }}){% endif %}</option>
+                        {% endfor %}
                     </select>
                     <div class="flex gap-2" x-show="at !== '' && !isCompletion" x-cloak>
                         <input type="number" name="quantity" min="1" :required="at !== '' && !isCompletion" placeholder="Qty" class="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-[var(--color-primary)]/30">

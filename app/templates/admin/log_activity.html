@@ -24,19 +24,8 @@
                 <select name="activity_type_id" x-model="selectedType" required
                         class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     <option value="">Select activity...</option>
-                    <template x-if="regularTypes.length > 0">
-                        <optgroup label="Measured">
-                            <template x-for="at in regularTypes" :key="at.id">
-                                <option :value="at.id" x-text="at.name + ' (' + at.unit + ')'"></option>
-                            </template>
-                        </optgroup>
-                    </template>
-                    <template x-if="milestoneTypes.length > 0">
-                        <optgroup label="Completions">
-                            <template x-for="mt in milestoneTypes" :key="mt.id">
-                                <option :value="mt.id" x-text="mt.name"></option>
-                            </template>
-                        </optgroup>
+                    <template x-for="at in activityTypes" :key="at.id">
+                        <option :value="at.id" x-text="at.is_milestone ? at.name : at.name + ' (' + at.unit + ')'"></option>
                     </template>
                 </select>
             </div>
@@ -68,12 +57,6 @@ function activityForm() {
         selectedQuest: '',
         selectedType: '',
         activityTypes: [],
-        get regularTypes() {
-            return this.activityTypes.filter(at => !at.is_milestone);
-        },
-        get milestoneTypes() {
-            return this.activityTypes.filter(at => at.is_milestone);
-        },
         get selectedIsCompletion() {
             const t = this.activityTypes.find(at => String(at.id) === String(this.selectedType));
             return t ? !!t.is_milestone : false;
