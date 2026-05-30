@@ -1,6 +1,6 @@
 import pytest
 from app import create_app, db
-from app.models import Member, Campaign, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain
+from app.models import Member, Campaign, Quest, ActivityType, EarningRule, PartyGoal, ShopItem, SideQuest, SideQuestChain, ActivityLog
 from tests.conftest import TestConfig
 
 
@@ -346,3 +346,57 @@ def test_dashboard_redeem_requires_balance(client, seeded):
         "item_id": seeded["prize_id"],
     }), follow_redirects=True)
     assert r.status_code == 200
+
+
+def _add_completion_type(quest_id, name="Finish Book", reward=20):
+    at = ActivityType(quest_id=quest_id, name=name, unit_label="completion", is_milestone=True)
+    db.session.add(at)
+    db.session.flush()
+    db.session.add(EarningRule(activity_type_id=at.id, rule_type="per_log", quantity_required=1, currency_reward=reward))
+    db.session.commit()
+    return at.id
+
+
+def test_log_completion_as_primary_no_quantity(app, auth_client, seeded):
+    with app.app_context():
+        at_id = _add_completion_type(seeded["quest_id"])
+    r = auth_client.post("/admin/log", data=with_csrf({
+        "quest_id": seeded["quest_id"],
+        "activity_type_id": at_id,
+    }), follow_redirects=True)
+    assert r.status_code == 200
+    with app.app_context():
+        assert ActivityLog.query.filter_by(activity_type_id=at_id, reversed=False).count() == 1
+
+
+def test_log_completion_primary_not_double_logged(app, auth_client, seeded):
+    with app.app_context():
+        at_id = _add_completion_type(seeded["quest_id"])
+    # Completion passed as both the primary selection and a milestones[] checkbox
+    auth_client.post("/admin/log", data=with_csrf({
+        "quest_id": seeded["quest_id"],
+        "activity_type_id": at_id,
+        "milestones": str(at_id),
+    }), follow_redirects=True)
+    with app.app_context():
+        assert ActivityLog.query.filter_by(activity_type_id=at_id, reversed=False).count() == 1
+
+
+def test_log_cross_quest_activity_rejected(app, auth_client, seeded):
+    # Create a second quest with its own activity type, then try to log it on quest 1
+    with app.app_context():
+        other_q = Quest(member_id=seeded["member_id"], campaign_id=seeded["campaign_id"],
+                        theme_name="Forest Ranger", color_primary="#00FF00", color_secondary="#0000FF")
+        db.session.add(other_q)
+        db.session.flush()
+        other_at = ActivityType(quest_id=other_q.id, name="Steps", unit_label="steps")
+        db.session.add(other_at)
+        db.session.commit()
+        other_at_id = other_at.id
+    auth_client.post("/admin/log", data=with_csrf({
+        "quest_id": seeded["quest_id"],
+        "activity_type_id": other_at_id,
+        "quantity": "10",
+    }), follow_redirects=True)
+    with app.app_context():
+        assert ActivityLog.query.filter_by(activity_type_id=other_at_id).count() == 0

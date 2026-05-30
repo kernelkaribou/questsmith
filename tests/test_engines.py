@@ -6,6 +6,7 @@ from app import create_app, db
 from app.models import (
     Member, Campaign, Quest, ActivityType, EarningRule,
     PartyGoal, QuestLevel, ShopItem, SideQuest, SideQuestChain, Achievement,
+    ActivityLog, SideQuestCompletion,
 )
 from tests.conftest import TestConfig
 
@@ -559,3 +560,82 @@ class TestLevelUnlockPersistence:
             levels = get_unlocked_levels(seeded["quest_a_id"])
             assert levels[0]["unlocked"] is True
             assert levels[0]["unlocked_at"] is not None
+
+
+class TestCompletionActivities:
+    """Completion (milestone) activity logging and dashboard stats."""
+
+    def _make_completion_type(self, quest_id, name="Finish Book", reward=25):
+        at = ActivityType(quest_id=quest_id, name=name, unit_label="completion", is_milestone=True)
+        db.session.add(at)
+        db.session.flush()
+        rule = EarningRule(activity_type_id=at.id, rule_type="per_log", quantity_required=1, currency_reward=reward)
+        db.session.add(rule)
+        db.session.commit()
+        return at.id
+
+    def test_completion_logs_flat_reward_at_quantity_one(self, app, seeded):
+        from app.engines.quest import log_activity
+        from app.engines.ledger import get_balance
+        with app.app_context():
+            at_id = self._make_completion_type(seeded["quest_a_id"])
+            log, txns = log_activity(seeded["quest_a_id"], at_id, 1)
+            db.session.commit()
+            assert log is not None
+            assert len(txns) == 1
+            assert get_balance(seeded["quest_a_id"]) == 25
+
+    def test_get_earning_progress_excludes_completions(self, app, seeded):
+        # A milestone type must never show a progress bar, even with a stale
+        # per_batch rule (legacy data) that quantity_required > 1.
+        from app.engines.quest import get_earning_progress
+        with app.app_context():
+            at = ActivityType(quest_id=seeded["quest_a_id"], name="Win Game", unit_label="completion", is_milestone=True)
+            db.session.add(at)
+            db.session.flush()
+            db.session.add(EarningRule(activity_type_id=at.id, rule_type="per_batch", quantity_required=5, currency_reward=10))
+            db.session.commit()
+            progress = get_earning_progress(seeded["quest_a_id"])
+            assert all(p["activity_type"].id != at.id for p in progress)
+
+    def test_completion_stats_count_non_reversed_logs(self, app, seeded):
+        from app.engines.quest import log_activity, get_completion_stats
+        with app.app_context():
+            at_id = self._make_completion_type(seeded["quest_a_id"], name="Finish Book")
+            log_activity(seeded["quest_a_id"], at_id, 1)
+            db.session.commit()
+            log2, _ = log_activity(seeded["quest_a_id"], at_id, 1)
+            db.session.commit()
+
+            activity_stats, quest_stats = get_completion_stats(seeded["quest_a_id"])
+            assert {"name": "Finish Book", "count": 2} in activity_stats
+            # quest_a has no side quests or chains
+            assert quest_stats == []
+
+            # Reversing a log must drop the count (reversal-aware).
+            log2.reversed = True
+            db.session.commit()
+            activity_stats, _ = get_completion_stats(seeded["quest_a_id"])
+            assert {"name": "Finish Book", "count": 1} in activity_stats
+
+    def test_quest_completions_stat_is_reversal_aware(self, app, seeded):
+        from app.engines.quest import get_completion_stats
+        from app.engines.side_quest import complete_side_quest, reverse_completion
+        with app.app_context():
+            sq = SideQuest(quest_id=seeded["quest_a_id"], name="Read Outside", currency_reward=5)
+            db.session.add(sq)
+            db.session.commit()
+
+            _, quest_stats = get_completion_stats(seeded["quest_a_id"])
+            assert quest_stats == [{"name": "Quest Completions", "count": 0}]
+
+            res = complete_side_quest(sq.id, seeded["quest_a_id"])
+            db.session.commit()
+            _, quest_stats = get_completion_stats(seeded["quest_a_id"])
+            assert quest_stats == [{"name": "Quest Completions", "count": 1}]
+
+            reverse_completion(res["completion"].id)
+            db.session.commit()
+            _, quest_stats = get_completion_stats(seeded["quest_a_id"])
+            assert quest_stats == [{"name": "Quest Completions", "count": 0}]
+

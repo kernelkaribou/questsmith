@@ -380,15 +380,22 @@ def quest_edit(quest_id):
         # Update milestone toggle for existing activity types
         for at in quest.activity_types:
             new_milestone = f"milestone_{at.id}" in request.form
-            if new_milestone != at.is_milestone:
-                at.is_milestone = new_milestone
-                if new_milestone and not at.unit_label:
+            was_milestone = at.is_milestone
+            at.is_milestone = new_milestone
+            if new_milestone:
+                # Completions are always a single flat reward per log. Normalize
+                # defensively on every save (not only on toggle) so any legacy
+                # rows with a stale per_batch rule_type or quantity_required > 1
+                # are corrected and earn correctly.
+                if not at.unit_label:
                     at.unit_label = "completion"
-                # Update rule type to match; completions are always one flat reward
                 for rule in at.earning_rules:
-                    rule.rule_type = "per_log" if new_milestone else "per_batch"
-                    if new_milestone:
-                        rule.quantity_required = 1
+                    rule.rule_type = "per_log"
+                    rule.quantity_required = 1
+            elif was_milestone:
+                # Toggled off — revert to cumulative measured behavior.
+                for rule in at.earning_rules:
+                    rule.rule_type = "per_batch"
 
         db.session.commit()
         flash("Quest updated", "success")
