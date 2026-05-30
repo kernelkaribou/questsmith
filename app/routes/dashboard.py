@@ -155,7 +155,7 @@ def quest_view(quest_id):
             SideQuestChain.quest_id == quest_id,
             SideQuestChain.completed_at.isnot(None),
         ).count()
-        quest_completion_stats.append({"name": "Chains", "count": chain_done})
+        quest_completion_stats.append({"name": "Chain Quests", "count": chain_done})
 
     # Theme context
     ctx = quest_engine.get_quest_context(quest_id)

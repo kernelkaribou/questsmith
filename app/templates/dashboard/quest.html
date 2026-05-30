@@ -582,7 +582,7 @@
                 </div>
                 {% endif %}
                 {% if quest_completion_stats %}
-                <div class="space-y-2 {{ 'mt-2 pt-2 border-t border-gray-200/60' if completion_stats }}">
+                <div class="space-y-2 {{ 'mt-2' if completion_stats }}">
                     {% for qs in quest_completion_stats %}
                     <div class="flex items-center justify-between text-sm">
                         <span class="font-semibold text-gray-800">{{ qs.name }}</span>
