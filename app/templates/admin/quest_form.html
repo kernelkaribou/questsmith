@@ -152,24 +152,25 @@
             {% if quest.activity_types|list %}
             <div class="space-y-3 mb-4">
                 {% for at in quest.activity_types %}
-                <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 gap-4 flex-wrap">
+                <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 gap-4 flex-wrap" x-data="{ completion: {{ 'true' if at.is_milestone else 'false' }} }">
                     <div class="flex items-center gap-3 flex-wrap">
                         <span class="font-semibold text-sm text-white">{{ at.name }}</span>
-                        <span class="text-white/40 text-sm">({{ at.unit_label }})</span>
+                        <span class="text-white/40 text-sm" x-show="!completion" x-cloak>({{ at.unit_label }})</span>
                         {% for rule in at.earning_rules %}
                         <div class="flex items-center gap-1 text-sm">
                             <span class="text-white/60">Earn</span>
                             <input type="number" name="rule_reward_{{ rule.id }}" value="{{ rule.currency_reward }}" class="w-14 px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-sm text-center text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                             <span class="text-white/60">per</span>
-                            <input type="number" name="rule_qty_{{ rule.id }}" value="{{ rule.quantity_required }}" class="w-14 px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-sm text-center text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                            <span class="text-white/60">{{ at.unit_label }}</span>
+                            <input type="number" name="rule_qty_{{ rule.id }}" value="{{ rule.quantity_required }}" x-show="!completion" :disabled="completion" x-cloak class="w-14 px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-sm text-center text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                            <span class="text-white/60" x-show="!completion" x-cloak>{{ at.unit_label }}</span>
+                            <span class="text-white/60" x-show="completion" x-cloak>completion</span>
                         </div>
                         {% endfor %}
                     </div>
                     <div class="flex items-center gap-3">
                         <label class="flex items-center gap-1 text-xs text-white/60 cursor-pointer whitespace-nowrap">
-                            <input type="checkbox" name="milestone_{{ at.id }}" {{ 'checked' if at.is_milestone }} class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
-                            Milestone
+                            <input type="checkbox" name="milestone_{{ at.id }}" {{ 'checked' if at.is_milestone }} x-model="completion" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
+                            Completion
                         </label>
                         <button type="submit" formaction="{{ url_for('admin.activity_type_delete', at_id=at.id) }}" formmethod="POST"
                                 onclick="return confirm('Remove {{ at.name }}?')"
@@ -188,20 +189,22 @@
             </div>
             {% else %}
             <hr class="my-5 border-white/10">
-            <h3 class="font-semibold text-white mb-2">First Activity Type</h3>
-            <p class="text-xs text-white/60 mb-3">Define how the adventurer earns currency.</p>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="text" name="new_activity_name" placeholder="Name (e.g., Reading)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                <input type="text" name="new_activity_unit" placeholder="Unit (e.g., pages)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <div x-data="{ completion: false }">
+                <h3 class="font-semibold text-white mb-2">First Activity Type</h3>
+                <p class="text-xs text-white/60 mb-3">Define how the adventurer earns currency.</p>
+                <label class="flex items-center gap-2 text-xs text-white/60 mb-3 cursor-pointer">
+                    <input type="checkbox" name="new_activity_milestone" x-model="completion" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
+                    Completion activity - each completion earns a flat reward (e.g., finished a book, won a game)
+                </label>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="text" name="new_activity_name" placeholder="Name (e.g., Reading)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="text" name="new_activity_unit" x-show="!completion" :disabled="completion" placeholder="Unit (e.g., pages)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" name="new_rule_qty" x-show="!completion" :disabled="completion" placeholder="Qty per reward (e.g., 50)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="number" name="new_rule_reward" :placeholder="completion ? 'Reward per completion (e.g., 5)' : 'Currency reward (e.g., 1)'" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                </div>
             </div>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="number" name="new_rule_qty" placeholder="Qty per reward (e.g., 50)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                <input type="number" name="new_rule_reward" placeholder="Currency reward (e.g., 1)" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-            </div>
-            <label class="flex items-center gap-2 text-xs text-white/60 mb-4">
-                <input type="checkbox" name="new_activity_milestone" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
-                Milestone (logged as checkbox, not quantity)
-            </label>
 
             <div class="flex items-center gap-3 pt-2">
                 <button type="submit" class="bg-amber-500 text-slate-900 px-5 py-2 rounded-md hover:bg-amber-400 font-medium transition-colors">Create Quest</button>
@@ -216,34 +219,34 @@
     <aside class="space-y-4 xl:sticky xl:top-6 self-start">
         <div class="bg-slate-800/50 border border-white/10 rounded-lg p-5">
             <h3 class="font-semibold text-white mb-3">Add Activity Type</h3>
-            <form method="POST" action="{{ url_for('admin.activity_type_create', quest_id=quest.id) }}" class="space-y-3">
+            <form method="POST" action="{{ url_for('admin.activity_type_create', quest_id=quest.id) }}" class="space-y-3" x-data="{ completion: false }">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
+                    <input type="checkbox" name="new_activity_milestone" x-model="completion" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
+                    Completion activity (each completion earns a flat reward)
+                </label>
                 <div>
                     <label class="block text-xs font-medium text-white/60 mb-1">Name</label>
                     <input type="text" name="new_activity_name" placeholder="e.g., Reading" required
                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                 </div>
-                <div>
+                <div x-show="!completion">
                     <label class="block text-xs font-medium text-white/60 mb-1">Unit</label>
-                    <input type="text" name="new_activity_unit" placeholder="e.g., pages" required
+                    <input type="text" name="new_activity_unit" placeholder="e.g., pages" :required="!completion" :disabled="completion"
                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
-                    <div>
+                    <div x-show="!completion">
                         <label class="block text-xs font-medium text-white/60 mb-1">Qty per reward</label>
-                        <input type="number" name="new_rule_qty" placeholder="50"
+                        <input type="number" name="new_rule_qty" placeholder="50" :disabled="completion"
                                class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-white/60 mb-1">Currency earned</label>
+                    <div :class="completion ? 'col-span-2' : ''">
+                        <label class="block text-xs font-medium text-white/60 mb-1" x-text="completion ? 'Reward per completion' : 'Currency earned'">Currency earned</label>
                         <input type="number" name="new_rule_reward" placeholder="1"
                                class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                     </div>
                 </div>
-                <label class="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
-                    <input type="checkbox" name="new_activity_milestone" class="rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500">
-                    Milestone (logged as checkbox)
-                </label>
                 <button type="submit" class="w-full bg-amber-500 text-slate-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-amber-400 transition-colors">
                     Add Activity Type
                 </button>

@@ -89,6 +89,14 @@ def _form_int(name, default=None, min_val=None):
         return default
 
 
+def _safe_int(raw):
+    """Parse an arbitrary value to int, returning None if invalid."""
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return None
+
+
 # --- Auth ---
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -230,8 +238,8 @@ def quest_create():
         activity_name = request.form.get("new_activity_name")
         if activity_name:
             from app.models import ActivityType, EarningRule
-            unit_label = request.form.get("new_activity_unit") or "units"
             is_milestone = bool(request.form.get("new_activity_milestone"))
+            unit_label = "completion" if is_milestone else (request.form.get("new_activity_unit") or "units")
             at = ActivityType(
                 quest_id=quest.id,
                 name=activity_name,
@@ -241,11 +249,12 @@ def quest_create():
             db.session.add(at)
             db.session.flush()
 
-            rule_qty = request.form.get("new_rule_qty")
             rule_reward = request.form.get("new_rule_reward")
+            rule_qty = "1" if is_milestone else request.form.get("new_rule_qty")
             if rule_qty and rule_reward:
                 rule = EarningRule(
                     activity_type_id=at.id,
+                    rule_type="per_log" if is_milestone else "per_batch",
                     quantity_required=int(rule_qty),
                     currency_reward=int(rule_reward),
                 )
@@ -348,25 +357,38 @@ def quest_edit(quest_id):
         elif request.form.get("theme_graphic_url"):
             quest.theme_graphic_url = request.form["theme_graphic_url"]
 
-        # Edit existing earning rules
+        # Edit existing earning rules. Reward is always editable; quantity is
+        # only submitted for measured activities (disabled for completions).
+        # Only rules belonging to this quest may be modified.
+        owned_rule_ids = {
+            rule.id for at in quest.activity_types for rule in at.earning_rules
+        }
         for key, value in request.form.items():
-            if key.startswith("rule_qty_") and value:
-                rule_id = int(key.replace("rule_qty_", ""))
-                rule = db.session.get(EarningRule, rule_id)
-                if rule:
-                    rule.quantity_required = int(value)
-                    reward_key = f"rule_reward_{rule_id}"
-                    if reward_key in request.form and request.form[reward_key]:
-                        rule.currency_reward = int(request.form[reward_key])
+            if key.startswith("rule_reward_") and value:
+                rule_id = _safe_int(key.replace("rule_reward_", ""))
+                if rule_id in owned_rule_ids:
+                    rule = db.session.get(EarningRule, rule_id)
+                    if rule:
+                        rule.currency_reward = int(value)
+            elif key.startswith("rule_qty_") and value:
+                rule_id = _safe_int(key.replace("rule_qty_", ""))
+                if rule_id in owned_rule_ids:
+                    rule = db.session.get(EarningRule, rule_id)
+                    if rule:
+                        rule.quantity_required = int(value)
 
         # Update milestone toggle for existing activity types
         for at in quest.activity_types:
             new_milestone = f"milestone_{at.id}" in request.form
             if new_milestone != at.is_milestone:
                 at.is_milestone = new_milestone
-                # Update rule type to match
+                if new_milestone and not at.unit_label:
+                    at.unit_label = "completion"
+                # Update rule type to match; completions are always one flat reward
                 for rule in at.earning_rules:
                     rule.rule_type = "per_log" if new_milestone else "per_batch"
+                    if new_milestone:
+                        rule.quantity_required = 1
 
         db.session.commit()
         flash("Quest updated", "success")
@@ -387,17 +409,19 @@ def activity_type_create(quest_id):
         return admin_error("Quest not found", url_for("admin.index"))
 
     name = request.form.get("new_activity_name")
+    is_milestone = "new_activity_milestone" in request.form
     unit = request.form.get("new_activity_unit")
+    if is_milestone:
+        unit = unit or "completion"
     if not name or not unit:
         return admin_error("Name and unit are required", url_for("admin.quest_edit", quest_id=quest_id))
 
-    is_milestone = "new_activity_milestone" in request.form
     at = ActivityType(quest_id=quest.id, name=name, unit_label=unit, is_milestone=is_milestone)
     db.session.add(at)
     db.session.flush()
 
-    new_qty = request.form.get("new_rule_qty")
     new_reward = request.form.get("new_rule_reward")
+    new_qty = "1" if is_milestone else request.form.get("new_rule_qty")
     if new_qty and new_reward:
         rule = EarningRule(
             activity_type_id=at.id,
@@ -743,55 +767,98 @@ def award_bonus(quest_id):
 @admin_required
 def log_activity():
     if request.method == "POST":
-        quest_id = int(request.form["quest_id"])
-        activity_type_id = int(request.form["activity_type_id"])
-        quantity = _form_int("quantity", min_val=1)
+        next_url = request.form.get("next") or url_for("admin.log_activity")
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         description = request.form.get("description") or None
         notes = request.form.get("notes") or None
 
-        if quantity is None:
-            flash("Quantity must be a positive integer", "error")
-            return redirect(request.form.get("next") or url_for("admin.log_activity"))
+        def _fail(message):
+            if is_ajax:
+                return jsonify(success=False, message=message), 400
+            flash(message, "error")
+            return redirect(next_url)
 
-        log, txns = quest_engine.log_activity(quest_id, activity_type_id, quantity, description, notes)
-        if log:
-            quest = db.session.get(Quest, quest_id)
+        quest_id = _safe_int(request.form.get("quest_id"))
+        if quest_id is None:
+            return _fail("Quest not found")
+        quest = db.session.get(Quest, quest_id)
+        if not quest:
+            return _fail("Quest not found")
 
-            # Handle milestone checkboxes
-            milestone_ids = request.form.getlist("milestones")
-            for mid in milestone_ids:
-                m_log, m_txns = quest_engine.log_activity(quest_id, int(mid), 1, notes=f"Milestone (with {quantity} {log.activity_type.unit_label})")
-                txns.extend(m_txns)
+        # Validate the primary (measured) activity, if one was selected
+        primary_id = _safe_int(request.form.get("activity_type_id")) if (request.form.get("activity_type_id") or "").strip() else None
+        primary_type = None
+        if primary_id is not None:
+            primary_type = db.session.get(ActivityType, primary_id)
+            if not primary_type or primary_type.quest_id != quest_id:
+                return _fail("Invalid activity type")
+            if primary_type.is_milestone:
+                return _fail("Completion activities are logged via their checkbox, not as a quantity")
 
-            achievement_engine.check_achievements(quest.member_id)
-            db.session.commit()
+        # Validate completion (milestone) selections (deduped)
+        seen_ids = set()
+        completion_types = []
+        for raw in request.form.getlist("milestones"):
+            mid = _safe_int(raw)
+            if mid is None or mid in seen_ids:
+                if mid is None:
+                    return _fail("Invalid completion selection")
+                continue
+            seen_ids.add(mid)
+            ct = db.session.get(ActivityType, mid)
+            if not ct or ct.quest_id != quest_id or not ct.is_milestone:
+                return _fail("Invalid completion selection")
+            completion_types.append(ct)
 
-            earned = sum(t.amount for t in txns)
-            # Show progress toward next currency
+        if not primary_type and not completion_types:
+            return _fail("Select an activity or completion to log")
+
+        txns = []
+        primary_log = None
+        quantity = None
+        if primary_type:
+            quantity = _form_int("quantity", min_val=1)
+            if quantity is None:
+                return _fail("Quantity must be a positive integer")
+            primary_log, p_txns = quest_engine.log_activity(
+                quest_id, primary_type.id, quantity, description, notes
+            )
+            if not primary_log:
+                return _fail("Failed to log activity")
+            txns.extend(p_txns)
+
+        for ct in completion_types:
+            _c_log, c_txns = quest_engine.log_activity(quest_id, ct.id, 1, notes=notes)
+            txns.extend(c_txns)
+
+        achievement_engine.check_achievements(quest.member_id)
+        db.session.commit()
+
+        earned = sum(t.amount for t in txns)
+
+        # Build a message from whatever was actually logged
+        parts = []
+        if primary_type:
+            parts.append(f"{quantity} {primary_type.unit_label}")
+        if completion_types:
+            parts.append(f"{len(completion_types)} completion{'s' if len(completion_types) != 1 else ''}")
+        logged_desc = " + ".join(parts)
+
+        progress_msg = ""
+        if primary_type:
             progress = quest_engine.get_earning_progress(quest_id)
-            at_progress = [p for p in progress if p["activity_type"].id == activity_type_id]
-            progress_msg = ""
+            at_progress = [p for p in progress if p["activity_type"].id == primary_type.id]
             if at_progress:
                 p = at_progress[0]
                 progress_msg = f" ({p['units_to_next']} {p['activity_type'].unit_label} to next)"
-            milestone_msg = f" + {len(milestone_ids)} milestone(s)" if milestone_ids else ""
 
-            # Check for quest completion notification
-            quest = db.session.get(Quest, quest_id)
-            completion_msg = ""
-            if quest.completed_at:
-                completion_msg = " QUEST COMPLETE!"
+        quest = db.session.get(Quest, quest_id)
+        completion_msg = " QUEST COMPLETE!" if quest.completed_at else ""
 
-            msg = f"Logged {quantity} - earned {earned} currency{progress_msg}{milestone_msg}{completion_msg}"
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify(success=True, message=msg)
-            flash(msg, "success")
-        else:
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify(success=False, message="Failed to log activity"), 400
-            flash("Failed to log activity", "error")
-
-        next_url = request.form.get("next") or url_for("admin.log_activity")
+        msg = f"Logged {logged_desc} - earned {earned} currency{progress_msg}{completion_msg}"
+        if is_ajax:
+            return jsonify(success=True, message=msg)
+        flash(msg, "success")
         return redirect(next_url)
 
     quests = Quest.query.filter_by(status="active").all()
