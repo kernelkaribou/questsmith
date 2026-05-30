@@ -334,7 +334,7 @@
                                 <form method="POST" action="{{ url_for('admin.side_quest_award', quest_id=quest.id, side_quest_id=sq.quest.id) }}" class="inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="next" value="{{ url_for('dashboard.quest_view', quest_id=quest.id) }}">
-                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background-color: var(--color-primary)">Claim</button>
+                                    <button type="submit" class="text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm transition hover:opacity-90" style="background-color: var(--color-primary)">Complete</button>
                                 </form>
                                 {% endif %}
                             </div>
