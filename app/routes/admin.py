@@ -702,6 +702,32 @@ def activity_log_undo(log_id):
     return admin_success(f"Reversed activity: {log.quantity} {log.activity_type.unit_label}", redirect_url)
 
 
+# --- Bonus Awards ---
+
+@bp.route("/quests/<int:quest_id>/bonus", methods=["POST"])
+@admin_required
+def award_bonus(quest_id):
+    """Award bonus currency (adjustment) to a quest."""
+    quest = _get_or_404(Quest, quest_id)
+    redirect_url = request.form.get("next") or url_for("admin.quest_detail", quest_id=quest_id)
+
+    amount = _form_int("amount", min_val=1)
+    reason = request.form.get("reason", "").strip()
+    if not reason:
+        return admin_error("Reason is required", redirect_url)
+
+    txn = Transaction(
+        quest_id=quest_id,
+        type="adjustment",
+        amount=amount,
+        description=f"Bonus: {reason}",
+    )
+    db.session.add(txn)
+    db.session.commit()
+
+    return admin_success(f"Awarded {amount} bonus ({reason})", redirect_url)
+
+
 # --- Activity Logging ---
 
 @bp.route("/log", methods=["GET", "POST"])

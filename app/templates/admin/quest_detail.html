@@ -68,6 +68,20 @@
     </form>
 </section>
 
+<section class="bg-slate-800/50 border border-white/10 rounded-lg p-4 mb-6">
+    <h2 class="font-semibold text-white mb-3">Award Bonus</h2>
+    <form method="POST" action="{{ url_for('admin.award_bonus', quest_id=quest.id) }}" class="space-y-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ url_for('admin.quest_detail', quest_id=quest.id) }}">
+        <div class="flex gap-2 items-end">
+            <input type="number" name="amount" min="1" required placeholder="Amount" class="w-24 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <input type="text" name="reason" required placeholder="Reason" class="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+            <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-500 transition-colors font-medium">Award</button>
+        </div>
+        <p class="text-xs text-white/40">Awards spendable currency only (does not count toward level progression).</p>
+    </form>
+</section>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <section class="bg-slate-800/50 border border-white/10 rounded-lg p-4">
         <div class="flex items-center justify-between mb-3">
