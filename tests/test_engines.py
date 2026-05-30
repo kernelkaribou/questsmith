@@ -627,15 +627,15 @@ class TestCompletionActivities:
             db.session.commit()
 
             _, quest_stats = get_completion_stats(seeded["quest_a_id"])
-            assert quest_stats == [{"name": "Quest Completions", "count": 0}]
+            assert quest_stats == [{"name": "Side Quests", "count": 0}]
 
             res = complete_side_quest(sq.id, seeded["quest_a_id"])
             db.session.commit()
             _, quest_stats = get_completion_stats(seeded["quest_a_id"])
-            assert quest_stats == [{"name": "Quest Completions", "count": 1}]
+            assert quest_stats == [{"name": "Side Quests", "count": 1}]
 
             reverse_completion(res["completion"].id)
             db.session.commit()
             _, quest_stats = get_completion_stats(seeded["quest_a_id"])
-            assert quest_stats == [{"name": "Quest Completions", "count": 0}]
+            assert quest_stats == [{"name": "Side Quests", "count": 0}]
 

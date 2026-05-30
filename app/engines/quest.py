@@ -238,7 +238,7 @@ def get_completion_stats(quest_id):
     Returns (activity_stats, quest_stats):
       - activity_stats: for each completion (milestone) activity type, the count
         of non-reversed activity logs -> [{"name", "count"}].
-      - quest_stats: a single merged "Quest Completions" entry counting each
+      - quest_stats: a single merged "Side Quests" entry counting each
         non-reversed standalone side quest completion plus each completed chain,
         or [] when the quest has no standalone side quests or chains.
 
@@ -274,6 +274,6 @@ def get_completion_stats(quest_id):
             SideQuestChain.quest_id == quest_id,
             SideQuestChain.completed_at.isnot(None),
         ).count()
-        quest_stats.append({"name": "Quest Completions", "count": sq_done + chain_done})
+        quest_stats.append({"name": "Side Quests", "count": sq_done + chain_done})
 
     return activity_stats, quest_stats
