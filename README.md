@@ -29,6 +29,8 @@ Access at `http://localhost:5000`
 
 Admin PIN: `1234` (configure via `ADMIN_PIN` environment variable)
 
+Timezone: set `TZ` to your local timezone (e.g. `America/Chicago`) so quest "complete by" deadlines apply to your local calendar date. Defaults to UTC.
+
 ## Development
 
 ```bash

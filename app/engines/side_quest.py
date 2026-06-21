@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from app import db
 from app.models import SideQuest, SideQuestChain, SideQuestCompletion, Quest
 from app.engines.ledger import record_side_quest_reward, record_reversal
+from app.config import get_app_timezone
 
 
 def get_available_side_quests(quest_id):
@@ -263,11 +264,24 @@ def get_completed_chains(quest_id):
     ).all()
 
 
+def is_expired(expires_at):
+    """Public helper: whether a date-only deadline has passed."""
+    if not expires_at:
+        return False
+    return _is_expired(expires_at, datetime.now(timezone.utc))
+
+
 def _is_expired(expires_at, now):
-    """Check if a datetime has passed."""
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    return now >= expires_at
+    """Check whether a date-only deadline has passed.
+
+    Deadlines are evaluated by calendar date in the application's local
+    timezone: a "complete by" date remains valid through that entire day,
+    regardless of the time of day. Any time component on the stored value is
+    ignored.
+    """
+    deadline_date = expires_at.date()
+    local_today = now.astimezone(get_app_timezone()).date()
+    return local_today > deadline_date
 
 
 def _get_completion_status(side_quest, quest_id):
