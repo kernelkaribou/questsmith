@@ -57,13 +57,25 @@ def _get_or_404(model, id):
     return obj
 
 
-def _parse_datetime(value):
+def _parse_deadline(value):
+    """Parse a date-only "complete by" deadline (YYYY-MM-DD).
+
+    Stored as midnight of the selected calendar date; expiry is evaluated by
+    date in the application's local timezone, so the deadline is valid through
+    the entire day. Accepts legacy datetime-local values by taking the date
+    part only.
+    """
     if not value:
         return None
+    # Accept a bare date (YYYY-MM-DD) or a legacy datetime-local value
+    # (YYYY-MM-DDTHH:MM); reject anything else as malformed.
+    if len(value) != 10 and value[10:11] != "T":
+        return None
     try:
-        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+        d = date.fromisoformat(value[:10])
     except (ValueError, TypeError):
         return None
+    return datetime(d.year, d.month, d.day)
 
 
 def _parse_date(date_str):
@@ -1050,7 +1062,7 @@ def side_quest_create(quest_id):
             currency_reward=int(request.form.get("currency_reward") or 0),
             prize_description=request.form.get("prize_description") or None,
             repeat_type=request.form.get("repeat_type", "one_time"),
-            expires_at=_parse_datetime(request.form.get("expires_at")),
+            expires_at=_parse_deadline(request.form.get("expires_at")),
         )
         db.session.add(sq)
         db.session.commit()
@@ -1069,7 +1081,7 @@ def side_quest_edit(side_quest_id):
         sq.currency_reward = int(request.form.get("currency_reward") or 0)
         sq.prize_description = request.form.get("prize_description") or None
         sq.repeat_type = request.form.get("repeat_type", "one_time")
-        sq.expires_at = _parse_datetime(request.form.get("expires_at"))
+        sq.expires_at = _parse_deadline(request.form.get("expires_at"))
         db.session.commit()
         flash("Side Quest updated", "success")
         return redirect(url_for("admin.quest_detail", quest_id=sq.quest_id))
@@ -1090,7 +1102,7 @@ def chain_create(quest_id):
             currency_reward=int(request.form.get("currency_reward") or 0),
             prize_description=request.form.get("prize_description") or None,
             visibility_mode=request.form.get("visibility_mode", "checklist_sequential"),
-            expires_at=_parse_datetime(request.form.get("expires_at")),
+            expires_at=_parse_deadline(request.form.get("expires_at")),
         )
         db.session.add(chain)
         db.session.commit()
@@ -1104,7 +1116,8 @@ def chain_create(quest_id):
 def chain_detail(chain_id):
     chain = _get_or_404(SideQuestChain, chain_id)
     status = side_quest_engine.get_chain_status(chain, chain.quest_id)
-    return render_template("admin/chain_detail.html", chain=chain, status=status, now=datetime.now(timezone.utc))
+    return render_template("admin/chain_detail.html", chain=chain, status=status,
+                           is_expired=side_quest_engine.is_expired(chain.expires_at))
 
 
 @bp.route("/chains/<int:chain_id>/edit", methods=["GET", "POST"])
@@ -1117,7 +1130,7 @@ def chain_edit(chain_id):
         chain.currency_reward = int(request.form.get("currency_reward") or 0)
         chain.prize_description = request.form.get("prize_description") or None
         chain.visibility_mode = request.form.get("visibility_mode", "checklist_sequential")
-        chain.expires_at = _parse_datetime(request.form.get("expires_at"))
+        chain.expires_at = _parse_deadline(request.form.get("expires_at"))
         db.session.commit()
         flash("Chain updated", "success")
         return redirect(url_for("admin.chain_detail", chain_id=chain.id))

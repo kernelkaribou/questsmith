@@ -15,6 +15,7 @@ services:
       - DATABASE_PATH=/app/data/questsmith.db
       - ADMIN_PIN=1234
       - SECRET_KEY=dev-secret-key-do-not-use-in-production
+      - TZ=UTC
     command: >
       sh -c "npm ci --quiet 2>/dev/null;
       npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css &&

@@ -11,4 +11,7 @@ services:
       - PGID=1000
       - PIN=1234
       - DATABASE_PATH=/app/data/questsmith.db
+      # Set to your local timezone so "complete by" deadlines align to your
+      # local calendar date (IANA name, e.g. America/Chicago). Defaults to UTC.
+      - TZ=UTC
     restart: unless-stopped
