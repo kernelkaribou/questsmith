@@ -729,3 +729,14 @@ class TestSideQuestDeadline:
     def test_public_is_expired_handles_none(self):
         from app.engines.side_quest import is_expired
         assert is_expired(None) is False
+
+    def test_parse_deadline_accepts_date_and_legacy_datetime(self):
+        from datetime import datetime
+        from app.routes.admin import _parse_deadline
+        assert _parse_deadline("2026-06-22") == datetime(2026, 6, 22)
+        # Legacy datetime-local value: date part is kept, time dropped
+        assert _parse_deadline("2026-06-22T15:30") == datetime(2026, 6, 22)
+        # Blank / malformed -> None
+        assert _parse_deadline("") is None
+        assert _parse_deadline("2026-06-22junk") is None
+        assert _parse_deadline("not-a-date") is None
