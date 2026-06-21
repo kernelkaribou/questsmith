@@ -639,3 +639,93 @@ class TestCompletionActivities:
             _, quest_stats = get_completion_stats(seeded["quest_a_id"])
             assert quest_stats == [{"name": "Side Quests", "count": 0}]
 
+
+
+class TestSideQuestDeadline:
+    """Deadlines ("complete by") are date-only and evaluated in local time."""
+
+    def test_is_expired_valid_through_entire_local_day(self, monkeypatch):
+        from datetime import datetime, timezone
+        from zoneinfo import ZoneInfo
+        from app.engines import side_quest
+
+        chicago = ZoneInfo("America/Chicago")
+        monkeypatch.setattr(side_quest, "get_app_timezone", lambda: chicago)
+
+        deadline = datetime(2026, 6, 22)  # complete by Jun 22 (date only)
+
+        # Jun 22 01:00 UTC == Jun 21 20:00 Chicago -> still valid
+        now = datetime(2026, 6, 22, 1, 0, tzinfo=timezone.utc)
+        assert side_quest._is_expired(deadline, now) is False
+
+        # Jun 23 04:59 UTC == Jun 22 23:59 Chicago -> still the deadline day
+        now = datetime(2026, 6, 23, 4, 59, tzinfo=timezone.utc)
+        assert side_quest._is_expired(deadline, now) is False
+
+        # Jun 23 05:00 UTC == Jun 23 00:00 Chicago -> next day, expired
+        now = datetime(2026, 6, 23, 5, 0, tzinfo=timezone.utc)
+        assert side_quest._is_expired(deadline, now) is True
+
+    def test_is_expired_ignores_stored_time_component(self, monkeypatch):
+        from datetime import datetime, timezone
+        from app.engines import side_quest
+
+        monkeypatch.setattr(side_quest, "get_app_timezone", lambda: timezone.utc)
+        # Legacy value carrying a midnight time component
+        deadline = datetime(2026, 6, 22, 0, 0)
+        now = datetime(2026, 6, 22, 23, 0, tzinfo=timezone.utc)
+        assert side_quest._is_expired(deadline, now) is False
+
+    def test_complete_blocked_only_after_deadline_date(self, app, seeded, monkeypatch):
+        from datetime import datetime, timezone, timedelta
+        from app.engines import side_quest
+        from app.engines.side_quest import complete_side_quest
+
+        monkeypatch.setattr(side_quest, "get_app_timezone", lambda: timezone.utc)
+
+        with app.app_context():
+            today = datetime.now(timezone.utc).date()
+
+            future = SideQuest(
+                quest_id=seeded["quest_a_id"], name="Future Deadline",
+                currency_reward=10, repeat_type="one_time",
+                expires_at=datetime(today.year, today.month, today.day) + timedelta(days=1),
+            )
+            past = SideQuest(
+                quest_id=seeded["quest_a_id"], name="Past Deadline",
+                currency_reward=10, repeat_type="one_time",
+                expires_at=datetime(today.year, today.month, today.day) - timedelta(days=1),
+            )
+            db.session.add_all([future, past])
+            db.session.commit()
+
+            # Deadline in the future (and today) -> completable
+            assert complete_side_quest(future.id, seeded["quest_a_id"]) is not None
+            db.session.commit()
+
+            # Deadline already passed -> blocked
+            assert complete_side_quest(past.id, seeded["quest_a_id"]) is None
+
+    def test_complete_allowed_on_deadline_date(self, app, seeded, monkeypatch):
+        from datetime import datetime, timezone
+        from app.engines import side_quest
+        from app.engines.side_quest import complete_side_quest
+
+        monkeypatch.setattr(side_quest, "get_app_timezone", lambda: timezone.utc)
+
+        with app.app_context():
+            today = datetime.now(timezone.utc).date()
+            sq = SideQuest(
+                quest_id=seeded["quest_a_id"], name="Today Deadline",
+                currency_reward=10, repeat_type="one_time",
+                expires_at=datetime(today.year, today.month, today.day),
+            )
+            db.session.add(sq)
+            db.session.commit()
+
+            # Deadline is today -> still completable regardless of time of day
+            assert complete_side_quest(sq.id, seeded["quest_a_id"]) is not None
+
+    def test_public_is_expired_handles_none(self):
+        from app.engines.side_quest import is_expired
+        assert is_expired(None) is False

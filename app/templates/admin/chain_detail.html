@@ -31,7 +31,7 @@
                 <p class="text-xs text-white/60">Status</p>
                 {% if chain.completed_at %}
                 <span class="text-green-300 font-medium">Completed</span>
-                {% elif chain.expires_at and chain.expires_at < now %}
+                {% elif is_expired %}
                 <span class="text-red-300 font-medium">Expired</span>
                 {% else %}
                 <span class="text-indigo-300 font-medium">Active</span>
@@ -39,7 +39,7 @@
             </div>
         </div>
         {% if chain.expires_at %}
-        <p class="text-xs text-white/40 mt-2 text-center">Expires: {{ chain.expires_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+        <p class="text-xs text-white/40 mt-2 text-center">Complete by: {{ chain.expires_at.strftime('%b %d, %Y') }}</p>
         {% endif %}
     </div>
 

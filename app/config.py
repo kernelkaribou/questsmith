@@ -1,5 +1,28 @@
 import os
 import secrets
+from datetime import timezone
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # pragma: no cover
+    ZoneInfo = None
+
+
+def get_app_timezone():
+    """Return the configured local (household) timezone.
+
+    Controlled by the APP_TIMEZONE or TZ environment variable using an IANA
+    name such as 'America/Chicago'. Falls back to UTC when unset or when the
+    timezone database is unavailable. This timezone defines what "today" means
+    when evaluating date-only deadlines (side quest / chain "complete by").
+    """
+    name = os.environ.get("APP_TIMEZONE") or os.environ.get("TZ")
+    if name and ZoneInfo is not None:
+        try:
+            return ZoneInfo(name)
+        except Exception:
+            return timezone.utc
+    return timezone.utc
 
 
 def _get_or_create_secret_key():
