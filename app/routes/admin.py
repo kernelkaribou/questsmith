@@ -67,6 +67,10 @@ def _parse_deadline(value):
     """
     if not value:
         return None
+    # Accept a bare date (YYYY-MM-DD) or a legacy datetime-local value
+    # (YYYY-MM-DDTHH:MM); reject anything else as malformed.
+    if len(value) != 10 and value[10:11] != "T":
+        return None
     try:
         d = date.fromisoformat(value[:10])
     except (ValueError, TypeError):

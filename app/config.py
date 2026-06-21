@@ -1,11 +1,14 @@
 import os
 import secrets
+import logging
 from datetime import timezone
 
 try:
     from zoneinfo import ZoneInfo
 except ImportError:  # pragma: no cover
     ZoneInfo = None
+
+logger = logging.getLogger(__name__)
 
 
 def get_app_timezone():
@@ -21,6 +24,7 @@ def get_app_timezone():
         try:
             return ZoneInfo(name)
         except Exception:
+            logger.warning("Unknown timezone %r; falling back to UTC for deadlines.", name)
             return timezone.utc
     return timezone.utc
 
